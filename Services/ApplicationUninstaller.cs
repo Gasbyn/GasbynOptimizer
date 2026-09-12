@@ -45,11 +45,8 @@ public sealed class ApplicationUninstaller
     {
         var candidates = new List<UninstallCandidate>();
 
-        if (!string.IsNullOrWhiteSpace(app.InstallLocation) && Directory.Exists(app.InstallLocation))
-        {
-            if (IsSafeCandidatePath(app.InstallLocation))
-                candidates.Add(new UninstallCandidate("Install folder", app.InstallLocation, "MEDIUM — zkontroluj, zda jde opravdu o tuto aplikaci", false));
-        }
+        if (!string.IsNullOrWhiteSpace(app.InstallLocation) && Directory.Exists(app.InstallLocation) && IsSafeCandidatePath(app.InstallLocation))
+            candidates.Add(new UninstallCandidate("Install folder", app.InstallLocation, "MEDIUM — zkontroluj, zda jde opravdu o tuto aplikaci", false));
 
         var appDataRoots = new[]
         {
@@ -69,14 +66,10 @@ public sealed class ApplicationUninstaller
                         candidates.Add(new UninstallCandidate("AppData folder", dir, "MEDIUM — název odpovídá aplikaci", false));
                 }
             }
-            catch
-            {
-                // Access-denied directories are ignored.
-            }
+            catch { }
         }
 
-        foreach (var registryCandidate in FindRegistryCandidates(app))
-            candidates.Add(registryCandidate);
+        candidates.AddRange(FindRegistryCandidates(app));
 
         return candidates
             .GroupBy(x => $"{x.Type}|{x.Path}", StringComparer.OrdinalIgnoreCase)
@@ -92,8 +85,7 @@ public sealed class ApplicationUninstaller
         {
             if (candidate.Type.Contains("Registry", StringComparison.OrdinalIgnoreCase))
             {
-                if (!candidate.Path.StartsWith("HKCU\\", StringComparison.OrdinalIgnoreCase) &&
-                    !candidate.Path.StartsWith("HKLM\\", StringComparison.OrdinalIgnoreCase))
+                if (!candidate.Path.StartsWith("HKCU\\", StringComparison.OrdinalIgnoreCase) && !candidate.Path.StartsWith("HKLM\\", StringComparison.OrdinalIgnoreCase))
                 {
                     message = "Registry cesta není v povoleném rozsahu.";
                     return false;
@@ -102,10 +94,7 @@ public sealed class ApplicationUninstaller
                 var split = candidate.Path.IndexOf('\\');
                 var hiveName = candidate.Path[..split];
                 var subPath = candidate.Path[(split + 1)..];
-                var hive = hiveName.Equals("HKCU", StringComparison.OrdinalIgnoreCase)
-                    ? Registry.CurrentUser
-                    : Registry.LocalMachine;
-
+                var hive = hiveName.Equals("HKCU", StringComparison.OrdinalIgnoreCase) ? Registry.CurrentUser : Registry.LocalMachine;
                 hive.DeleteSubKeyTree(subPath, throwOnMissingSubKey: false);
                 message = "Vybraná registry položka byla odstraněna.";
                 return true;
@@ -141,8 +130,9 @@ public sealed class ApplicationUninstaller
         }
     }
 
-    private static IEnumerable<UninstallCandidate> FindRegistryCandidates(InstalledApplication app)
+    private static List<UninstallCandidate> FindRegistryCandidates(InstalledApplication app)
     {
+        var result = new List<UninstallCandidate>();
         foreach (var hive in new[] { ("HKCU", Registry.CurrentUser), ("HKLM", Registry.LocalMachine) })
         {
             foreach (var path in new[]
@@ -160,12 +150,13 @@ public sealed class ApplicationUninstaller
                         using var key = root.OpenSubKey(name, writable: false);
                         var display = key?.GetValue("DisplayName")?.ToString() ?? string.Empty;
                         if (string.Equals(display, app.Name, StringComparison.OrdinalIgnoreCase))
-                            yield return new UninstallCandidate("Registry uninstall entry", $"{hive.Item1}\\{path}\\{name}", "MEDIUM — pouze pokud oficiální uninstall záznam zůstal", false);
+                            result.Add(new UninstallCandidate("Registry uninstall entry", $"{hive.Item1}\\{path}\\{name}", "MEDIUM — pouze pokud oficiální uninstall záznam zůstal", false));
                     }
                 }
                 catch { }
             }
         }
+        return result;
     }
 
     private static bool LooksRelated(string candidate, string appName)
@@ -175,14 +166,10 @@ public sealed class ApplicationUninstaller
         if (normalizedCandidate.Length < 4 || normalizedApp.Length < 4)
             return false;
 
-        return normalizedCandidate.Contains(normalizedApp, StringComparison.OrdinalIgnoreCase) ||
-               normalizedApp.Contains(normalizedCandidate, StringComparison.OrdinalIgnoreCase);
+        return normalizedCandidate.Contains(normalizedApp, StringComparison.OrdinalIgnoreCase) || normalizedApp.Contains(normalizedCandidate, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string Normalize(string value)
-    {
-        return new string(value.Where(char.IsLetterOrDigit).ToArray());
-    }
+    private static string Normalize(string value) => new(value.Where(char.IsLetterOrDigit).ToArray());
 
     private static bool IsSafeCandidatePath(string path)
     {
@@ -194,17 +181,15 @@ public sealed class ApplicationUninstaller
             var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
             var programFilesX86Full = string.IsNullOrWhiteSpace(programFilesX86) ? string.Empty : Path.GetFullPath(programFilesX86).TrimEnd(Path.DirectorySeparatorChar);
             var userProfile = Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)).TrimEnd(Path.DirectorySeparatorChar);
+            var commonData = Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)).TrimEnd(Path.DirectorySeparatorChar);
 
-            if (full.Equals(windows, StringComparison.OrdinalIgnoreCase) ||
-                full.StartsWith(windows + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
-                full.Equals(programFiles, StringComparison.OrdinalIgnoreCase) ||
-                full.StartsWith(programFiles + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+            if (full.Equals(windows, StringComparison.OrdinalIgnoreCase) || full.StartsWith(windows + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                full.Equals(programFiles, StringComparison.OrdinalIgnoreCase) || full.StartsWith(programFiles + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
                 (!string.IsNullOrWhiteSpace(programFilesX86Full) && (full.Equals(programFilesX86Full, StringComparison.OrdinalIgnoreCase) || full.StartsWith(programFilesX86Full + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)))
                 )
                 return false;
 
-            return full.StartsWith(userProfile + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
-                   full.StartsWith(Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+            return full.StartsWith(userProfile + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) || full.StartsWith(commonData + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
         }
         catch
         {
