@@ -35,10 +35,7 @@ public partial class MainWindow : Window
                     return ShortenHardwareName(name);
             }
         }
-        catch
-        {
-            // UI should still work if WMI is unavailable.
-        }
+        catch { }
 
         return "Unknown CPU";
     }
@@ -58,10 +55,7 @@ public partial class MainWindow : Window
                 }
             }
         }
-        catch
-        {
-            // UI should still work if WMI is unavailable.
-        }
+        catch { }
 
         return "Unknown GPU";
     }
@@ -77,10 +71,7 @@ public partial class MainWindow : Window
                     return Math.Max(1, (int)Math.Round(bytes / 1024d / 1024d / 1024d));
             }
         }
-        catch
-        {
-            // UI should still work if WMI is unavailable.
-        }
+        catch { }
 
         return 0;
     }
@@ -104,6 +95,20 @@ public partial class MainWindow : Window
         ShowPage(button.Tag.ToString() ?? "Dashboard");
     }
 
+    private void SetActiveNav(string page)
+    {
+        foreach (var child in NavPanel.Children)
+        {
+            if (child is not Button button)
+                continue;
+
+            var active = string.Equals(button.Tag?.ToString(), page, StringComparison.OrdinalIgnoreCase);
+            button.Background = active ? (Brush)FindResource("OrangeSoft") : Brushes.Transparent;
+            button.Foreground = active ? Brushes.White : (Brush)FindResource("TextMuted");
+            button.FontWeight = active ? FontWeights.SemiBold : FontWeights.Normal;
+        }
+    }
+
     private void ShowPage(string page)
     {
         PageTitle.Text = page;
@@ -117,6 +122,8 @@ public partial class MainWindow : Window
             "Settings" => "Nastavení aplikace",
             _ => "Gasbyn Optimizer"
         };
+
+        SetActiveNav(page);
 
         if (page == "Dashboard")
         {
@@ -136,7 +143,6 @@ public partial class MainWindow : Window
     private void BuildSecondaryPage(string page)
     {
         SecondaryContent.Children.Clear();
-
         AddPageHeader(page);
 
         switch (page)
@@ -211,7 +217,8 @@ public partial class MainWindow : Window
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(14),
             Padding = new Thickness(20),
-            Margin = new Thickness(0, 0, 0, 12)
+            Margin = new Thickness(0, 0, 0, 12),
+            Effect = (System.Windows.Media.Effects.DropShadowEffect)FindResource("CardShadow")
         };
 
         var grid = new Grid();
@@ -220,17 +227,15 @@ public partial class MainWindow : Window
 
         var stack = new StackPanel();
         stack.Children.Add(new TextBlock { Text = title, FontSize = 16, FontWeight = FontWeights.SemiBold });
-        stack.Children.Add(new TextBlock { Text = description, FontSize = 12, Foreground = (Brush)FindResource("TextMuted"), Margin = new Thickness(0, 5, 0, 0) });
-
-        var tierText = new TextBlock
+        stack.Children.Add(new TextBlock { Text = description, FontSize = 12, Foreground = (Brush)FindResource("TextMuted"), Margin = new Thickness(0, 5, 0, 0), TextWrapping = TextWrapping.Wrap });
+        stack.Children.Add(new TextBlock
         {
             Text = tier,
             FontSize = 9,
             FontWeight = FontWeights.Bold,
             Foreground = tier == "PREMIUM" ? (Brush)FindResource("Orange") : (Brush)FindResource("TextMuted"),
             Margin = new Thickness(0, 10, 0, 0)
-        };
-        stack.Children.Add(tierText);
+        });
 
         Grid.SetColumn(stack, 0);
         grid.Children.Add(stack);
@@ -259,7 +264,8 @@ public partial class MainWindow : Window
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(14),
             Padding = new Thickness(20),
-            Margin = new Thickness(0, 0, 0, 12)
+            Margin = new Thickness(0, 0, 0, 12),
+            Effect = (System.Windows.Media.Effects.DropShadowEffect)FindResource("CardShadow")
         };
 
         var grid = new Grid();
