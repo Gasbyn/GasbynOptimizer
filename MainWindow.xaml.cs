@@ -4,14 +4,20 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using GasbynOptimizer.Core;
+using GasbynOptimizer.Models;
+using GasbynOptimizer.Tweaks.Gaming;
 
 namespace GasbynOptimizer;
 
 public partial class MainWindow : Window
 {
+    private readonly TweakEngine _tweakEngine = new();
+
     public MainWindow()
     {
         InitializeComponent();
+        _tweakEngine.Register(GameMode.Create());
         LoadSystemInfo();
         ShowPage("Dashboard");
     }
@@ -148,8 +154,10 @@ public partial class MainWindow : Window
         switch (page)
         {
             case "Tweaks":
-                AddTweakCard("Windows Game Mode", "Základní herní režim Windows.", "FREE", "Připraveno pro TweakEngine");
-                AddTweakCard("Hardware Accelerated GPU Scheduling", "Stav plánování GPU ve Windows.", "FREE", "Detekce nastavení");
+                var gameMode = _tweakEngine.Get("game-mode");
+                var gameModeStatus = gameMode is null ? TweakStatus.Unknown : gameMode.GetStatus(new TweakContext());
+                AddTweakCard("Windows Game Mode", $"Aktuální stav: {FormatStatus(gameModeStatus)}. Bezpečné zapnutí uloží původní stav do backupu.", "FREE", "Manage Game Mode");
+                AddTweakCard("Hardware Accelerated GPU Scheduling", "Stav plánování GPU ve Windows.", "FREE", "Scan status");
                 AddTweakCard("High Performance Power Plan", "Přepnutí napájecího plánu bez mazání existujících plánů.", "PREMIUM", "Připraveno pro TweakEngine");
                 AddTweakCard("Gaming Network Profile", "Budoucí bezpečné síťové nastavení pro hraní.", "PREMIUM", "Připraveno pro TweakEngine");
                 break;
@@ -185,6 +193,14 @@ public partial class MainWindow : Window
                 break;
         }
     }
+
+    private static string FormatStatus(TweakStatus status) => status switch
+    {
+        TweakStatus.Enabled => "ENABLED",
+        TweakStatus.Disabled => "DISABLED",
+        TweakStatus.NotConfigured => "NOT CONFIGURED",
+        _ => "UNKNOWN"
+    };
 
     private void AddPageHeader(string page)
     {
@@ -247,7 +263,7 @@ public partial class MainWindow : Window
             VerticalAlignment = VerticalAlignment.Center,
             Tag = title
         };
-        button.Click += PlaceholderAction_Click;
+        button.Click += actionText == "Manage Game Mode" ? GameModeAction_Click : PlaceholderAction_Click;
         Grid.SetColumn(button, 1);
         grid.Children.Add(button);
 
@@ -287,10 +303,38 @@ public partial class MainWindow : Window
         SecondaryContent.Children.Add(border);
     }
 
+    private void GameModeAction_Click(object sender, RoutedEventArgs e)
+    {
+        var tweak = _tweakEngine.Get("game-mode");
+        if (tweak is null)
+        {
+            MessageBox.Show("Game Mode tweak nebyl nalezen.", "Gasbyn Optimizer", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        var status = tweak.GetStatus(new TweakContext());
+        var action = status == TweakStatus.Enabled ? "restore" : "enable";
+        var question = action == "enable"
+            ? "Zapnout Windows Game Mode? Původní nastavení se před změnou uloží do backupu."
+            : "Game Mode je už zapnutý. Chceš obnovit původní nastavení z backupu?";
+
+        var confirm = MessageBox.Show(question, "Gasbyn Optimizer", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (confirm != MessageBoxResult.Yes)
+            return;
+
+        var context = new TweakContext();
+        var result = action == "enable" ? tweak.Apply(context) : tweak.Restore(context);
+
+        MessageBox.Show(result.Message, "Gasbyn Optimizer", MessageBoxButton.OK,
+            result.Success ? MessageBoxImage.Information : MessageBoxImage.Warning);
+
+        ShowPage("Tweaks");
+    }
+
     private void PlaceholderAction_Click(object sender, RoutedEventArgs e)
     {
         MessageBox.Show(
-            "Tahle funkce zatím pouze připravuje UI. Skutečné systémové změny přidáme až do bezpečného TweakEngine se zálohou a ověřením.",
+            "Tahle funkce zatím pouze připravuje UI. Skutečné systémové změny přidáme postupně do bezpečného TweakEngine se zálohou a ověřením.",
             "Gasbyn Optimizer",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
