@@ -35,6 +35,9 @@ public partial class MainWindow
 
         switch (title)
         {
+            case "GAMING OPTIMIZER":
+                window.RunGamingAudit();
+                break;
             case "Hardware Accelerated GPU Scheduling":
             case "GPU Scheduling":
                 window.ScanHags();
