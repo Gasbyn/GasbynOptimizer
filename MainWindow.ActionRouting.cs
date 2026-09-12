@@ -21,7 +21,16 @@ public partial class MainWindow
             return;
 
         var button = FindParent<Button>(source);
-        if (button?.Tag is not string title || !button.IsDescendantOf(window.SecondaryContent))
+        if (button is null) return;
+
+        if (button.Content is string content && content.Contains("QUICK OPTIMIZE", System.StringComparison.OrdinalIgnoreCase))
+        {
+            window.QuickOptimizeSafe();
+            e.Handled = true;
+            return;
+        }
+
+        if (button.Tag is not string title || !button.IsDescendantOf(window.SecondaryContent))
             return;
 
         window.RunDynamicAction(title);
