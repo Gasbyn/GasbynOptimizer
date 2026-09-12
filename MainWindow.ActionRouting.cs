@@ -60,6 +60,9 @@ public partial class MainWindow
             case "Recycle Bin":
                 window.ShowRecycleBinInfoReal();
                 break;
+            case "View startup":
+                window.OpenStartupManager();
+                break;
             default:
                 window.RunDynamicAction(title);
                 break;
