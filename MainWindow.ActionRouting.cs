@@ -10,7 +10,7 @@ public partial class MainWindow
     {
         EventManager.RegisterClassHandler(
             typeof(MainWindow),
-            Mouse.PreviewMouseLeftButtonDownEvent,
+            UIElement.PreviewMouseLeftButtonDownEvent,
             new MouseButtonEventHandler(RouteDynamicAction),
             true);
     }
