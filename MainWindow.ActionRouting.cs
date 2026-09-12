@@ -33,7 +33,38 @@ public partial class MainWindow
         if (button.Tag is not string title || !button.IsDescendantOf(window.SecondaryContent))
             return;
 
-        window.RunDynamicAction(title);
+        switch (title)
+        {
+            case "Hardware Accelerated GPU Scheduling":
+            case "GPU Scheduling":
+                window.ScanHags();
+                break;
+            case "High Performance Power Plan":
+            case "Power Plan":
+                window.ManagePowerPlan();
+                break;
+            case "Windows Gaming Services":
+                window.ScanGamingServices();
+                break;
+            case "Fullscreen Optimization Check":
+                window.ScanFullscreen();
+                break;
+            case "Fortnite Optimization Profile":
+            case "Fortnite Profile":
+                window.ScanFortniteProfile();
+                break;
+            case "NVIDIA Gaming Profile":
+            case "NVIDIA Profile":
+                window.ScanNvidiaProfile();
+                break;
+            case "Recycle Bin":
+                window.ShowRecycleBinInfoReal();
+                break;
+            default:
+                window.RunDynamicAction(title);
+                break;
+        }
+
         e.Handled = true;
     }
 }
