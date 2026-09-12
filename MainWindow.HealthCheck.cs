@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Management;
-using System.ServiceProcess;
 using System.Text;
 using System.Windows;
 
@@ -33,8 +32,7 @@ public partial class MainWindow
         sb.AppendLine();
         sb.AppendLine("Health Check nic nemaže ani nemění. Jde pouze o diagnostiku.");
 
-        MessageBox.Show(sb.ToString(), "Gasbyn Optimizer — Health Check", MessageBoxButton.OK,
-            fail > 0 ? MessageBoxImage.Warning : warn > 0 ? MessageBoxImage.Information : MessageBoxImage.Information);
+        MessageBox.Show(sb.ToString(), "Gasbyn Optimizer — Health Check", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private static void CheckDisk(StringBuilder sb, ref int good, ref int warn, ref int fail)
@@ -80,16 +78,29 @@ public partial class MainWindow
     {
         try
         {
-            using var service = new ServiceController(serviceName);
-            if (service.Status == ServiceControllerStatus.Running)
+            using var searcher = new ManagementObjectSearcher(
+                $"SELECT State, StartMode FROM Win32_Service WHERE Name='{serviceName}'");
+
+            var service = searcher.Get().Cast<ManagementObject>().FirstOrDefault();
+            if (service is null)
+            {
+                warn++;
+                sb.AppendLine($"[WARN] {displayName}: service not found or inaccessible");
+                return;
+            }
+
+            var state = service["State"]?.ToString() ?? "Unknown";
+            var startMode = service["StartMode"]?.ToString() ?? "Unknown";
+
+            if (state.Equals("Running", StringComparison.OrdinalIgnoreCase))
             {
                 good++;
-                sb.AppendLine($"[OK] {displayName}: Running");
+                sb.AppendLine($"[OK] {displayName}: Running ({startMode})");
             }
             else
             {
                 warn++;
-                sb.AppendLine($"[WARN] {displayName}: {service.Status}");
+                sb.AppendLine($"[WARN] {displayName}: {state} ({startMode})");
             }
         }
         catch
