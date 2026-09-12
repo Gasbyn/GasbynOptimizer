@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,7 +7,7 @@ using System.Windows.Media;
 using GasbynOptimizer.Models;
 using GasbynOptimizer.Services;
 
-namespace GasbynOptimizer.App.Apps;
+namespace GasbynOptimizer.Apps;
 
 public partial class AppsManagerWindow : Window
 {
@@ -40,10 +38,7 @@ public partial class AppsManagerWindow : Window
         }
     }
 
-    private void Search_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        RefreshList();
-    }
+    private void Search_TextChanged(object sender, TextChangedEventArgs e) => RefreshList();
 
     private void RefreshList()
     {
@@ -81,12 +76,10 @@ public partial class AppsManagerWindow : Window
         }
     }
 
-    private static bool Matches(InstalledApplication app, string query)
-    {
-        return app.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-               app.Publisher.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-               app.InstallLocation.Contains(query, StringComparison.OrdinalIgnoreCase);
-    }
+    private static bool Matches(InstalledApplication app, string query) =>
+        app.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+        app.Publisher.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+        app.InstallLocation.Contains(query, StringComparison.OrdinalIgnoreCase);
 
     private void AppsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -104,7 +97,6 @@ public partial class AppsManagerWindow : Window
     {
         DetailName.Text = app.Name;
         DetailMeta.Text = $"Publisher: {app.Publisher}  •  Version: {app.Version}  •  Size: {app.EstimatedSizeText}";
-
         WhatText.Text = BuildWhatItDoes(app);
         ImpactText.Text = BuildImpact(app);
         InstallText.Text =
@@ -115,18 +107,16 @@ public partial class AppsManagerWindow : Window
 
     private static string BuildWhatItDoes(InstalledApplication app)
     {
-        var name = app.Name;
-        var publisher = app.Publisher;
-        if (name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase))
+        if (app.Name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase))
             return "Pravděpodobně komponenta NVIDIA ovladače nebo doprovodného softwaru. Může souviset s GPU, ovladači nebo NVIDIA funkcemi.";
-        if (name.Contains("Microsoft Visual C++", StringComparison.OrdinalIgnoreCase))
+        if (app.Name.Contains("Microsoft Visual C++", StringComparison.OrdinalIgnoreCase))
             return "Microsoft runtime knihovna používaná jinými programy. Není vhodné ji odinstalovávat jen kvůli úklidu.";
-        if (name.Contains(".NET", StringComparison.OrdinalIgnoreCase) || name.Contains("ASP.NET", StringComparison.OrdinalIgnoreCase))
+        if (app.Name.Contains(".NET", StringComparison.OrdinalIgnoreCase) || app.Name.Contains("ASP.NET", StringComparison.OrdinalIgnoreCase))
             return "Microsoft .NET runtime/framework. Jiné aplikace na něm mohou být závislé.";
-        if (name.Contains("Xbox", StringComparison.OrdinalIgnoreCase) || name.Contains("Gaming Services", StringComparison.OrdinalIgnoreCase))
+        if (app.Name.Contains("Xbox", StringComparison.OrdinalIgnoreCase) || app.Name.Contains("Gaming Services", StringComparison.OrdinalIgnoreCase))
             return "Komponenta spojená s Xbox/Gaming Services ve Windows. Může ovlivnit některé hry a herní služby.";
-        if (!string.Equals(publisher, "Unknown", StringComparison.OrdinalIgnoreCase))
-            return $"Registrovaná aplikace od vydavatele {publisher}. Lokální checker neumí spolehlivě určit kompletní účel bez vendor dokumentace, proto tento popis ber jako heuristiku.";
+        if (!string.Equals(app.Publisher, "Unknown", StringComparison.OrdinalIgnoreCase))
+            return $"Registrovaná aplikace od vydavatele {app.Publisher}. Lokální checker neumí spolehlivě určit kompletní účel bez vendor dokumentace, proto tento popis ber jako heuristiku.";
         return "Účel nelze bezpečně určit pouze z uninstall záznamu. Před odinstalací doporučujeme ověřit aplikaci podle názvu a vydavatele.";
     }
 
@@ -189,7 +179,6 @@ public partial class AppsManagerWindow : Window
 
         var candidates = _uninstaller.ScanLeftovers(_selectedApp);
         LeftoversList.Items.Clear();
-
         foreach (var candidate in candidates)
         {
             var check = new CheckBox
@@ -238,10 +227,7 @@ public partial class AppsManagerWindow : Window
         var failed = 0;
         foreach (var candidate in selected)
         {
-            if (_uninstaller.RemoveCandidate(candidate, out _))
-                removed++;
-            else
-                failed++;
+            if (_uninstaller.RemoveCandidate(candidate, out _)) removed++; else failed++;
         }
 
         DeepStatus.Text = $"Dokončeno: odstraněno {removed}, nepodařilo se odstranit {failed}. Doporučeno je provést nový Deep Scan.";
