@@ -63,6 +63,10 @@ public partial class MainWindow
             case "View startup":
                 window.OpenStartupManager();
                 break;
+            case "Deep Scan Summary":
+            case "Deep Clean":
+                window.OpenDeepClean();
+                break;
             default:
                 window.RunDynamicAction(title);
                 break;
