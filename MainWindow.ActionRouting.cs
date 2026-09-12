@@ -67,6 +67,9 @@ public partial class MainWindow
             case "Deep Clean":
                 window.OpenDeepClean();
                 break;
+            case "Run health check":
+                window.RunHealthCheck();
+                break;
             default:
                 window.RunDynamicAction(title);
                 break;
