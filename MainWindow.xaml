@@ -53,6 +53,7 @@
                     <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"><StackPanel x:Name="NavPanel">
                         <Button Style="{StaticResource NavButton}" Content="âŒ‚   Dashboard" Tag="Dashboard" Click="Nav_Click"/>
                         <Button Style="{StaticResource NavButton}" Content="âš¡   Tweaks" Tag="Tweaks" Click="Nav_Click"/>
+                        <Button Style="{StaticResource NavButton}" Content="Full Optimizer" Tag="Full Optimizer" Click="FullOptimizer_Click"/>
                         <Button Style="{StaticResource NavButton}" Content="ðŸ§¹   Cleanup" Tag="Cleanup" Click="Nav_Click"/>
                         <Button Style="{StaticResource NavButton}" Content="âœ¦   Deep Clean" Tag="Deep Clean" Click="Nav_Click"/>
                         <Button Style="{StaticResource NavButton}" Content="ðŸš€   Startup" Tag="Startup" Click="Nav_Click"/>
