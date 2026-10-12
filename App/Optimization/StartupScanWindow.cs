@@ -9,7 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace GasbynOptimizer.App.Optimization;
+namespace GasbynOptimizer.Optimization;
 
 public sealed class StartupScanWindow : Window
 {
