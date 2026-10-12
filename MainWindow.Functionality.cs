@@ -82,6 +82,7 @@ public partial class MainWindow
                 case "Change History": ShowHistory(); break;
                 case "Refresh": LoadSystemInfo(); ShowPage("PC Info"); break;
                 case "Manage Game Mode": GameModeAction_Click(this, new RoutedEventArgs()); break;
+                case "Open Full Optimizer": FullOptimizer_Click(this, new RoutedEventArgs()); break;
                 case "Quick Optimize": QuickOptimizeSafe(); break;
                 default: HandleGenericAction(title); break;
             }
