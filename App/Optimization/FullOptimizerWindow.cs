@@ -341,7 +341,7 @@ public sealed class FullOptimizerWindow : Window
                     UseShellExecute = true,
                     Verb = "runas",
                     WindowStyle = ProcessWindowStyle.Hidden,
-                    Arguments = "-NoProfile -Command \"Checkpoint-Computer -Description 'Gasbyn Optimizer' -RestorePointType MODIFY_SETTINGS\""
+                    Arguments = "-NoProfile -Command \"$ErrorActionPreference='Stop'; Checkpoint-Computer -Description 'Gasbyn Optimizer' -RestorePointType MODIFY_SETTINGS\""
                 };
                 using var p = Process.Start(psi) ?? throw new InvalidOperationException("PowerShell se nepodařilo spustit.");
                 p.WaitForExit();
