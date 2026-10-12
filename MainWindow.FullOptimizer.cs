@@ -1,5 +1,5 @@
 using System.Windows;
-using GasbynOptimizer.App.Optimization;
+using GasbynOptimizer.Optimization;
 
 namespace GasbynOptimizer;
 
