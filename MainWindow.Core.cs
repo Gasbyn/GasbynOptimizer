@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using GasbynOptimizer.Core;
 using GasbynOptimizer.Models;
 using GasbynOptimizer.Tweaks.Gaming;
+using GasbynOptimizer.Optimization;
 
 namespace GasbynOptimizer;
 
@@ -157,7 +158,4 @@ public partial class MainWindow
         catch { RamValue.Text = "RAM unavailable"; }
     }
 
-    private void MinimizeWindow_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
-    private void MaximizeWindow_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
-    private void CloseWindow_Click(object sender, RoutedEventArgs e) => Close();
 }
