@@ -21,6 +21,8 @@ public partial class MainWindow
         {
             LoadSystemInfo();
             ShowPage("Dashboard");
+            var scan = new StartupScanWindow { Owner = this };
+            scan.ShowDialog();
         };
     }
 
