@@ -1,3 +1,15 @@
+using System;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using GasbynOptimizer.Core;
+using GasbynOptimizer.Models;
+
+namespace GasbynOptimizer;
+
+public partial class MainWindow
+{
 
     private static string FormatStatus(TweakStatus status) => status switch
     {
@@ -128,3 +140,4 @@
     }
 
     private void QuickCleanup_Click(object sender, RoutedEventArgs e) => ShowPage("Cleanup");
+}
