@@ -22,6 +22,7 @@ public sealed class FullOptimizerWindow : Window
     private readonly TextBox _processName = new() { Text = "FortniteClient-Win64-Shipping.exe", MinWidth = 260 };
     private readonly TextBlock _benchmarkStatus = new();
     private bool _busy;
+    private readonly Dictionary<string, TextBlock> _toggleStatuses = new(StringComparer.OrdinalIgnoreCase);
 
     private static readonly string DataFolder = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppFolderName);
@@ -124,6 +125,7 @@ public sealed class FullOptimizerWindow : Window
         card.Children.Add(Body(description));
         var status = new TextBlock { Text = "Čekám na kontrolu…", Foreground = Brush("#FF9A52"), Margin = new Thickness(0, 10, 0, 0) };
         card.Children.Add(status);
+        _toggleStatuses[id] = status;
         var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
         var enable = ActionButton(enableText);
         enable.Click += async (_, _) => await ChangeSettingAsync(id, true, status);
@@ -143,14 +145,27 @@ public sealed class FullOptimizerWindow : Window
         _scanStatus.Text = "Kontroluji, co je aktuálně zapnuté/vypnuté…";
         try
         {
-            await Task.Run(() =>
+            var scan = await Task.Run(() => new
             {
-                _ = GetGameModeState();
-                _ = GetVisualEffectsState();
-                _ = GetPowerPlanState();
-                _ = LoadState();
+                GameMode = GetGameModeState(),
+                VisualEffects = GetVisualEffectsState(),
+                PowerPlan = GetPowerPlanState(),
+                Saved = LoadState()
             });
-            _scanStatus.Text = "Kontrola dokončena. Stav se znovu načte po každé změně.";
+            if (_toggleStatuses.TryGetValue("game-mode", out var game))
+                game.Text = $"Aktuální stav: {(scan.GameMode == true ? "ZAPNUTO" : scan.GameMode == false ? "VYPNUTO" : "Windows default / nenastaveno")} · backup: {(scan.Saved.ContainsKey("game-mode") ? "uložen" : "není")}";
+            if (_toggleStatuses.TryGetValue("visual-effects", out var visual))
+            {
+                var v = scan.VisualEffects is null ? "Windows default" : Convert.ToInt32(scan.VisualEffects, CultureInfo.InvariantCulture) == 2 ? "ZAPNUTO (best performance)" : $"Jiný režim ({scan.VisualEffects})";
+                visual.Text = $"Aktuální stav: {v} · backup: {(scan.Saved.ContainsKey("visual-effects") ? "uložen" : "není")}";
+            }
+            if (_toggleStatuses.TryGetValue("power-plan", out var power))
+            {
+                var active = System.Text.RegularExpressions.Regex.Match(scan.PowerPlan, @"([0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})").Groups[1].Value;
+                var high = active.Equals("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", StringComparison.OrdinalIgnoreCase);
+                power.Text = $"Aktuální plán: {(high ? "High Performance" : scan.PowerPlan.Trim())} · backup: {(scan.Saved.ContainsKey("power-plan") ? "uložen" : "není")}";
+            }
+            _scanStatus.Text = "Kontrola dokončena. Aktuální stav je načten; po změně proběhne další kontrola.";
         }
         catch (Exception ex) { _scanStatus.Text = "Kontrola dokončena s upozorněním: " + ex.Message; }
         finally { SetBusy(false); }
