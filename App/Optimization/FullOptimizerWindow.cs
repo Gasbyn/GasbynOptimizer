@@ -306,8 +306,8 @@ public sealed class FullOptimizerWindow : Window
                         _ => "výchozí Windows / nenastaveno"
                     };
                 case "game-dvr":
-                    using (var key = Registry.CurrentUser.OpenSubKey(@"System\\GameConfigStore"))
-                    using (var capture = Registry.CurrentUser.OpenSubKey(@"Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR"))
+                    using (var key = Registry.CurrentUser.OpenSubKey(@"System\GameConfigStore"))
+                    using (var capture = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\GameDVR"))
                     {
                         var background = key?.GetValue("GameDVR_Enabled");
                         var appCapture = capture?.GetValue("AppCaptureEnabled");
@@ -328,14 +328,14 @@ public sealed class FullOptimizerWindow : Window
                         ? "High Performance"
                         : "aktivní plán ID " + match.Value;
                 case "transparency":
-                    using (var key = Registry.CurrentUser.OpenSubKey(@"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"))
+                    using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
                     {
                         var value = key?.GetValue("EnableTransparency");
                         return value is null ? "výchozí Windows" : Convert.ToInt32(value, CultureInfo.InvariantCulture) == 0 ? "průhlednost vypnutá" : "průhlednost zapnutá";
                     }
                 case "fast-menus":
-                    using (var key = Registry.CurrentUser.OpenSubKey(@"Control Panel\\Desktop"))
-                    using (var metrics = Registry.CurrentUser.OpenSubKey(@"Control Panel\\Desktop\\WindowMetrics"))
+                    using (var key = Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop"))
+                    using (var metrics = Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop\WindowMetrics"))
                         return $"MenuShowDelay={key?.GetValue("MenuShowDelay") ?? "default"}, MinAnimate={metrics?.GetValue("MinAnimate") ?? "default"}";
                 default:
                     return "stav není dostupný";
