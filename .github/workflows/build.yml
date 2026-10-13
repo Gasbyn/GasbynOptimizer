@@ -21,6 +21,23 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Validate embedded updater PowerShell syntax
+        shell: pwsh
+        run: |
+          $source = Get-Content "Services/AppUpdater.cs" -Raw
+          $match = [regex]::Match($source, 'private const string UpdateScript = """\r?\n(?<script>[\s\S]*?)\r?\n""";')
+          if (-not $match.Success) {
+            throw "Could not extract the embedded updater script for syntax checking."
+          }
+          $scriptText = [regex]::Replace($match.Groups["script"].Value, '(?m)^ {4}', '')
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseInput($scriptText, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Host ("Line {0}: {1}" -f $_.Extent.StartLineNumber, $_.Message) }
+            throw "Embedded updater script contains PowerShell syntax errors."
+          }
+
       - name: Publish self-contained Windows app
         run: dotnet publish GasbynOptimizer.csproj --configuration Release --runtime win-x64 --self-contained true --output publish
 
