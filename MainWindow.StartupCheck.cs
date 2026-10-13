@@ -20,7 +20,7 @@ public partial class MainWindow
 {
     private HardwareInventory? _hardwareInventory;
     private static readonly HttpClient UpdateHttpClient = CreateUpdateHttpClient();
-    private string? _latestReleaseUrl;
+    private (string Tag, string Url, string? DownloadUrl, string? Sha256)? _latestRelease;
 
     private static HttpClient CreateUpdateHttpClient()
     {
@@ -34,7 +34,9 @@ public partial class MainWindow
     {
         StartupScanOverlay.Visibility = Visibility.Visible;
         UpdateAvailablePanel.Visibility = Visibility.Collapsed;
-        _latestReleaseUrl = null;
+        _latestRelease = null;
+        UpdateLatestReleaseButton.Content = "ZOBRAZIT";
+        UpdateLatestReleaseButton.IsEnabled = true;
         StartupScanAdminButton.Visibility = Visibility.Collapsed;
         StartupScanContinue.IsEnabled = false;
         if (!IsRunningAsAdministrator())
@@ -96,13 +98,19 @@ public partial class MainWindow
                 var release = await CheckForLatestReleaseAsync();
                 if (release is not null)
                 {
-                    _latestReleaseUrl = release.Value.Url;
+                    _latestRelease = release;
+                    var hasVerifiedPackage =
+                        !string.IsNullOrWhiteSpace(release.Value.DownloadUrl) &&
+                        !string.IsNullOrWhiteSpace(release.Value.Sha256);
+                    UpdateLatestReleaseButton.Content = hasVerifiedPackage ? "AKTUALIZOVAT" : "ZOBRAZIT";
                     UpdateAvailableText.Text = $"Verze {release.Value.Tag} je dostupná. Aktuální verze: {GetCurrentAppVersion().ToString(3)}.";
                     UpdateAvailablePanel.Visibility = Visibility.Visible;
                     notes.AppendLine();
                     notes.AppendLine("AKTUALIZACE");
                     notes.AppendLine($"Dostupná verze: {release.Value.Tag}");
-                    notes.AppendLine("Před stažením ověř, že odkaz vede na oficiální vydání Gasbyn Optimizeru.");
+                    notes.AppendLine(hasVerifiedPackage
+                        ? "Vydání obsahuje ověřený instalační balíček; lze aktualizovat přímo v optimizeru."
+                        : "Ověřený automatický balíček není dostupný; otevře se stránka vydání.");
                 }
                 else
                 {
@@ -210,7 +218,7 @@ public partial class MainWindow
         return Version.TryParse(versionPart, out version!);
     }
 
-    private static async Task<(string Tag, string Url)?> CheckForLatestReleaseAsync()
+    private static async Task<(string Tag, string Url, string? DownloadUrl, string? Sha256)?> CheckForLatestReleaseAsync()
     {
         // GitHub's latest-release endpoint only exposes published releases. Drafts and prereleases are ignored.
         // A private repository returns 404 to unauthenticated clients, which is treated as no public update.
@@ -240,23 +248,105 @@ public partial class MainWindow
         if (!TryParseReleaseVersion(tag, out var latestVersion))
             return null;
 
-        return latestVersion > GetCurrentAppVersion()
-            ? (tag.Trim(), parsedUrl.AbsoluteUri)
-            : null;
+        if (latestVersion <= GetCurrentAppVersion())
+            return null;
+
+        string? downloadUrl = null;
+        string? sha256 = null;
+        if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var asset in assets.EnumerateArray())
+            {
+                var assetName = asset.TryGetProperty("name", out var nameElement) ? nameElement.GetString() : null;
+                if (!string.Equals(assetName, "GasbynOptimizer-win-x64.zip", StringComparison.Ordinal))
+                    continue;
+
+                downloadUrl = asset.TryGetProperty("browser_download_url", out var downloadElement)
+                    ? downloadElement.GetString()
+                    : null;
+                sha256 = asset.TryGetProperty("digest", out var digestElement)
+                    ? digestElement.GetString()
+                    : null;
+                break;
+            }
+        }
+
+        if (!Uri.TryCreate(downloadUrl, UriKind.Absolute, out var packageUri) ||
+            packageUri.Scheme != Uri.UriSchemeHttps ||
+            !packageUri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) ||
+            !packageUri.AbsolutePath.StartsWith(
+                "/Gasbyn/GasbynOptimizer/releases/download/",
+                StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(sha256) ||
+            !Regex.IsMatch(
+                sha256.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) ? sha256["sha256:".Length..] : sha256,
+                "^[0-9a-fA-F]{64}$",
+                RegexOptions.CultureInvariant))
+        {
+            downloadUrl = null;
+            sha256 = null;
+        }
+
+        return (tag.Trim(), parsedUrl.AbsoluteUri, downloadUrl, sha256);
     }
 
-    private void OpenLatestRelease_Click(object sender, RoutedEventArgs e)
+    private async void UpdateLatestRelease_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(_latestReleaseUrl))
+        if (_latestRelease is not { } release)
             return;
 
+        // Without a trusted ZIP asset and its GitHub SHA-256 digest, fall back to the release page.
+        if (string.IsNullOrWhiteSpace(release.DownloadUrl) || string.IsNullOrWhiteSpace(release.Sha256))
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(release.Url) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                StartupScanDetails.Text += Environment.NewLine + "Odkaz na aktualizaci se nepodařilo otevřít: " + ex.Message;
+            }
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            $"Stáhnout a nainstalovat verzi {release.Tag}? Gasbyn Optimizer se zavře a po aktualizaci se znovu spustí. Nastavení uložená v uživatelském profilu zůstanou zachována.",
+            "Aktualizace Gasbyn Optimizeru",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (confirm != MessageBoxResult.Yes)
+            return;
+
+        UpdateLatestReleaseButton.IsEnabled = false;
+        UpdateLatestReleaseButton.Content = "STAHUJI…";
         try
         {
-            Process.Start(new ProcessStartInfo(_latestReleaseUrl) { UseShellExecute = true });
+            var executablePath = Environment.ProcessPath;
+            if (string.IsNullOrWhiteSpace(executablePath))
+                throw new InvalidOperationException("Nepodařilo se zjistit cestu ke spuštěné aplikaci.");
+
+            await AppUpdater.PrepareAndLaunchAsync(
+                release.DownloadUrl,
+                release.Sha256,
+                executablePath,
+                Environment.ProcessId,
+                status => UpdateAvailableText.Text = $"Verze {release.Tag}: {status}");
+
+            StartupScanStatus.Text = "Aktualizace je připravena. Optimizer se nyní restartuje…";
+            Application.Current.Shutdown();
         }
         catch (Exception ex)
         {
-            StartupScanDetails.Text += Environment.NewLine + "Odkaz na aktualizaci se nepodařilo otevřít: " + ex.Message;
+            UpdateLatestReleaseButton.IsEnabled = true;
+            UpdateLatestReleaseButton.Content = "ZKUSIT ZNOVU";
+            UpdateAvailableText.Text = $"Aktualizace {release.Tag} se nepodařila.";
+            StartupScanDetails.Text += Environment.NewLine + Environment.NewLine +
+                "AKTUALIZACE SE NEPOVEDLA" + Environment.NewLine + ex.Message;
+            MessageBox.Show(
+                "Aktualizace nebyla zahájena. Optimizer zůstává spuštěný." + Environment.NewLine + Environment.NewLine + ex.Message,
+                "Gasbyn Optimizer",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
         }
     }
 
