@@ -839,21 +839,6 @@ public partial class MainWindow
         Cursor = System.Windows.Input.Cursors.Hand
     };
 
-    private sealed class WorkspaceTweakSnapshot
-    {
-        public string? PowerScheme { get; set; }
-        public List<WorkspaceTweakRegistrySnapshot> RegistryValues { get; set; } = new();
-    }
-
-    private sealed class WorkspaceTweakRegistrySnapshot
-    {
-        public string Path { get; set; } = "";
-        public string Name { get; set; } = "";
-        public bool Exists { get; set; }
-        public string Kind { get; set; } = "String";
-        public string Data { get; set; } = "";
-    }
-
     private sealed class WorkspaceFpsRecord
     {
         public DateTime Date { get; set; }
