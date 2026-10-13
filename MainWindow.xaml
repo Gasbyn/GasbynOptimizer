@@ -172,7 +172,7 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Border Width="23" Height="23" Background="{StaticResource Orange}" CornerRadius="6" ClipToBounds="True"><Image Source="Logo.png" Stretch="UniformToFill"/></Border>
                     <TextBlock Text="GASBYN OPTIMIZER" Margin="9,0,0,0" FontSize="12" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}" Foreground="#B8BBC2" VerticalAlignment="Center"/>
-                    <Border Margin="10,0,0,0" Background="#17191D" CornerRadius="6" Padding="7,3"><TextBlock Text="v2.0.B6" FontSize="8" Foreground="{StaticResource TextDim}"/></Border>
+                    <Border Margin="10,0,0,0" Background="#17191D" CornerRadius="6" Padding="7,3"><TextBlock Text="v2.0.B12" FontSize="8" Foreground="{StaticResource TextDim}"/></Border>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Style="{StaticResource TinyWindowButton}" Content="—" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="MinimizeWindow_Click"/>
@@ -203,7 +203,7 @@
                         <Button Style="{StaticResource NavButton}" Content="▣   PC Info" Tag="PC Info" Click="Nav_Click"/>
                         <Button Style="{StaticResource NavButton}" Content="⚙   Settings" Tag="Settings" Click="Nav_Click"/>
                     </StackPanel></ScrollViewer>
-                    <Border Grid.Row="3" Background="#121419" BorderBrush="#252830" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,12,0,0"><StackPanel><StackPanel Orientation="Horizontal"><Ellipse Width="8" Height="8" Fill="{StaticResource Green}" VerticalAlignment="Center"/><TextBlock Text="  SYSTEM READY" FontSize="9" FontWeight="Bold" Foreground="#B9BDC5"/></StackPanel><TextBlock Text="Gasbyn Optimizer  •  v2.0.B6" Margin="0,8,0,0" FontSize="9" Foreground="{StaticResource TextDim}"/></StackPanel></Border>
+                    <Border Grid.Row="3" Background="#121419" BorderBrush="#252830" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,12,0,0"><StackPanel><StackPanel Orientation="Horizontal"><Ellipse Width="8" Height="8" Fill="{StaticResource Green}" VerticalAlignment="Center"/><TextBlock Text="  SYSTEM READY" FontSize="9" FontWeight="Bold" Foreground="#B9BDC5"/></StackPanel><TextBlock Text="Gasbyn Optimizer  •  v2.0.B12" Margin="0,8,0,0" FontSize="9" Foreground="{StaticResource TextDim}"/></StackPanel></Border>
                 </Grid>
             </Border>
             <Grid Grid.Column="1" Margin="34,28,34,28"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
