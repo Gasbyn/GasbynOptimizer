@@ -29,6 +29,7 @@
         <Storyboard x:Key="PageEnter"><DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.22"/><DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="9" To="0" Duration="0:0:0.22"/></Storyboard>
     </Window.Resources>
     <Grid>
+      <Grid x:Name="AppSurface">
         <Grid.RowDefinitions><RowDefinition Height="36"/><RowDefinition Height="*"/></Grid.RowDefinitions>
         <Border Grid.Row="0" Background="#0B0C0F" BorderBrush="#1E2127" BorderThickness="0,0,0,1" MouseLeftButtonDown="WindowTitleBar_MouseLeftButtonDown">
             <Grid Margin="12,3,8,3">
@@ -82,5 +83,42 @@
             </Grid>
         </Grid>
     </Grid>
+    <Grid x:Name="StartupScanOverlay" Grid.RowSpan="2" Panel.ZIndex="100" Background="#B808090B" Visibility="Collapsed">
+        <Border Width="650" MaxWidth="90%" Padding="28" Background="#121419" BorderBrush="#3C2619" BorderThickness="1"
+                CornerRadius="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel>
+                <TextBlock Text="INITIAL SYSTEM CHECK" FontSize="20" FontWeight="Bold" Foreground="#FF6A00"/>
+                <TextBlock Text="Analyzuji hardware a důležitá nastavení Windows. Během kontroly je aplikace záměrně překrytá; žádné změny systému se neprovádějí."
+                           Margin="0,8,0,18" Foreground="#A8ADB7" TextWrapping="Wrap"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
+                    <Grid Width="28" Height="28" Margin="0,0,12,0">
+                        <Ellipse Stroke="#343842" StrokeThickness="3"/>
+                        <Ellipse Stroke="#FF6A00" StrokeThickness="3" StrokeDashArray="2 3" RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform><RotateTransform/></Ellipse.RenderTransform>
+                            <Ellipse.Triggers>
+                                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                    <BeginStoryboard>
+                                        <Storyboard RepeatBehavior="Forever">
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                             From="0" To="360" Duration="0:0:1.1"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Ellipse.Triggers>
+                        </Ellipse>
+                    </Grid>
+                    <TextBlock x:Name="StartupScanStatus" Text="Připravuji kontrolu…" FontWeight="SemiBold" Foreground="#F4F4F5" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                </StackPanel>
+                <ProgressBar IsIndeterminate="True" Height="4" Background="#292D35" Foreground="#FF6A00" BorderThickness="0" Margin="0,0,0,16"/>
+                <Border Background="#0D0F13" BorderBrush="#252830" BorderThickness="1" CornerRadius="10" Padding="14">
+                    <TextBlock x:Name="StartupScanDetails" Text="Čekám na kontrolu CPU, GPU, RAM, základní desky, disků a konfigurace Windows…"
+                               Foreground="#B8BDC6" TextWrapping="Wrap" FontSize="12"/>
+                </Border>
+                <Button x:Name="StartupScanContinue" Content="POKRAČOVAT DO OPTIMIZERU" Click="StartupScanContinue_Click"
+                        IsEnabled="False" HorizontalAlignment="Right" Margin="0,18,0,0" Padding="16,11"
+                        Background="#FF6A00" Foreground="White" BorderThickness="0" Cursor="Hand" FontWeight="Bold"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+    </Grid>
 </Window>
-
