@@ -87,8 +87,8 @@ public partial class MainWindow
                 AddInfoCard("Installed Applications", "Zobrazí nainstalované aplikace a dostupné akce správce aplikací.", "Installed Applications");
                 break;
             case "Gaming":
+                BuildTweaksWorkspace(gamingOnly: true);
                 AddInfoCard("GAMING AUDIT", "Zkontroluje Game Mode, HAGS, plán napájení a Fortnite. Audit nic nemění.", "GAMING OPTIMIZER");
-                AddInfoCard("Windows Gaming Tweaks", "Otevře vratné herní přepínače: Game Mode a Game DVR jsou nyní v kategorii Tweaks.", "Open Tweaks");
                 AddInfoCard("Windows Gaming Services", "Zobrazí stav souvisejících herních služeb; nic nevypíná.", "Windows Gaming Services");
                 AddInfoCard("Fullscreen Optimization Check", "Zobrazí aktuální stav relevantního nastavení.", "Fullscreen Optimization Check");
                 AddInfoCard("Fortnite Optimization Profile", "Zkontroluje, zda existuje konfigurace Fortnite.", "Fortnite Optimization Profile");
