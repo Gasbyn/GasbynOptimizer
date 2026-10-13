@@ -1195,6 +1195,32 @@ public partial class MainWindow
         pathRow.Children.Add(browse);
         stack.Children.Add(pathRow);
 
+        var preparePresentMon = WorkspaceButton("Automaticky stáhnout / aktualizovat PresentMon");
+        preparePresentMon.Margin = new Thickness(0, 10, 0, 0);
+        preparePresentMon.Click += async (_, _) =>
+        {
+            preparePresentMon.IsEnabled = false;
+            try
+            {
+                var progress = new Progress<string>(message =>
+                {
+                    if (_workspaceBenchmarkStatus is not null) _workspaceBenchmarkStatus.Text = message;
+                });
+                var path = await PresentMonInstaller.EnsureInstalledAsync(progress);
+                if (_workspacePresentMonPath is not null) _workspacePresentMonPath.Text = path;
+                SaveWorkspacePresentMonPath(path);
+                if (_workspaceBenchmarkStatus is not null)
+                    _workspaceBenchmarkStatus.Text = $"PresentMon je připraven: {Path.GetFileName(path)}";
+            }
+            catch (Exception ex)
+            {
+                if (_workspaceBenchmarkStatus is not null)
+                    _workspaceBenchmarkStatus.Text = "Automatické stažení PresentMon selhalo: " + ex.Message;
+            }
+            finally { preparePresentMon.IsEnabled = true; }
+        };
+        stack.Children.Add(preparePresentMon);
+
         var processRow = new Grid { Margin = new Thickness(0, 10, 0, 0) };
         processRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         processRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -1241,11 +1267,6 @@ public partial class MainWindow
     private async Task RunWorkspaceFpsTestAsync(string exePath, string processName, TextBlock status, TextBlock history, Button button)
     {
         if (button is null) return;
-        if (!File.Exists(exePath))
-        {
-            status.Text = "Nejdřív vyber platný PresentMon.exe.";
-            return;
-        }
         if (string.IsNullOrWhiteSpace(processName) || processName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
         {
             status.Text = "Zadej platný název procesu, například FortniteClient-Win64-Shipping.exe.";
@@ -1253,10 +1274,22 @@ public partial class MainWindow
         }
 
         button.IsEnabled = false;
-        status.Text = "Spouštím měření…";
+        status.Text = "Kontroluji PresentMon…";
         try
         {
+            var autoManagedPath = Path.GetFullPath(PresentMonInstaller.InstalledPath);
+            if (!File.Exists(exePath) ||
+                string.Equals(Path.GetFullPath(exePath), autoManagedPath, StringComparison.OrdinalIgnoreCase))
+            {
+                var progress = new Progress<string>(message => status.Text = message);
+                exePath = await PresentMonInstaller.EnsureInstalledAsync(progress);
+                if (_workspacePresentMonPath is not null) _workspacePresentMonPath.Text = exePath;
+            }
+            if (!File.Exists(exePath))
+                throw new FileNotFoundException("PresentMon.exe nebyl nalezen.");
+
             SaveWorkspacePresentMonPath(exePath);
+            status.Text = "Spouštím měření…";
             var folder = Path.Combine(WorkspaceDataDirectory, "FpsTests");
             Directory.CreateDirectory(folder);
             var output = Path.Combine(folder, $"presentmon-{DateTime.Now:yyyyMMdd-HHmmss}.csv");
@@ -1352,8 +1385,13 @@ public partial class MainWindow
 
     private static string LoadWorkspacePresentMonPath()
     {
-        try { return File.Exists(WorkspacePresentMonPath) ? File.ReadAllText(WorkspacePresentMonPath).Trim() : ""; }
-        catch { return ""; }
+        try
+        {
+            var saved = File.Exists(WorkspacePresentMonPath) ? File.ReadAllText(WorkspacePresentMonPath).Trim() : "";
+            if (!string.IsNullOrWhiteSpace(saved) && File.Exists(saved)) return saved;
+            return PresentMonInstaller.IsInstalled ? PresentMonInstaller.InstalledPath : "";
+        }
+        catch { return PresentMonInstaller.IsInstalled ? PresentMonInstaller.InstalledPath : ""; }
     }
 
     private static void SaveWorkspacePresentMonPath(string path)
