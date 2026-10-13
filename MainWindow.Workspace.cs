@@ -81,11 +81,51 @@ public partial class MainWindow
             "ON: nastaví MenuShowDelay=100 a MinAnimate=0. OFF: obnoví původní hodnoty.");
 
         var hw = _hardwareInventory;
+        var advanced = OptimizerPreferencesStore.Load().AdvancedRecommendations;
         var note = hw is null
             ? "Hardware nebyl zatím načten. Obecné změny zůstávají dostupné; ovladačové a BIOS zásahy se neprovádějí."
-            : hw.BuildRecommendations(OptimizerPreferencesStore.Load().AdvancedRecommendations);
+            : hw.BuildRecommendations(advanced);
         AddInfoCard("HARDWARE-AWARE DOPORUČENÍ", note, "Hardware Detection");
+        AddAmdCompatibilityInfo(hw, advanced);
         _ = RefreshWorkspaceTweakStatesAsync();
+    }
+
+    private void AddAmdCompatibilityInfo(GasbynOptimizer.Services.HardwareInventory? hardware, bool advanced)
+    {
+        var warning = hardware is null
+            ? "INFO · GPU nebyla ověřena, proto zůstává ovladačový modul nedostupný."
+            : hardware.GetCompatibilityNote("amd-gpu-profile", advanced);
+        if (hardware?.HasAmdGpu == true)
+            warning = "INFO · AMD Radeon GPU detekována, ale zatím není nakonfigurována ověřená vratná změna ovladače; nic se nepřepíše.";
+
+        var card = WorkspaceCard();
+        card.Opacity = advanced ? 0.78 : 0.58;
+        var root = new Grid();
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var copy = new StackPanel { Margin = new Thickness(0, 0, 18, 0) };
+        copy.Children.Add(WorkspaceHeading("AMD RADEON-ONLY GPU TUNING"));
+        copy.Children.Add(WorkspaceBody("Tento modul je pouze indikátor kompatibility. Nepoužívá neověřené ovladačové, napěťové ani taktovací zásahy."));
+        var status = WorkspaceBody(warning);
+        status.Margin = new Thickness(0, 8, 0, 0);
+        copy.Children.Add(status);
+        Grid.SetColumn(copy, 0);
+        root.Children.Add(copy);
+
+        var unavailable = new ToggleButton
+        {
+            Style = (Style)FindResource("SwitchToggleButton"),
+            IsChecked = false,
+            IsEnabled = false,
+            ToolTip = warning,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        System.Windows.Automation.AutomationProperties.SetName(unavailable, "AMD Radeon-only GPU tuning — unavailable");
+        Grid.SetColumn(unavailable, 1);
+        root.Children.Add(unavailable);
+        card.Child = root;
+        SecondaryContent.Children.Add(card);
     }
 
     private void AddWorkspaceTweakCard(string title, string description, string id, string tooltip)
