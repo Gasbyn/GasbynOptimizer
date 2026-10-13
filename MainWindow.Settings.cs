@@ -46,7 +46,7 @@ public partial class MainWindow
             });
 
         AddPreferenceRow(content, "Pokročilý režim doporučení",
-            "Zobrazí i nedoporučené/nekompatibilní moduly jako méně výraznou informaci. Hardware-nekompatibilní operace zůstávají blokované.",
+            "Odemkne i tweaky označené jako nekompatibilní. Zapínej je jen tehdy, když rozumíš omezením; neimplementované nebo bezpečnostně rizikové zásahy zůstávají blokované.",
             preferences.AdvancedRecommendations,
             enabled =>
             {
