@@ -55,7 +55,7 @@ public partial class AppsManagerWindow : Window
             panel.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
             var stack = new StackPanel();
-            stack.Children.Add(new TextBlock { Text = app.Name, FontSize = 14, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis });
+            stack.Children.Add(new TextBlock { Text = app.Name, FontSize = 14, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White, TextTrimming = TextTrimming.CharacterEllipsis });
             stack.Children.Add(new TextBlock { Text = $"{app.Publisher}  •  {app.Version}", FontSize = 10, Foreground = (Brush)FindResource("TextMuted"), Margin = new Thickness(0, 4, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis });
             stack.Children.Add(new TextBlock { Text = app.EstimatedSizeText, FontSize = 9, Foreground = (Brush)FindResource("TextDim"), Margin = new Thickness(0, 3, 0, 0) });
             Grid.SetColumn(stack, 0);
