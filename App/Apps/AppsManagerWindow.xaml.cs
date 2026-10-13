@@ -9,7 +9,7 @@ using GasbynOptimizer.Services;
 
 namespace GasbynOptimizer.Apps;
 
-public partial class AppsManagerWindow : Window
+public partial class AppsManagerWindow : UserControl
 {
     private readonly ApplicationInventory _inventory = new();
     private readonly ApplicationUninstaller _uninstaller = new();
