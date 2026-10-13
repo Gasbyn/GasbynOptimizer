@@ -14,6 +14,7 @@ internal static class PresentMonInstaller
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "GasbynOptimizer", "Tools", "PresentMon");
     private static readonly string ExecutablePath = Path.Combine(InstallDirectory, "PresentMon.exe");
+    private static readonly string VersionPath = Path.Combine(InstallDirectory, "installed-version.txt");
 
     private static readonly HttpClient Client = CreateClient();
 
@@ -30,12 +31,6 @@ internal static class PresentMonInstaller
 
     public static async Task<string> EnsureInstalledAsync(IProgress<string>? progress = null)
     {
-        if (File.Exists(ExecutablePath))
-        {
-            progress?.Report("PresentMon už je připraven.");
-            return ExecutablePath;
-        }
-
         Directory.CreateDirectory(InstallDirectory);
         progress?.Report("Zjišťuji oficiální verzi PresentMon…");
 
@@ -72,6 +67,19 @@ internal static class PresentMonInstaller
         if (!found)
             throw new InvalidOperationException("V oficiálním vydání PresentMon nebyl nalezen x64 EXE soubor s SHA-256 kontrolním součtem.");
 
+        if (File.Exists(ExecutablePath) && File.Exists(VersionPath))
+        {
+            try
+            {
+                if (string.Equals(File.ReadAllText(VersionPath).Trim(), version, StringComparison.OrdinalIgnoreCase))
+                {
+                    progress?.Report($"PresentMon {version ?? ""} už je aktuální.");
+                    return ExecutablePath;
+                }
+            }
+            catch { }
+        }
+
         var assetName = selected.GetProperty("name").GetString()!;
         var downloadUrl = selected.GetProperty("browser_download_url").GetString();
         var expectedDigest = selected.GetProperty("digest").GetString()!["sha256:".Length..];
@@ -106,6 +114,7 @@ internal static class PresentMonInstaller
                 File.Delete(finalPath);
             }
 
+            File.WriteAllText(VersionPath, version ?? "unknown");
             progress?.Report($"PresentMon {version ?? ""} je připraven.");
             return ExecutablePath;
         }
