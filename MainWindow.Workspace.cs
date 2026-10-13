@@ -76,6 +76,12 @@ public partial class MainWindow
         }
 
         AddWorkspaceTweakCard(
+            "Hardware-accelerated GPU scheduling (HAGS)",
+            "Zapne HAGS ve Windows. Podpora a přínos závisí na GPU, ovladači a verzi Windows; po změně může být nutný restart.",
+            "hags",
+            "ON: nastaví HwSchMode=2 v HKLM. OFF: obnoví původní hodnotu. Pokud ovladač nebo Windows tuto funkci nepodporuje, nemusí mít změna účinek.", "POKROČILÉ", "GPU", "RESTART");
+
+        AddWorkspaceTweakCard(
             "Výkonové vizuální efekty",
             "Přepne Windows do režimu nejlepšího výkonu. Některé animace a vizuální efekty se mohou změnit.",
             "visual-effects",
@@ -557,6 +563,7 @@ public partial class MainWindow
 
     private static string WorkspaceTweakName(string id) => id switch
     {
+        "hags" => "Hardware-accelerated GPU scheduling (HAGS)",
         "game-mode" => "Windows Game Mode",
         "game-dvr" => "Vypnout Game DVR na pozadí",
         "mouse-acceleration" => "Vypnout akceleraci myši",
@@ -601,6 +608,9 @@ public partial class MainWindow
 
                 switch (id)
                 {
+                    case "hags":
+                        SetWorkspaceMachineDword(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, operations);
+                        break;
                     case "game-mode":
                         SetWorkspaceDword(@"Software\Microsoft\GameBar", "AutoGameModeEnabled", 1, operations);
                         SetWorkspaceDword(@"Software\Microsoft\GameBar", "AllowAutoGameMode", 1, operations);
@@ -700,6 +710,21 @@ public partial class MainWindow
     private static WorkspaceTweakSnapshot CaptureWorkspaceTweak(string id)
     {
         var snapshot = new WorkspaceTweakSnapshot();
+        if (id == "hags")
+        {
+            const string path = @"SYSTEM\CurrentControlSet\Control\GraphicsDrivers";
+            const string name = "HwSchMode";
+            using var key = Registry.LocalMachine.OpenSubKey(path);
+            var value = key?.GetValue(name);
+            snapshot.RegistryValues.Add(new WorkspaceTweakRegistrySnapshot
+            {
+                Hive = "HKLM", Path = path, Name = name, Exists = value is not null,
+                Kind = value is null ? RegistryValueKind.DWord.ToString() : key!.GetValueKind(name).ToString(),
+                Data = value is null ? "" : SerializeWorkspaceRegistryValue(value)
+            });
+            return snapshot;
+        }
+
         if (id == "fullscreen-optimizations")
         {
             var executable = FindFortniteExecutablePath();
@@ -829,7 +854,9 @@ public partial class MainWindow
             if (item.Exists)
             {
                 operations.Add($"REGISTRY RESTORE: {fullName}; Type={item.Kind}; OriginalValue={item.Data}");
-                using var key = Registry.CurrentUser.CreateSubKey(item.Path)
+                var root = string.Equals(item.Hive, "HKLM", StringComparison.OrdinalIgnoreCase)
+                    ? Registry.LocalMachine : Registry.CurrentUser;
+                using var key = root.CreateSubKey(item.Path)
                     ?? throw new InvalidOperationException("Nepodařilo se obnovit " + fullName);
                 var kind = Enum.TryParse<RegistryValueKind>(item.Kind, out var parsed) ? parsed : RegistryValueKind.String;
                 object value = kind switch
@@ -845,10 +872,19 @@ public partial class MainWindow
             else
             {
                 operations.Add("REGISTRY DELETE: " + fullName + "; hodnota před zapnutím neexistovala.");
-                using var key = Registry.CurrentUser.OpenSubKey(item.Path, writable: true);
+                var root = string.Equals(item.Hive, "HKLM", StringComparison.OrdinalIgnoreCase)
+                    ? Registry.LocalMachine : Registry.CurrentUser;
+                using var key = root.OpenSubKey(item.Path, writable: true);
                 key?.DeleteValue(item.Name, throwOnMissingValue: false);
             }
         }
+    }
+
+    private static void SetWorkspaceMachineDword(string path, string name, int value, List<string> operations)
+    {
+        operations.Add($"REGISTRY SET: HKLM\\{path}\\{name}; Type=REG_DWORD; Value={value}");
+        using var key = Registry.LocalMachine.CreateSubKey(path) ?? throw new InvalidOperationException("Nepodařilo se otevřít HKLM\\" + path);
+        key.SetValue(name, value, RegistryValueKind.DWord);
     }
 
     private static void SetWorkspaceDword(string path, string name, int value, List<string> operations)
@@ -916,6 +952,8 @@ public partial class MainWindow
 
             return id switch
             {
+                "hags" => (Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers")?.GetValue("HwSchMode") is int hags && hags == 2)
+                    ? "HAGS zapnutý (restart může být nutný)" : "HAGS výchozí/vypnutý",
                 "game-mode" => Read(@"Software\Microsoft\GameBar", "AutoGameModeEnabled") is int mode && mode == 1
                     ? "Game Mode zapnutý" : "Game Mode výchozí/vypnutý",
                 "game-dvr" => Read(@"System\GameConfigStore", "GameDVR_Enabled") is int capture && capture == 0 &&
@@ -987,6 +1025,7 @@ public partial class MainWindow
 
         return id switch
         {
+            "hags" => Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers")?.GetValue("HwSchMode") is int hags && hags == 2,
             "game-mode" => Read(@"Software\Microsoft\GameBar", "AutoGameModeEnabled") is int gm && gm == 1 &&
                            Read(@"Software\Microsoft\GameBar", "AllowAutoGameMode") is int allow && allow == 1,
             "game-dvr" => Read(@"System\GameConfigStore", "GameDVR_Enabled") is int capture && capture == 0 &&
@@ -1105,6 +1144,7 @@ public partial class MainWindow
     private sealed class WorkspaceTweakRegistrySnapshot
     {
         public WorkspaceTweakRegistrySnapshot() { }
+        public string Hive { get; set; } = "HKCU";
         public string Path { get; set; } = "";
         public string Name { get; set; } = "";
         public bool Exists { get; set; }
