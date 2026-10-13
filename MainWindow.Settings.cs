@@ -114,12 +114,13 @@ public partial class MainWindow
 
         var toggle = new ToggleButton
         {
-            Content = enabled ? "ON" : "OFF", IsChecked = enabled, Width = 70, Height = 32,
-            Background = enabled ? (Brush)FindResource("Orange") : (Brush)FindResource("Border"),
-            Foreground = Brushes.White, BorderThickness = new Thickness(0), FontWeight = FontWeights.Bold,
-            Cursor = System.Windows.Input.Cursors.Hand, VerticalAlignment = VerticalAlignment.Center,
-            ToolTip = enabled ? "Kliknutím vypneš tuto možnost." : "Kliknutím zapneš tuto možnost."
+            Style = (Style)FindResource("SwitchToggleButton"),
+            IsChecked = enabled,
+            Cursor = System.Windows.Input.Cursors.Hand,
+            VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = enabled ? "Zapnuto — kliknutím vypneš." : "Vypnuto — kliknutím zapneš."
         };
+        System.Windows.Automation.AutomationProperties.SetName(toggle, title);
         var updatingToggle = false;
         toggle.Checked += (_, _) => { if (!updatingToggle) Persist(true); };
         toggle.Unchecked += (_, _) => { if (!updatingToggle) Persist(false); };
@@ -128,16 +129,14 @@ public partial class MainWindow
             try
             {
                 save(value);
-                toggle.Content = value ? "ON" : "OFF";
-                toggle.Background = value ? (Brush)FindResource("Orange") : (Brush)FindResource("Border");
-                toggle.ToolTip = value ? "Kliknutím vypneš tuto možnost." : "Kliknutím zapneš tuto možnost.";
+                toggle.ToolTip = value ? "Zapnuto — kliknutím vypneš." : "Vypnuto — kliknutím zapneš.";
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Nastavení se nepodařilo uložit: " + ex.Message, "Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
                 updatingToggle = true;
                 toggle.IsChecked = !value;
-                toggle.Content = !value ? "ON" : "OFF";
+                toggle.ToolTip = !value ? "Zapnuto — kliknutím vypneš." : "Vypnuto — kliknutím zapneš.";
                 updatingToggle = false;
             }
         }
