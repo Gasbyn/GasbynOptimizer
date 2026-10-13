@@ -850,7 +850,7 @@ public partial class MainWindow
 
         foreach (var item in snapshot.RegistryValues)
         {
-            var fullName = $"HKCU\\{item.Path}\\{item.Name}";
+            var fullName = $"{item.Hive}\\{item.Path}\\{item.Name}";
             if (item.Exists)
             {
                 operations.Add($"REGISTRY RESTORE: {fullName}; Type={item.Kind}; OriginalValue={item.Data}");
@@ -929,7 +929,7 @@ public partial class MainWindow
         if (!string.IsNullOrWhiteSpace(snapshot.PowerScheme))
             operations.Add("BACKUP POWER PLAN: original scheme ID=" + snapshot.PowerScheme);
         foreach (var item in snapshot.RegistryValues)
-            operations.Add($"BACKUP REGISTRY: HKCU\\{item.Path}\\{item.Name}; Exists={item.Exists}; Kind={item.Kind}; Data={item.Data}");
+            operations.Add($"BACKUP REGISTRY: {item.Hive}\\{item.Path}\\{item.Name}; Exists={item.Exists}; Kind={item.Kind}; Data={item.Data}");
     }
 
     private static string ReadWorkspaceActualStatus(string id)
