@@ -144,9 +144,9 @@ public partial class MainWindow
             IsChecked = false,
             VerticalAlignment = VerticalAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Right,
-            ToolTip = tooltip,
-            AutomationProperties = { Name = title }
+            ToolTip = tooltip
         };
+        System.Windows.Automation.AutomationProperties.SetName(toggle, title);
         toggle.Checked += async (_, _) =>
         {
             if (!_loadingWorkspaceSwitches)
