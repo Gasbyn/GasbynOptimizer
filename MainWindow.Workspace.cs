@@ -542,12 +542,14 @@ public partial class MainWindow
 
     private sealed class WorkspaceTweakSnapshot
     {
+        public WorkspaceTweakSnapshot() { }
         public string? PowerScheme { get; set; }
         public List<WorkspaceTweakRegistrySnapshot> RegistryValues { get; set; } = new();
     }
 
     private sealed class WorkspaceTweakRegistrySnapshot
     {
+        public WorkspaceTweakRegistrySnapshot() { }
         public string Path { get; set; } = "";
         public string Name { get; set; } = "";
         public bool Exists { get; set; }
@@ -845,6 +847,7 @@ public partial class MainWindow
 
     private sealed class WorkspaceFpsRecord
     {
+        public WorkspaceFpsRecord() { }
         public DateTime Date { get; set; }
         public string Process { get; set; } = "";
         public int DurationSeconds { get; set; }
