@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -1288,31 +1289,66 @@ public partial class MainWindow
             if (!File.Exists(exePath))
                 throw new FileNotFoundException("PresentMon.exe nebyl nalezen.");
 
+            // Validate the target before starting the timer; an invalid process name or
+            // a game that is still loading must not produce a misleading empty benchmark.
+            var processBaseName = Path.GetFileNameWithoutExtension(processName.Trim());
+            var gameProcesses = Process.GetProcessesByName(processBaseName);
+            try
+            {
+                if (gameProcesses.Length == 0)
+                    throw new InvalidOperationException($"Proces hry „{processBaseName}“ nebyl nalezen. Spusť Fortnite, počkej až bude načtený a zkontroluj název procesu.");
+            }
+            finally
+            {
+                foreach (var gameProcess in gameProcesses) gameProcess.Dispose();
+            }
+
             SaveWorkspacePresentMonPath(exePath);
-            status.Text = "Spouštím měření…";
+            status.Text = "Spouštím PresentMon s požadovanými oprávněními…";
             var folder = Path.Combine(WorkspaceDataDirectory, "FpsTests");
             Directory.CreateDirectory(folder);
             var output = Path.Combine(folder, $"presentmon-{DateTime.Now:yyyyMMdd-HHmmss}.csv");
-            using var process = new Process { StartInfo = new ProcessStartInfo(exePath) { UseShellExecute = false, CreateNoWindow = true } };
-            process.StartInfo.ArgumentList.Add("--process_name");
-            process.StartInfo.ArgumentList.Add(processName);
-            process.StartInfo.ArgumentList.Add("--output_file");
-            process.StartInfo.ArgumentList.Add(output);
-            if (!process.Start()) throw new InvalidOperationException("PresentMon se nepodařilo spustit.");
+            var startInfo = new ProcessStartInfo(exePath)
+            {
+                // Use Windows' normal UAC consent flow when PresentMon needs elevated ETW access.
+                UseShellExecute = true,
+                Verb = "runas",
+                WorkingDirectory = Path.GetDirectoryName(exePath) ?? Environment.CurrentDirectory
+            };
+            startInfo.ArgumentList.Add("--process_name");
+            startInfo.ArgumentList.Add(processBaseName);
+            startInfo.ArgumentList.Add("--output_file");
+            startInfo.ArgumentList.Add(output);
+            using var process = new Process { StartInfo = startInfo };
+            try
+            {
+                if (!process.Start()) throw new InvalidOperationException("PresentMon se nepodařilo spustit.");
+            }
+            catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
+            {
+                throw new InvalidOperationException("Spuštění PresentMonu bylo zrušeno v potvrzení Windows UAC. Povol spuštění, aby mohl test pokračovat.", ex);
+            }
 
             for (var seconds = 60; seconds > 0; seconds--)
             {
-                status.Text = $"Měření běží… zbývá {seconds} s. Nech hru běžet.";
+                status.Text = $"Měření běží… zbývá {seconds} s. Nech Fortnite aktivní.";
                 await Task.Delay(1000);
                 if (process.HasExited) break;
             }
             if (!process.HasExited) process.Kill(entireProcessTree: true);
             try { await process.WaitForExitAsync(); } catch { }
-            await Task.Delay(800);
+            await Task.Delay(1500);
 
             var frameTimes = ParseWorkspaceFrameTimes(output);
             if (frameTimes.Count < 30)
-                throw new InvalidOperationException("PresentMon nezapsal dost snímků. Ověř název procesu, nech hru běžet a případně spusť PresentMon jako správce.");
+            {
+                var csvExists = File.Exists(output);
+                var csvSize = csvExists ? new FileInfo(output).Length : 0;
+                throw new InvalidOperationException(
+                    $"PresentMon zaznamenal jen {frameTimes.Count} platných snímků. CSV: {(csvExists ? $"{csvSize} B" : "nevytvořeno")}. " +
+                    "Zkontroluj, že Fortnite běží během celého testu, není minimalizovaný a že PresentMonu povolíš UAC. " +
+                    "Log měření zůstává ve složce FpsTests pro diagnostiku.");
+            }
 
             var sorted = frameTimes.OrderBy(x => x).ToArray();
             var averageFps = 1000d / frameTimes.Average();
