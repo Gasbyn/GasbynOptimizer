@@ -6,7 +6,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media.Effects;
 using Microsoft.Win32;
 using GasbynOptimizer.Services;
 
@@ -18,7 +17,6 @@ public partial class MainWindow
 
     private async Task RunStartupCheckAsync()
     {
-        AppSurface.Effect = new BlurEffect { Radius = 12, KernelType = KernelType.Gaussian };
         StartupScanOverlay.Visibility = Visibility.Visible;
         StartupScanContinue.IsEnabled = false;
         StartupScanSpinner.Visibility = Visibility.Visible;
@@ -137,6 +135,5 @@ public partial class MainWindow
     private void StartupScanContinue_Click(object sender, RoutedEventArgs e)
     {
         StartupScanOverlay.Visibility = Visibility.Collapsed;
-        AppSurface.Effect = null;
     }
 }
