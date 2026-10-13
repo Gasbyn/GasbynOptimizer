@@ -836,8 +836,6 @@ public partial class MainWindow
         Cursor = System.Windows.Input.Cursors.Hand
     };
 
-    private static string BrushHex(string hex) => hex;
-
     private sealed class WorkspaceSnapshot
     {
         public string? PowerScheme { get; set; }
