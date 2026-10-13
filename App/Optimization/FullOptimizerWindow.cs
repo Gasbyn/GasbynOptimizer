@@ -28,7 +28,8 @@ public sealed class FullOptimizerWindow : Window
     private readonly Dictionary<string, ToggleButton> _toggleButtons = new(StringComparer.OrdinalIgnoreCase);
     private bool _loadingToggles;
     private TextBlock _hardwareSummary = new();
-    private TextBlock _compatibilityStatus = new();
+    private TextBlock _hardwareRecommendationStatus = new();
+    private TextBlock _amdGpuStatus = new();
     private Border? _amdGpuCard;
 
     private static readonly string DataFolder = Path.Combine(
@@ -68,8 +69,8 @@ public sealed class FullOptimizerWindow : Window
         _hardwareSummary = Body("Probíhá kontrola CPU, GPU, RAM, základní desky a disků…");
         _hardwareSummary.Margin = new Thickness(0, 0, 0, 10);
         hardwareCard.Children.Add(_hardwareSummary);
-        _compatibilityStatus = Body("Doporučení se načtou po dokončení kontroly hardwaru.");
-        hardwareCard.Children.Add(_compatibilityStatus);
+        _hardwareRecommendationStatus = Body("Doporučení se načtou po dokončení kontroly hardwaru.");
+        hardwareCard.Children.Add(_hardwareRecommendationStatus);
         _root.Children.Add(hardwareCard);
 
         AddSectionHeader("GAMING");
@@ -219,9 +220,9 @@ public sealed class FullOptimizerWindow : Window
         card.Children.Add(Heading("AMD RADEON-SPECIFIC GPU TUNING"));
         var description = Body("Tento řádek ukazuje kompatibilitu podle nalezené grafiky. V této verzi nejsou přidávány neověřené ovladačové zásahy; nekompatibilní GPU moduly nikdy neprovedou příkaz.");
         card.Children.Add(description);
-        _compatibilityStatus = Body("Čekám na kontrolu GPU…");
-        _compatibilityStatus.Margin = new Thickness(0, 8, 0, 0);
-        card.Children.Add(_compatibilityStatus);
+        _amdGpuStatus = Body("Čekám na kontrolu GPU…");
+        _amdGpuStatus.Margin = new Thickness(0, 8, 0, 0);
+        card.Children.Add(_amdGpuStatus);
         var unavailable = new ToggleButton
         {
             Content = "NEDOSTUPNÉ", IsChecked = false, IsEnabled = false, Width = 118, Height = 32,
@@ -237,57 +238,166 @@ public sealed class FullOptimizerWindow : Window
     private async Task ScanCurrentStateAsync()
     {
         SetBusy(true);
-        _scanStatus.Text = "Kontroluji, co je aktuálně zapnuté/vypnuté…";
+        _scanStatus.Text = "Kontroluji aktuální stav Windows i hardware…";
         try
         {
-            var scan = await Task.Run(() => new
+            var scan = await Task.Run(() =>
             {
-                GameMode = GetGameModeState(),
-                VisualEffects = GetVisualEffectsState(),
-                PowerPlan = GetPowerPlanState(),
-                Saved = LoadState()
+                var hardware = HardwareInventoryService.Scan();
+                var saved = LoadState();
+                var actual = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var id in new[] { "game-mode", "game-dvr", "visual-effects", "power-plan", "transparency", "fast-menus" })
+                    actual[id] = ReadActualStateSummary(id);
+                return new { Hardware = hardware, Saved = saved, Actual = actual };
             });
-            if (_toggleStatuses.TryGetValue("game-mode", out var game))
-                game.Text = $"Aktuální stav: {(scan.GameMode == true ? "ZAPNUTO" : scan.GameMode == false ? "VYPNUTO" : "Windows default / nenastaveno")} · backup: {(scan.Saved.ContainsKey("game-mode") ? "uložen" : "není")}";
-            if (_toggleStatuses.TryGetValue("visual-effects", out var visual))
+
+            var hw = scan.Hardware;
+            var advanced = OptimizerPreferencesStore.Load().AdvancedRecommendations;
+            _hardwareSummary.Text =
+                $"CPU: {hw.Cpu}\nGPU: {hw.Gpu}\nRAM: {hw.Memory}\nZákladní deska: {hw.Motherboard}\nDisky: {hw.Disks}\nWindows: {hw.Windows}";
+            _hardwareRecommendationStatus.Text = hw.HasNvidiaGpu
+                ? "DOPORUČENÍ · Detekována NVIDIA GPU. Obecné vratné Windows tweaky jsou dostupné; AMD Radeon-only úpravy nejsou použity."
+                : hw.HasAmdGpu
+                    ? "DOPORUČENÍ · Detekována AMD Radeon GPU. Používej obecné vratné změny; ovladačové zásahy nejsou automatizované."
+                    : "DOPORUČENÍ · Výrobce GPU není jasný. Používej pouze obecné, vratné změny a čti popisky.";
+            _amdGpuStatus.Text = !hw.HasAmdGpu
+                ? (advanced
+                    ? "INFO · AMD Radeon GPU nebyla detekována. Modul zůstává zakázaný, protože není kompatibilní s hardwarem."
+                    : "NEDOPORUČENO · AMD Radeon GPU nebyla detekována. Modul je zašedlý a nedá se zapnout.")
+                : "AMD GPU detekována, ale tato verze neobsahuje ověřenou vratnou změnu ovladače; žádný příkaz se neprovede.";
+            if (_amdGpuCard is not null) _amdGpuCard.Opacity = advanced ? 0.82 : 0.55;
+
+            _loadingToggles = true;
+            try
             {
-                var v = scan.VisualEffects is null ? "Windows default" : Convert.ToInt32(scan.VisualEffects, CultureInfo.InvariantCulture) == 2 ? "ZAPNUTO (best performance)" : $"Jiný režim ({scan.VisualEffects})";
-                visual.Text = $"Aktuální stav: {v} · backup: {(scan.Saved.ContainsKey("visual-effects") ? "uložen" : "není")}";
+                foreach (var pair in _toggleButtons)
+                {
+                    var managed = scan.Saved.ContainsKey(pair.Key);
+                    pair.Value.IsChecked = managed;
+                    pair.Value.Content = managed ? "ON" : "OFF";
+                    if (!_toggleStatuses.TryGetValue(pair.Key, out var status)) continue;
+
+                    var note = hw.GetCompatibilityNote(pair.Key, advanced);
+                    status.Text = $"Aktuální Windows: {scan.Actual[pair.Key]}\nSpravováno Gasbyn Optimizerem: {(managed ? "ON — původní stav uložen" : "OFF — bez aktivní zálohy")}\n{note}";
+                    status.Foreground = note.StartsWith("NEDOPORUČENO", StringComparison.OrdinalIgnoreCase)
+                        ? Brush(advanced ? "#858A94" : "#B17B4B")
+                        : Brush("#FF9A52");
+                }
             }
-            if (_toggleStatuses.TryGetValue("power-plan", out var power))
-            {
-                var match = System.Text.RegularExpressions.Regex.Match(scan.PowerPlan, @"([0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})");
-                var active = match.Success ? match.Groups[1].Value : string.Empty;
-                var high = !string.IsNullOrEmpty(active) && active.Equals("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", StringComparison.OrdinalIgnoreCase);
-                power.Text = $"Aktuální plán: {(high ? "High Performance" : scan.PowerPlan.Trim())} · backup: {(scan.Saved.ContainsKey("power-plan") ? "uložen" : "není")}";
-            }
-            _scanStatus.Text = "Kontrola dokončena. Aktuální stav je načten; po změně proběhne další kontrola.";
+            finally { _loadingToggles = false; }
+
+            _scanStatus.Text = "Kontrola dokončena. Přepínač ON uloží původní hodnoty; OFF je obnoví.";
         }
         catch (Exception ex) { _scanStatus.Text = "Kontrola dokončena s upozorněním: " + ex.Message; }
         finally { SetBusy(false); }
     }
 
-    private async Task ChangeSettingAsync(string id, bool enable, TextBlock status)
+    private static string ReadActualStateSummary(string id)
     {
-        if (_busy) return;
-        var label = id switch { "game-mode" => "Windows Game Mode", "visual-effects" => "Výkonové vizuální efekty", _ => "High Performance power plan" };
+        try
+        {
+            switch (id)
+            {
+                case "game-mode":
+                    return GetGameModeState() switch
+                    {
+                        true => "Game Mode zapnutý",
+                        false => "Game Mode vypnutý",
+                        _ => "výchozí Windows / nenastaveno"
+                    };
+                case "game-dvr":
+                    using (var key = Registry.CurrentUser.OpenSubKey(@"System\\GameConfigStore"))
+                    using (var capture = Registry.CurrentUser.OpenSubKey(@"Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR"))
+                    {
+                        var background = key?.GetValue("GameDVR_Enabled");
+                        var appCapture = capture?.GetValue("AppCaptureEnabled");
+                        if (background is int b && b == 0 && appCapture is int c && c == 0) return "background capture vypnuté";
+                        if (background is int || appCapture is int) return "nahrávání povolené nebo částečně nakonfigurované";
+                        return "výchozí Windows / nenastaveno";
+                    }
+                case "visual-effects":
+                    var effects = GetVisualEffectsState();
+                    return effects is null ? "výchozí Windows" : Convert.ToInt32(effects, CultureInfo.InvariantCulture) == 2
+                        ? "režim nejlepšího výkonu"
+                        : "jiný režim (" + effects + ")";
+                case "power-plan":
+                    var output = GetPowerPlanState();
+                    var match = System.Text.RegularExpressions.Regex.Match(output, @"([0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})");
+                    if (!match.Success) return output.Trim();
+                    return match.Value.Equals("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", StringComparison.OrdinalIgnoreCase)
+                        ? "High Performance"
+                        : "aktivní plán ID " + match.Value;
+                case "transparency":
+                    using (var key = Registry.CurrentUser.OpenSubKey(@"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"))
+                    {
+                        var value = key?.GetValue("EnableTransparency");
+                        return value is null ? "výchozí Windows" : Convert.ToInt32(value, CultureInfo.InvariantCulture) == 0 ? "průhlednost vypnutá" : "průhlednost zapnutá";
+                    }
+                case "fast-menus":
+                    using (var key = Registry.CurrentUser.OpenSubKey(@"Control Panel\\Desktop"))
+                    using (var metrics = Registry.CurrentUser.OpenSubKey(@"Control Panel\\Desktop\\WindowMetrics"))
+                        return $"MenuShowDelay={key?.GetValue("MenuShowDelay") ?? "default"}, MinAnimate={metrics?.GetValue("MinAnimate") ?? "default"}";
+                default:
+                    return "stav není dostupný";
+            }
+        }
+        catch (Exception ex) { return "stav nelze přečíst: " + ex.Message; }
+    }
+
+    private static string GetTweakName(string id) => id switch
+    {
+        "game-mode" => "Windows Game Mode",
+        "game-dvr" => "Vypnout Game DVR na pozadí",
+        "visual-effects" => "Výkonové vizuální efekty",
+        "power-plan" => "High Performance power plan",
+        "transparency" => "Vypnout efekty průhlednosti",
+        "fast-menus" => "Rychlejší nabídky a animace oken",
+        _ => id
+    };
+
+    private void SetToggleValue(ToggleButton toggle, bool enabled)
+    {
+        _loadingToggles = true;
+        try
+        {
+            toggle.IsChecked = enabled;
+            toggle.Content = enabled ? "ON" : "OFF";
+            toggle.Background = Brush(enabled ? "#FF6A00" : "#292D35");
+        }
+        finally { _loadingToggles = false; }
+    }
+
+    private async Task ChangeSettingAsync(string id, bool enable, TextBlock status, ToggleButton toggle)
+    {
+        if (_busy)
+        {
+            SetToggleValue(toggle, !enable);
+            return;
+        }
+
+        var label = GetTweakName(id);
         var prompt = enable
-            ? $"Zapnout modul „{label}“? Původní stav se uloží, aby šel vrátit. Některé změny mohou vyžadovat restart Windows."
-            : $"Vrátit modul „{label}“ do původního stavu uloženého při zapnutí?";
-        if (MessageBox.Show(prompt, "Gasbyn Optimizer", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+            ? $"Zapnout modul „{label}“?\n\nUložím původní hodnoty, zaznamenám všechny operace do logu (pokud je povolený) a po změně znovu ověřím stav. Některé změny mohou vyžadovat odhlášení nebo restart."
+            : $"Vrátit modul „{label}“ přesně do původního stavu uloženého při zapnutí?\n\nPůvodní hodnoty budou obnoveny a akce se zapíše do logu.";
+        if (MessageBox.Show(prompt, "Gasbyn Optimizer", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+        {
+            SetToggleValue(toggle, !enable);
+            return;
+        }
 
         SetBusy(true);
-        status.Text = enable ? "Ukládám původní stav a zapínám…" : "Obnovuji uložený původní stav…";
+        status.Text = enable ? "Ukládám původní stav a aplikuji změnu…" : "Obnovuji uložené původní hodnoty…";
         try
         {
             await Task.Run(() => ApplySetting(id, enable));
-            status.Text = enable ? "Zapnuto. Pro plné použití změn doporučuji restart PC." : "Původní stav obnoven.";
-            _scanStatus.Text = "Znovu ověřuji aktuální nastavení…";
+            _scanStatus.Text = "Změna dokončena. Ověřuji stav Windows…";
             await ScanCurrentStateAsync();
+            status.Text += enable ? "\nPoslední akce: úspěšné zapnutí." : "\nPoslední akce: úspěšné obnovení.";
         }
         catch (Exception ex)
         {
-            status.Text = "Akce se nepovedla.";
+            status.Text = "Akce selhala; podrobnosti jsou v chybové zprávě a logu (pokud je povolený).";
+            SetToggleValue(toggle, !enable);
             MessageBox.Show(ex.Message, "Gasbyn Optimizer", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { SetBusy(false); }
