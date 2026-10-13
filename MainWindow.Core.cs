@@ -3,10 +3,11 @@ using System.Linq;
 using System.Management;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using GasbynOptimizer.Core;
 using GasbynOptimizer.Models;
 using GasbynOptimizer.Tweaks.Gaming;
-using GasbynOptimizer.Optimization;
 
 namespace GasbynOptimizer;
 
@@ -18,12 +19,10 @@ public partial class MainWindow
     {
         InitializeComponent();
         _tweakEngine.Register(GameMode.Create());
-        Loaded += (_, _) =>
+        Loaded += async (_, _) =>
         {
-            LoadSystemInfo();
             ShowPage("Dashboard");
-            var scan = new StartupScanWindow { Owner = this };
-            scan.ShowDialog();
+            await RunStartupCheckAsync();
         };
     }
 
@@ -33,8 +32,32 @@ public partial class MainWindow
             ShowPage(page);
     }
 
+    private void UpdateNavigationSelection(string page)
+    {
+        foreach (var button in NavPanel.Children.OfType<Button>())
+        {
+            var selected = string.Equals(button.Tag as string, page, StringComparison.OrdinalIgnoreCase);
+            button.Background = selected
+                ? (Brush)FindResource("OrangeSoft")
+                : Brushes.Transparent;
+            button.Foreground = selected
+                ? (Brush)FindResource("OrangeLight")
+                : new SolidColorBrush(Color.FromRgb(144, 149, 159));
+            button.BorderBrush = selected
+                ? new SolidColorBrush(Color.FromRgb(74, 40, 20))
+                : Brushes.Transparent;
+            button.BorderThickness = selected ? new Thickness(1) : new Thickness(0);
+            button.FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal;
+
+            button.ApplyTemplate();
+            if (button.Template.FindName("NavActiveIndicator", button) is FrameworkElement indicator)
+                indicator.Visibility = selected ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
     private void ShowPage(string page)
     {
+        UpdateNavigationSelection(page);
         PageTitle.Text = page;
         PageSubtitle.Text = page switch
         {
@@ -58,16 +81,14 @@ public partial class MainWindow
         DashboardView.Visibility = dashboard ? Visibility.Visible : Visibility.Collapsed;
         SecondaryView.Visibility = dashboard ? Visibility.Collapsed : Visibility.Visible;
         SecondaryContent.Children.Clear();
-        if (dashboard) return;
+        if (dashboard) { AnimateContent(); return; }
 
         AddPageHeader(page);
         switch (page)
         {
             case "Tweaks":
-                AddTweakCard("Windows Game Mode", "Zapnutí herního režimu Windows. Původní stav se ukládá před změnou.", "FREE", "Manage Game Mode");
-                AddInfoCard("GAMING OPTIMIZER", "Zobrazí audit Game Mode, HAGS, power planu a Fortnite konfigurace bez automatické změny.", "GAMING OPTIMIZER");
-                AddInfoCard("High Performance Power Plan", "Zkontroluj a případně přepni plán napájení. Použij Full Optimizer pro reverzibilní přepínač.", "Power Plan");
-                AddInfoCard("Hardware Accelerated GPU Scheduling", "Zkontroluj aktuální stav HAGS.", "GPU Scheduling");
+                BuildTweaksWorkspace();
+                AddInfoCard("Hardware Accelerated GPU Scheduling", "Zkontroluj aktuální stav HAGS. Změna HAGS není automaticky aplikována, protože závisí na GPU, ovladači a verzi Windows.", "GPU Scheduling");
                 break;
             case "Cleanup":
                 AddInfoCard("User TEMP", "Zkontroluje a nabídne odstranění dočasných souborů aktuálního uživatele.", "User TEMP");
@@ -90,12 +111,12 @@ public partial class MainWindow
                 AddInfoCard("Installed Applications", "Zobrazí nainstalované aplikace a dostupné akce správce aplikací.", "Installed Applications");
                 break;
             case "Gaming":
-                AddInfoCard("GAMING OPTIMIZER", "Zkontroluje nastavení herního režimu, HAGS, power planu a Fortnite.", "GAMING OPTIMIZER");
+                BuildTweaksWorkspace(gamingOnly: true);
+                AddInfoCard("GAMING AUDIT", "Zkontroluje Game Mode, HAGS, plán napájení a Fortnite. Audit nic nemění.", "GAMING OPTIMIZER");
                 AddInfoCard("Windows Gaming Services", "Zobrazí stav souvisejících herních služeb; nic nevypíná.", "Windows Gaming Services");
                 AddInfoCard("Fullscreen Optimization Check", "Zobrazí aktuální stav relevantního nastavení.", "Fullscreen Optimization Check");
                 AddInfoCard("Fortnite Optimization Profile", "Zkontroluje, zda existuje konfigurace Fortnite.", "Fortnite Optimization Profile");
                 AddInfoCard("NVIDIA Gaming Profile", "Zkontroluje dostupné lokální NVIDIA profilové soubory.", "NVIDIA Gaming Profile");
-                AddInfoCard("Full Optimizer", "Reverzibilní přepínače, bod obnovení a FPS testy.", "Open Full Optimizer");
                 break;
             case "Network":
                 AddInfoCard("Connection Info", "Zobrazí aktivní síťové adaptéry, rychlost linky a IPv4 adresy.", "Connection Info");
@@ -109,13 +130,10 @@ public partial class MainWindow
             case "Benchmark":
                 AddInfoCard("CPU Quick Test", "Krátký výpočetní test CPU pro srovnání ve stejných podmínkách.", "CPU Quick Test");
                 AddInfoCard("Before / After", "Zobrazí tipy pro porovnání před a po změně.", "Before / After");
-                AddInfoCard("FPS Tester", "PresentMon a historie posledních 15 testů jsou ve Full Optimizeru.", "Open Full Optimizer");
+                BuildBenchmarkWorkspace();
                 break;
             case "Backup":
-                AddInfoCard("Tweak Backups", "Otevře seznam dostupných lokálních záloh.", "Tweak Backups");
-                AddInfoCard("Restore All", "Zobrazí rozsah a bezpečný postup obnovení.", "Restore All");
-                AddInfoCard("Change History", "Zobrazí historii zaznamenaných změn.", "Change History");
-                AddInfoCard("System Restore Point", "Vytvoř bod obnovení ve Full Optimizeru před změnou nastavení.", "Open Full Optimizer");
+                BuildBackupWorkspace();
                 break;
             case "PC Info":
                 LoadSystemInfo();
@@ -124,17 +142,45 @@ public partial class MainWindow
                 AddInfoCard("Refresh", "Znovu načte systémové informace.", "Refresh");
                 break;
             case "Settings":
+                AddSettingsCard();
                 AddInfoCard("Safe-by-default", "Optimizer nepřepíná automaticky služby, Defender, bootovací časovače ani IPv6. Každý tweak musí mít jasný přínos, kontrolu stavu a návratovou cestu.", "About");
-                AddInfoCard("Open Full Optimizer", "Otevře přepínače, bod obnovení a FPS historii.", "Open Full Optimizer");
+                AddInfoCard("Optimization workspace", "Vratné optimalizace jsou v Tweaks, měření FPS v Benchmark a bod obnovení v Backup.", "Open Tweaks");
                 break;
             default:
-                AddInfoCard("Open Full Optimizer", "Reverzibilní optimalizace a FPS testy.", "Open Full Optimizer");
+                AddInfoCard("Open Tweaks", "Vratné systémové optimalizace a jejich stav.", "Open Tweaks");
                 break;
+        }
+        AnimateContent();
+    }
+
+    private void AnimateContent()
+    {
+        ContentHost.Opacity = 0;
+        ContentHost.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(220))
+        {
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+        });
+
+        if (ContentHost.RenderTransform is TranslateTransform transform)
+        {
+            transform.Y = 9;
+            transform.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(9, 0, TimeSpan.FromMilliseconds(220))
+            {
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            });
         }
     }
 
     private void LoadSystemInfo()
     {
+        if (_hardwareInventory is not null)
+        {
+            CpuValue.Text = _hardwareInventory.Cpu;
+            GpuValue.Text = _hardwareInventory.Gpu;
+            RamValue.Text = _hardwareInventory.Memory;
+            return;
+        }
+
         try
         {
             using var cpu = new ManagementObjectSearcher("SELECT Name FROM Win32_Processor");

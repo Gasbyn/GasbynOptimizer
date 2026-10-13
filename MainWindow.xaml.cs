@@ -51,8 +51,9 @@ public partial class MainWindow
                 "Settings" => "APPLICATION SETTINGS",
                 _ => "GASBYN OPTIMIZER"
             },
-            FontSize = 11,
+            FontSize = 20,
             FontWeight = FontWeights.Bold,
+            FontFamily = (FontFamily)FindResource("DisplayFont"),
             Foreground = (Brush)FindResource("Orange"),
             Margin = new Thickness(0, 0, 0, 14)
         };
@@ -71,7 +72,7 @@ public partial class MainWindow
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var stack = new StackPanel();
-        stack.Children.Add(new TextBlock { Text = title, FontSize = 16, FontWeight = FontWeights.SemiBold });
+        stack.Children.Add(new TextBlock { Text = title, FontSize = 20, FontFamily = (FontFamily)FindResource("DisplayFont"), FontWeight = FontWeights.SemiBold });
         stack.Children.Add(new TextBlock { Text = description, FontSize = 12, Foreground = (Brush)FindResource("TextMuted"), Margin = new Thickness(0, 5, 0, 0), TextWrapping = TextWrapping.Wrap });
         stack.Children.Add(new TextBlock { Text = tier, FontSize = 9, FontWeight = FontWeights.Bold, Foreground = tier == "PREMIUM" ? (Brush)FindResource("Orange") : (Brush)FindResource("TextMuted"), Margin = new Thickness(0, 10, 0, 0) });
         Grid.SetColumn(stack, 0); grid.Children.Add(stack);

@@ -44,7 +44,8 @@ public partial class MainWindow
                 break;
             case "High Performance Power Plan":
             case "Power Plan":
-                window.ManagePowerPlan();
+            case "Open Tweaks":
+                window.ShowPage("Tweaks");
                 break;
             case "Windows Gaming Services":
                 window.ScanGamingServices();

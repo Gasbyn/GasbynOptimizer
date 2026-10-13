@@ -1,7 +1,9 @@
 using System.IO;
+using System.Collections.Generic;
 using System.Text.Json;
 using GasbynOptimizer.Models;
 using Microsoft.Win32;
+using GasbynOptimizer.Services;
 
 namespace GasbynOptimizer.Tweaks.Gaming;
 
@@ -24,6 +26,7 @@ public static class GameMode
 
     private static TweakResult Apply(TweakContext context)
     {
+        var operations = new List<string>();
         try
         {
             var backupDirectory = EnsureBackupDirectory(context);
@@ -33,46 +36,75 @@ public static class GameMode
             {
                 var original = ReadCurrentValue();
                 File.WriteAllText(backupPath, JsonSerializer.Serialize(original));
+                operations.Add("BACKUP FILE: " + backupPath + "; original value=" + JsonSerializer.Serialize(original));
+            }
+            else
+            {
+                operations.Add("BACKUP REUSED: " + backupPath + "; the original value is preserved.");
             }
 
+            operations.Add(@"REGISTRY SET: HKCU\Software\Microsoft\GameBar\AllowAutoGameMode; Type=REG_DWORD; Value=1");
             using var key = Registry.CurrentUser.CreateSubKey(RegistryPath);
             if (key is null)
-                return TweakResult.Fail("Nepodařilo se otevřít nastavení Game Mode.");
+            {
+                var failure = TweakResult.Fail("Nepodařilo se otevřít nastavení Game Mode.");
+                OptimizerAuditLog.WriteChange("game-mode", "Windows Game Mode", "ENABLE", false, operations, failure.Message);
+                return failure;
+            }
 
             key.SetValue(ValueName, 1, RegistryValueKind.DWord);
-
-            return GetCurrentStatus() == TweakStatus.Enabled
+            var result = GetCurrentStatus() == TweakStatus.Enabled
                 ? TweakResult.Ok("Windows Game Mode byl zapnut. Původní stav je uložen v backupu.")
                 : TweakResult.Fail("Game Mode se nepodařilo ověřit po změně.");
+            OptimizerAuditLog.WriteChange("game-mode", "Windows Game Mode", "ENABLE", result.Success, operations, result.Message);
+            return result;
         }
         catch (Exception ex)
         {
+            operations.Add("ERROR: " + ex);
+            OptimizerAuditLog.WriteChange("game-mode", "Windows Game Mode", "ENABLE", false, operations, ex.ToString());
             return TweakResult.Fail($"Nepodařilo se zapnout Game Mode: {ex.Message}");
         }
     }
 
     private static TweakResult Restore(TweakContext context)
     {
+        var operations = new List<string>();
         try
         {
             var backupPath = Path.Combine(EnsureBackupDirectory(context), "game-mode.json");
             if (!File.Exists(backupPath))
-                return TweakResult.Fail("Backup Game Mode nebyl nalezen.");
+            {
+                var failure = TweakResult.Fail("Backup Game Mode nebyl nalezen.");
+                OptimizerAuditLog.WriteChange("game-mode", "Windows Game Mode", "RESTORE", false, operations, failure.Message);
+                return failure;
+            }
 
             var original = JsonSerializer.Deserialize<BackupValue>(File.ReadAllText(backupPath));
             using var key = Registry.CurrentUser.CreateSubKey(RegistryPath);
             if (key is null)
-                return TweakResult.Fail("Nepodařilo se otevřít nastavení Game Mode.");
+            {
+                var failure = TweakResult.Fail("Nepodařilo se otevřít nastavení Game Mode.");
+                OptimizerAuditLog.WriteChange("game-mode", "Windows Game Mode", "RESTORE", false, operations, failure.Message);
+                return failure;
+            }
 
+            operations.Add(original?.Value is null
+                ? @"REGISTRY DELETE: HKCU\Software\Microsoft\GameBar\AllowAutoGameMode; value was originally absent"
+                : $@"REGISTRY RESTORE: HKCU\Software\Microsoft\GameBar\AllowAutoGameMode; Type=REG_DWORD; OriginalValue={original.Value.Value}");
             if (original?.Value is null)
                 key.DeleteValue(ValueName, false);
             else
                 key.SetValue(ValueName, original.Value.Value, RegistryValueKind.DWord);
 
-            return TweakResult.Ok("Původní nastavení Game Mode bylo obnoveno.");
+            var result = TweakResult.Ok("Původní nastavení Game Mode bylo obnoveno.");
+            OptimizerAuditLog.WriteChange("game-mode", "Windows Game Mode", "RESTORE", true, operations, result.Message);
+            return result;
         }
         catch (Exception ex)
         {
+            operations.Add("ERROR: " + ex);
+            OptimizerAuditLog.WriteChange("game-mode", "Windows Game Mode", "RESTORE", false, operations, ex.ToString());
             return TweakResult.Fail($"Nepodařilo se obnovit Game Mode: {ex.Message}");
         }
     }
