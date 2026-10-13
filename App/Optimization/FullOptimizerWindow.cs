@@ -11,6 +11,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Shapes;
 using GasbynOptimizer.Services;
 
 namespace GasbynOptimizer.Optimization;
@@ -188,11 +190,13 @@ public sealed class FullOptimizerWindow : Window
         var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0), VerticalAlignment = VerticalAlignment.Center };
         var toggle = new ToggleButton
         {
-            Content = "OFF", Width = 76, Height = 34, IsChecked = false,
-            Background = Brush("#292D35"), Foreground = Brushes.White,
-            BorderBrush = Brush("#3A3D45"), BorderThickness = new Thickness(1),
-            FontWeight = FontWeights.Bold, Cursor = System.Windows.Input.Cursors.Hand,
-            ToolTip = onOffTooltip
+            Width = 58, Height = 30, IsChecked = false,
+            Style = CreateSwitchStyle(),
+            Cursor = System.Windows.Input.Cursors.Hand,
+            ToolTip = onOffTooltip,
+            Focusable = true,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center
         };
         toggle.Checked += async (_, _) =>
         {
@@ -204,12 +208,79 @@ public sealed class FullOptimizerWindow : Window
         };
         _toggleButtons[id] = toggle;
         row.Children.Add(toggle);
-        var hint = Body("ON = aplikovat optimalizaci   ·   OFF = obnovit původní stav");
-        hint.Margin = new Thickness(12, 0, 0, 0);
-        hint.VerticalAlignment = VerticalAlignment.Center;
-        row.Children.Add(hint);
         card.Children.Add(row);
         _root.Children.Add(card);
+    }
+
+    private static Style CreateSwitchStyle()
+    {
+        var style = new Style(typeof(ToggleButton));
+        style.Setters.Add(new Setter(Control.BackgroundProperty, Brushes.Transparent));
+        style.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(0)));
+        style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0)));
+        style.Setters.Add(new Setter(Control.FocusVisualStyleProperty, null));
+
+        var template = new ControlTemplate(typeof(ToggleButton));
+        var root = new FrameworkElementFactory(typeof(Grid));
+        root.SetValue(FrameworkElement.WidthProperty, 58d);
+        root.SetValue(FrameworkElement.HeightProperty, 30d);
+
+        var track = new FrameworkElementFactory(typeof(Border));
+        track.Name = "SwitchTrack";
+        track.SetValue(Border.BackgroundProperty, Brush("#34373F"));
+        track.SetValue(Border.BorderBrushProperty, Brush("#4A4D55"));
+        track.SetValue(Border.BorderThicknessProperty, new Thickness(1));
+        track.SetValue(Border.CornerRadiusProperty, new CornerRadius(15));
+        root.AppendChild(track);
+
+        var thumb = new FrameworkElementFactory(typeof(Ellipse));
+        thumb.Name = "SwitchThumb";
+        thumb.SetValue(FrameworkElement.WidthProperty, 22d);
+        thumb.SetValue(FrameworkElement.HeightProperty, 22d);
+        thumb.SetValue(Shape.FillProperty, Brush("#A0A4AC"));
+        thumb.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Left);
+        thumb.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        thumb.SetValue(FrameworkElement.MarginProperty, new Thickness(4, 0, 0, 0));
+        thumb.SetValue(UIElement.RenderTransformProperty, new TranslateTransform(0, 0));
+        root.AppendChild(thumb);
+
+        template.VisualTree = root;
+        var checkedState = new Trigger { Property = ToggleButton.IsCheckedProperty, Value = true };
+        checkedState.Setters.Add(new Setter(Border.BackgroundProperty, Brush("#FF6A00"), "SwitchTrack"));
+        checkedState.Setters.Add(new Setter(Border.BorderBrushProperty, Brush("#FF8738"), "SwitchTrack"));
+        checkedState.Setters.Add(new Setter(Shape.FillProperty, Brushes.White, "SwitchThumb"));
+        template.Triggers.Add(checkedState);
+
+        var checkedAnimation = new DoubleAnimation
+        {
+            To = 28,
+            Duration = TimeSpan.FromMilliseconds(200),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTargetName(checkedAnimation, "SwitchThumb");
+        Storyboard.SetTargetProperty(checkedAnimation, new PropertyPath("(UIElement.RenderTransform).(TranslateTransform.X)"));
+        var checkedStoryboard = new Storyboard();
+        checkedStoryboard.Children.Add(checkedAnimation);
+        var checkedEvent = new EventTrigger { RoutedEvent = ToggleButton.CheckedEvent };
+        checkedEvent.Actions.Add(new BeginStoryboard { Storyboard = checkedStoryboard });
+        template.Triggers.Add(checkedEvent);
+
+        var uncheckedAnimation = new DoubleAnimation
+        {
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(180),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTargetName(uncheckedAnimation, "SwitchThumb");
+        Storyboard.SetTargetProperty(uncheckedAnimation, new PropertyPath("(UIElement.RenderTransform).(TranslateTransform.X)"));
+        var uncheckedStoryboard = new Storyboard();
+        uncheckedStoryboard.Children.Add(uncheckedAnimation);
+        var uncheckedEvent = new EventTrigger { RoutedEvent = ToggleButton.UncheckedEvent };
+        uncheckedEvent.Actions.Add(new BeginStoryboard { Storyboard = uncheckedStoryboard });
+        template.Triggers.Add(uncheckedEvent);
+
+        style.Setters.Add(new Setter(Control.TemplateProperty, template));
+        return style;
     }
 
     private void AddAmdGpuCompatibilityCard()
@@ -270,7 +341,6 @@ public sealed class FullOptimizerWindow : Window
                 {
                     var managed = scan.Saved.ContainsKey(pair.Key);
                     pair.Value.IsChecked = managed;
-                    pair.Value.Content = managed ? "ON" : "OFF";
                     if (!_toggleStatuses.TryGetValue(pair.Key, out var status)) continue;
 
                     var note = hw.GetCompatibilityNote(pair.Key, advanced);
@@ -357,8 +427,6 @@ public sealed class FullOptimizerWindow : Window
         try
         {
             toggle.IsChecked = enabled;
-            toggle.Content = enabled ? "ON" : "OFF";
-            toggle.Background = Brush(enabled ? "#FF6A00" : "#292D35");
         }
         finally { _loadingToggles = false; }
     }
