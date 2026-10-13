@@ -78,7 +78,7 @@ public partial class MainWindow
             "High Performance power plan",
             "Aktivuje vestavěný plán Vysoký výkon. Může zvýšit spotřebu energie a teploty.",
             "power-plan",
-            "ON: spustí powercfg.exe /setactive SCHEME_MIN. OFF: aktivuje původní ID plánu uložené před změnou.", "POKROČILÉ", "VÝKON", "SPOTŘEBA");
+            "ON: aktivuje plán napájení Vysoký výkon. OFF: aktivuje původní ID plánu uložené před změnou. Vyšší spotřeba a teploty jsou možné.", "POKROČILÉ", "VÝKON", "SPOTŘEBA");
 
         AddWorkspaceTweakCard(
             "Vypnout efekty průhlednosti",
@@ -185,7 +185,7 @@ public partial class MainWindow
         var incompatible = IsWorkspaceTweakIncompatible(id);
         var advanced = OptimizerPreferencesStore.Load().AdvancedRecommendations;
         var locked = incompatible && !advanced;
-        var detailForHover = locked
+        object detailForHover = locked
             ? "🔒 Tweak je nekompatibilní s tvým PC, pro obejití zajdi do Settings a zapni Pokročilý režim doporučení."
             : BuildTweakToolTip(title, description, tooltip);
         var card = new Border
@@ -198,6 +198,7 @@ public partial class MainWindow
             Margin = new Thickness(0, 0, 0, 12),
             ToolTip = detailForHover
         };
+        card.Opacity = locked ? 0.48 : 1.0;
         ToolTipService.SetShowDuration(card, 30000);
         ToolTipService.SetInitialShowDelay(card, 400);
 
