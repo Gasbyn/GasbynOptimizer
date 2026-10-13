@@ -11,6 +11,36 @@ namespace GasbynOptimizer;
 public partial class MainWindow
 {
 
+    // Custom title-bar buttons (WindowStyle=None disables the standard Windows buttons).
+    private void MinimizeWindow_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void MaximizeWindow_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState == WindowState.Maximized
+            ? WindowState.Normal
+            : WindowState.Maximized;
+    }
+
+    private void CloseWindow_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private void WindowTitleBar_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.ButtonState == System.Windows.Input.MouseButtonState.Pressed)
+        {
+            if (WindowState == WindowState.Maximized)
+                WindowState = WindowState.Normal;
+
+            DragMove();
+        }
+    }
+
+
     private static string FormatStatus(TweakStatus status) => status switch
     {
         TweakStatus.Enabled => "ENABLED",
