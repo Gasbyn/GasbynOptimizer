@@ -33,7 +33,7 @@ jobs:
           retention-days: 30
 
       - name: Package release ZIP
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || startsWith(github.ref, 'refs/heads/release/')
         shell: pwsh
         run: Compress-Archive -Path publish\* -DestinationPath GasbynOptimizer-win-x64.zip -Force
 
