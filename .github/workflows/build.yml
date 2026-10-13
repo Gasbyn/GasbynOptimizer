@@ -5,8 +5,6 @@ on:
     branches: [ main, "feature/**", "release/**" ]
   pull_request:
     branches: [ main ]
-  release:
-    types: [ published ]
 
 permissions:
   contents: write
@@ -50,7 +48,7 @@ jobs:
           retention-days: 30
 
       - name: Package release ZIP
-        if: github.event_name == 'release' || startsWith(github.ref, 'refs/heads/release/')
+        if: startsWith(github.ref, 'refs/heads/release/')
         shell: pwsh
         run: Compress-Archive -Path publish\* -DestinationPath GasbynOptimizer-win-x64.zip -Force
 
@@ -70,6 +68,15 @@ jobs:
           git tag -f v2.0.B5 $env:GITHUB_SHA
           git push origin +refs/tags/v2.0.B5
 
+      - name: Point B8 release tag at the exact build commit
+        if: github.ref == 'refs/heads/release/v2.0.B8'
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f v2.0.B8 $env:GITHUB_SHA
+          git push origin +refs/tags/v2.0.B8
+
       - name: Publish release from release branch
         if: startsWith(github.ref, 'refs/heads/release/')
         uses: softprops/action-gh-release@v2
@@ -88,13 +95,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Attach ZIP to published GitHub Release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.release.tag_name }}
-          name: ${{ github.event.release.name }}
-          files: GasbynOptimizer-win-x64.zip
-          fail_on_unmatched_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
