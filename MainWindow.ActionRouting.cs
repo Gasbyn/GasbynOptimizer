@@ -44,7 +44,8 @@ public partial class MainWindow
                 break;
             case "High Performance Power Plan":
             case "Power Plan":
-                window.FullOptimizer_Click(window, new RoutedEventArgs());
+            case "Open Tweaks":
+                window.ShowPage("Tweaks");
                 break;
             case "Windows Gaming Services":
                 window.ScanGamingServices();
