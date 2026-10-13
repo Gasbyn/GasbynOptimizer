@@ -169,145 +169,145 @@ internal static class AppUpdater
     }
 
     private const string UpdateScript = """
-param(
-    [Parameter(Mandatory = $true)][string]$ZipPath,
-    [Parameter(Mandatory = $true)][string]$TargetDirectory,
-    [Parameter(Mandatory = $true)][string]$ExecutablePath,
-    [Parameter(Mandatory = $true)][int]$ParentProcessId,
-    [Parameter(Mandatory = $true)][string]$WorkDirectory
-)
+    param(
+        [Parameter(Mandatory = $true)][string]$ZipPath,
+        [Parameter(Mandatory = $true)][string]$TargetDirectory,
+        [Parameter(Mandatory = $true)][string]$ExecutablePath,
+        [Parameter(Mandatory = $true)][int]$ParentProcessId,
+        [Parameter(Mandatory = $true)][string]$WorkDirectory
+    )
 
-$ErrorActionPreference = 'Stop'
-$stageDirectory = Join-Path $WorkDirectory 'stage'
-$backupDirectory = Join-Path $WorkDirectory 'backup'
-$backupReady = $false
-$originalFiles = @{}
-$copiedPaths = @()
+    $ErrorActionPreference = 'Stop'
+    $stageDirectory = Join-Path $WorkDirectory 'stage'
+    $backupDirectory = Join-Path $WorkDirectory 'backup'
+    $backupReady = $false
+    $originalFiles = @{}
+    $copiedPaths = @()
 
-try {
-    $parent = Get-Process -Id $ParentProcessId -ErrorAction SilentlyContinue
-    if ($null -ne $parent) {
-        Wait-Process -Id $ParentProcessId -Timeout 60 -ErrorAction Stop
-    }
-    if (Get-Process -Id $ParentProcessId -ErrorAction SilentlyContinue) {
-        throw 'Gasbyn Optimizer se nepodařilo bezpečně zavřít.'
-    }
-
-    if (Test-Path -LiteralPath $stageDirectory) {
-        Remove-Item -LiteralPath $stageDirectory -Recurse -Force
-    }
-    New-Item -ItemType Directory -Path $stageDirectory -Force | Out-Null
-
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $archive = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
     try {
-        $stagePrefix = [IO.Path]::GetFullPath($stageDirectory).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
-        foreach ($entry in $archive.Entries) {
-            if ([string]::IsNullOrWhiteSpace($entry.FullName)) { continue }
-            $destination = [IO.Path]::GetFullPath((Join-Path $stageDirectory $entry.FullName))
-            if (-not $destination.StartsWith($stagePrefix, [StringComparison]::OrdinalIgnoreCase)) {
-                throw 'Balíček obsahuje neplatnou cestu. Aktualizace byla zastavena.'
-            }
+        $parent = Get-Process -Id $ParentProcessId -ErrorAction SilentlyContinue
+        if ($null -ne $parent) {
+            Wait-Process -Id $ParentProcessId -Timeout 60 -ErrorAction Stop
         }
-    }
-    finally {
-        $archive.Dispose()
-    }
-
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($ZipPath, $stageDirectory)
-
-    $newExecutable = Join-Path $stageDirectory 'GasbynOptimizer.exe'
-    if (Test-Path -LiteralPath $newExecutable) {
-        $sourceDirectory = $stageDirectory
-    }
-    else {
-        $foundExe = Get-ChildItem -LiteralPath $stageDirectory -Filter 'GasbynOptimizer.exe' -File -Recurse | Select-Object -First 1
-        if ($null -eq $foundExe) {
-            throw 'Stažený balíček neobsahuje GasbynOptimizer.exe.'
+        if (Get-Process -Id $ParentProcessId -ErrorAction SilentlyContinue) {
+            throw 'Gasbyn Optimizer se nepodařilo bezpečně zavřít.'
         }
-        $sourceDirectory = $foundExe.DirectoryName
-    }
 
-    if (Test-Path -LiteralPath $backupDirectory) {
-        Remove-Item -LiteralPath $backupDirectory -Recurse -Force
-    }
-    New-Item -ItemType Directory -Path $backupDirectory -Force | Out-Null
+        if (Test-Path -LiteralPath $stageDirectory) {
+            Remove-Item -LiteralPath $stageDirectory -Recurse -Force
+        }
+        New-Item -ItemType Directory -Path $stageDirectory -Force | Out-Null
 
-    $oldFiles = @(Get-ChildItem -LiteralPath $TargetDirectory -File -Recurse -Force)
-    foreach ($file in $oldFiles) {
-        $relative = [IO.Path]::GetRelativePath($TargetDirectory, $file.FullName)
-        $originalFiles[$relative] = $true
-        $backupPath = Join-Path $backupDirectory $relative
-        New-Item -ItemType Directory -Path (Split-Path -Parent $backupPath) -Force | Out-Null
-        Copy-Item -LiteralPath $file.FullName -Destination $backupPath -Force
-    }
-    $backupReady = $true
-
-    $newFiles = @(Get-ChildItem -LiteralPath $sourceDirectory -File -Recurse -Force)
-    if ($newFiles.Count -eq 0) { throw 'Balíček aktualizace je prázdný.' }
-
-    foreach ($file in $newFiles) {
-        $relative = [IO.Path]::GetRelativePath($sourceDirectory, $file.FullName)
-        $copiedPaths += $relative
-        $destination = Join-Path $TargetDirectory $relative
-        New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
-        Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
-    }
-
-    if (-not (Test-Path -LiteralPath $ExecutablePath)) {
-        throw 'Po aktualizaci nebyl nalezen spustitelný soubor.'
-    }
-
-    $newProcess = Start-Process -FilePath $ExecutablePath -WorkingDirectory $TargetDirectory -PassThru
-    Start-Sleep -Seconds 2
-    if ($newProcess.HasExited) {
-        throw 'Nová verze se ihned po spuštění ukončila.'
-    }
-
-    Remove-Item -LiteralPath $stageDirectory -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -LiteralPath $ZipPath -Force -ErrorAction SilentlyContinue
-}
-catch {
-    $failureMessage = $_.Exception.Message
-    try {
-        if ($backupReady -and (Test-Path -LiteralPath $backupDirectory)) {
-            foreach ($relative in $copiedPaths) {
-                if (-not $originalFiles.ContainsKey($relative)) {
-                    $newPath = Join-Path $TargetDirectory $relative
-                    if (Test-Path -LiteralPath $newPath) {
-                        Remove-Item -LiteralPath $newPath -Force -ErrorAction SilentlyContinue
-                    }
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $archive = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
+        try {
+            $stagePrefix = [IO.Path]::GetFullPath($stageDirectory).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
+            foreach ($entry in $archive.Entries) {
+                if ([string]::IsNullOrWhiteSpace($entry.FullName)) { continue }
+                $destination = [IO.Path]::GetFullPath((Join-Path $stageDirectory $entry.FullName))
+                if (-not $destination.StartsWith($stagePrefix, [StringComparison]::OrdinalIgnoreCase)) {
+                    throw 'Balíček obsahuje neplatnou cestu. Aktualizace byla zastavena.'
                 }
             }
-
-            $backupFiles = @(Get-ChildItem -LiteralPath $backupDirectory -File -Recurse -Force)
-            foreach ($file in $backupFiles) {
-                $relative = [IO.Path]::GetRelativePath($backupDirectory, $file.FullName)
-                $destination = Join-Path $TargetDirectory $relative
-                New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
-                Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
-            }
         }
+        finally {
+            $archive.Dispose()
+        }
+
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($ZipPath, $stageDirectory)
+
+        $newExecutable = Join-Path $stageDirectory 'GasbynOptimizer.exe'
+        if (Test-Path -LiteralPath $newExecutable) {
+            $sourceDirectory = $stageDirectory
+        }
+        else {
+            $foundExe = Get-ChildItem -LiteralPath $stageDirectory -Filter 'GasbynOptimizer.exe' -File -Recurse | Select-Object -First 1
+            if ($null -eq $foundExe) {
+                throw 'Stažený balíček neobsahuje GasbynOptimizer.exe.'
+            }
+            $sourceDirectory = $foundExe.DirectoryName
+        }
+
+        if (Test-Path -LiteralPath $backupDirectory) {
+            Remove-Item -LiteralPath $backupDirectory -Recurse -Force
+        }
+        New-Item -ItemType Directory -Path $backupDirectory -Force | Out-Null
+
+        $oldFiles = @(Get-ChildItem -LiteralPath $TargetDirectory -File -Recurse -Force)
+        foreach ($file in $oldFiles) {
+            $relative = [IO.Path]::GetRelativePath($TargetDirectory, $file.FullName)
+            $originalFiles[$relative] = $true
+            $backupPath = Join-Path $backupDirectory $relative
+            New-Item -ItemType Directory -Path (Split-Path -Parent $backupPath) -Force | Out-Null
+            Copy-Item -LiteralPath $file.FullName -Destination $backupPath -Force
+        }
+        $backupReady = $true
+
+        $newFiles = @(Get-ChildItem -LiteralPath $sourceDirectory -File -Recurse -Force)
+        if ($newFiles.Count -eq 0) { throw 'Balíček aktualizace je prázdný.' }
+
+        foreach ($file in $newFiles) {
+            $relative = [IO.Path]::GetRelativePath($sourceDirectory, $file.FullName)
+            $copiedPaths += $relative
+            $destination = Join-Path $TargetDirectory $relative
+            New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+            Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
+        }
+
+        if (-not (Test-Path -LiteralPath $ExecutablePath)) {
+            throw 'Po aktualizaci nebyl nalezen spustitelný soubor.'
+        }
+
+        $newProcess = Start-Process -FilePath $ExecutablePath -WorkingDirectory $TargetDirectory -PassThru
+        Start-Sleep -Seconds 2
+        if ($newProcess.HasExited) {
+            throw 'Nová verze se ihned po spuštění ukončila.'
+        }
+
+        Remove-Item -LiteralPath $stageDirectory -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $ZipPath -Force -ErrorAction SilentlyContinue
     }
     catch {
-        $failureMessage += ([Environment]::NewLine + 'Obnova původních souborů také narazila na chybu: ' + $_.Exception.Message)
-    }
+        $failureMessage = $_.Exception.Message
+        try {
+            if ($backupReady -and (Test-Path -LiteralPath $backupDirectory)) {
+                foreach ($relative in $copiedPaths) {
+                    if (-not $originalFiles.ContainsKey($relative)) {
+                        $newPath = Join-Path $TargetDirectory $relative
+                        if (Test-Path -LiteralPath $newPath) {
+                            Remove-Item -LiteralPath $newPath -Force -ErrorAction SilentlyContinue
+                        }
+                    }
+                }
 
-    if (-not (Get-Process -Id $ParentProcessId -ErrorAction SilentlyContinue)) {
-        try { Start-Process -FilePath $ExecutablePath -WorkingDirectory $TargetDirectory | Out-Null } catch { }
-    }
+                $backupFiles = @(Get-ChildItem -LiteralPath $backupDirectory -File -Recurse -Force)
+                foreach ($file in $backupFiles) {
+                    $relative = [IO.Path]::GetRelativePath($backupDirectory, $file.FullName)
+                    $destination = Join-Path $TargetDirectory $relative
+                    New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+                    Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
+                }
+            }
+        }
+        catch {
+            $failureMessage += ([Environment]::NewLine + 'Obnova původních souborů také narazila na chybu: ' + $_.Exception.Message)
+        }
 
-    try {
-        Add-Type -AssemblyName PresentationFramework
-        [System.Windows.MessageBox]::Show(
-            ('Aktualizaci se nepodařilo dokončit.' + [Environment]::NewLine + [Environment]::NewLine + $failureMessage + [Environment]::NewLine + [Environment]::NewLine + 'Pokud už začala výměna souborů, aktualizátor se pokusil obnovit zálohu.'),
-            'Gasbyn Optimizer — aktualizace',
-            [System.Windows.MessageBoxButton]::OK,
-            [System.Windows.MessageBoxImage]::Error
-        ) | Out-Null
+        if (-not (Get-Process -Id $ParentProcessId -ErrorAction SilentlyContinue)) {
+            try { Start-Process -FilePath $ExecutablePath -WorkingDirectory $TargetDirectory | Out-Null } catch { }
+        }
+
+        try {
+            Add-Type -AssemblyName PresentationFramework
+            [System.Windows.MessageBox]::Show(
+                ('Aktualizaci se nepodařilo dokončit.' + [Environment]::NewLine + [Environment]::NewLine + $failureMessage + [Environment]::NewLine + [Environment]::NewLine + 'Pokud už začala výměna souborů, aktualizátor se pokusil obnovit zálohu.'),
+                'Gasbyn Optimizer — aktualizace',
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Error
+            ) | Out-Null
+        }
+        catch { }
+        exit 1
     }
-    catch { }
-    exit 1
-}
 """;
 }
