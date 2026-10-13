@@ -8,7 +8,6 @@ using System.Windows.Media.Animation;
 using GasbynOptimizer.Core;
 using GasbynOptimizer.Models;
 using GasbynOptimizer.Tweaks.Gaming;
-using GasbynOptimizer.Optimization;
 
 namespace GasbynOptimizer;
 
@@ -64,10 +63,8 @@ public partial class MainWindow
         switch (page)
         {
             case "Tweaks":
-                AddTweakCard("Windows Game Mode", "Zapnutí herního režimu Windows. Původní stav se ukládá před změnou.", "FREE", "Manage Game Mode");
-                AddInfoCard("GAMING OPTIMIZER", "Zobrazí audit Game Mode, HAGS, power planu a Fortnite konfigurace bez automatické změny.", "GAMING OPTIMIZER");
-                AddInfoCard("High Performance Power Plan", "Zkontroluj a případně přepni plán napájení. Použij Full Optimizer pro reverzibilní přepínač.", "Power Plan");
-                AddInfoCard("Hardware Accelerated GPU Scheduling", "Zkontroluj aktuální stav HAGS.", "GPU Scheduling");
+                BuildTweaksWorkspace();
+                AddInfoCard("Hardware Accelerated GPU Scheduling", "Zkontroluj aktuální stav HAGS. Změna HAGS není automaticky aplikována, protože závisí na GPU, ovladači a verzi Windows.", "GPU Scheduling");
                 break;
             case "Cleanup":
                 AddInfoCard("User TEMP", "Zkontroluje a nabídne odstranění dočasných souborů aktuálního uživatele.", "User TEMP");
@@ -90,12 +87,12 @@ public partial class MainWindow
                 AddInfoCard("Installed Applications", "Zobrazí nainstalované aplikace a dostupné akce správce aplikací.", "Installed Applications");
                 break;
             case "Gaming":
-                AddInfoCard("GAMING OPTIMIZER", "Zkontroluje nastavení herního režimu, HAGS, power planu a Fortnite.", "GAMING OPTIMIZER");
+                AddInfoCard("GAMING AUDIT", "Zkontroluje Game Mode, HAGS, plán napájení a Fortnite. Audit nic nemění.", "GAMING OPTIMIZER");
+                AddInfoCard("Windows Gaming Tweaks", "Otevře vratné herní přepínače: Game Mode a Game DVR jsou nyní v kategorii Tweaks.", "Open Tweaks");
                 AddInfoCard("Windows Gaming Services", "Zobrazí stav souvisejících herních služeb; nic nevypíná.", "Windows Gaming Services");
                 AddInfoCard("Fullscreen Optimization Check", "Zobrazí aktuální stav relevantního nastavení.", "Fullscreen Optimization Check");
                 AddInfoCard("Fortnite Optimization Profile", "Zkontroluje, zda existuje konfigurace Fortnite.", "Fortnite Optimization Profile");
                 AddInfoCard("NVIDIA Gaming Profile", "Zkontroluje dostupné lokální NVIDIA profilové soubory.", "NVIDIA Gaming Profile");
-                AddInfoCard("Full Optimizer", "Reverzibilní přepínače, bod obnovení a FPS testy.", "Open Full Optimizer");
                 break;
             case "Network":
                 AddInfoCard("Connection Info", "Zobrazí aktivní síťové adaptéry, rychlost linky a IPv4 adresy.", "Connection Info");
@@ -109,13 +106,10 @@ public partial class MainWindow
             case "Benchmark":
                 AddInfoCard("CPU Quick Test", "Krátký výpočetní test CPU pro srovnání ve stejných podmínkách.", "CPU Quick Test");
                 AddInfoCard("Before / After", "Zobrazí tipy pro porovnání před a po změně.", "Before / After");
-                AddInfoCard("FPS Tester", "PresentMon a historie posledních 15 testů jsou ve Full Optimizeru.", "Open Full Optimizer");
+                BuildBenchmarkWorkspace();
                 break;
             case "Backup":
-                AddInfoCard("Tweak Backups", "Otevře seznam dostupných lokálních záloh.", "Tweak Backups");
-                AddInfoCard("Restore All", "Zobrazí rozsah a bezpečný postup obnovení.", "Restore All");
-                AddInfoCard("Change History", "Zobrazí historii zaznamenaných změn.", "Change History");
-                AddInfoCard("System Restore Point", "Vytvoř bod obnovení ve Full Optimizeru před změnou nastavení.", "Open Full Optimizer");
+                BuildBackupWorkspace();
                 break;
             case "PC Info":
                 LoadSystemInfo();
@@ -126,10 +120,10 @@ public partial class MainWindow
             case "Settings":
                 AddSettingsCard();
                 AddInfoCard("Safe-by-default", "Optimizer nepřepíná automaticky služby, Defender, bootovací časovače ani IPv6. Každý tweak musí mít jasný přínos, kontrolu stavu a návratovou cestu.", "About");
-                AddInfoCard("Open Full Optimizer", "Otevře reverzibilní přepínače, bod obnovení a FPS historii.", "Open Full Optimizer");
+                AddInfoCard("Optimization workspace", "Vratné optimalizace jsou v Tweaks, měření FPS v Benchmark a bod obnovení v Backup.", "Open Tweaks");
                 break;
             default:
-                AddInfoCard("Open Full Optimizer", "Reverzibilní optimalizace a FPS testy.", "Open Full Optimizer");
+                AddInfoCard("Open Tweaks", "Vratné systémové optimalizace a jejich stav.", "Open Tweaks");
                 break;
         }
         AnimateContent();
