@@ -8,3 +8,5 @@
 
 ## Updating
 From B5, launch Gasbyn Optimizer and click **AKTUALIZOVAT** when B6 is detected.
+
+This release packages the Windows PowerShell 5.1 compatibility fix for the in-app updater.
