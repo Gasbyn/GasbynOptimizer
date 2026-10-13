@@ -122,8 +122,9 @@ public partial class MainWindow
                 AddInfoCard("Refresh", "Znovu načte systémové informace.", "Refresh");
                 break;
             case "Settings":
+                AddSettingsCard();
                 AddInfoCard("Safe-by-default", "Optimizer nepřepíná automaticky služby, Defender, bootovací časovače ani IPv6. Každý tweak musí mít jasný přínos, kontrolu stavu a návratovou cestu.", "About");
-                AddInfoCard("Open Full Optimizer", "Otevře přepínače, bod obnovení a FPS historii.", "Open Full Optimizer");
+                AddInfoCard("Open Full Optimizer", "Otevře reverzibilní přepínače, bod obnovení a FPS historii.", "Open Full Optimizer");
                 break;
             default:
                 AddInfoCard("Open Full Optimizer", "Reverzibilní optimalizace a FPS testy.", "Open Full Optimizer");
@@ -133,6 +134,14 @@ public partial class MainWindow
 
     private void LoadSystemInfo()
     {
+        if (_hardwareInventory is not null)
+        {
+            CpuValue.Text = _hardwareInventory.Cpu;
+            GpuValue.Text = _hardwareInventory.Gpu;
+            RamValue.Text = _hardwareInventory.Memory;
+            return;
+        }
+
         try
         {
             using var cpu = new ManagementObjectSearcher("SELECT Name FROM Win32_Processor");
