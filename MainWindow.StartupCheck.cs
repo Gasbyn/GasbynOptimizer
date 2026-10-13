@@ -310,5 +310,6 @@ public partial class MainWindow
     private void StartupScanContinue_Click(object sender, RoutedEventArgs e)
     {
         StartupScanOverlay.Visibility = Visibility.Collapsed;
+        CheckWorkspaceDriftOnStartup();
     }
 }
