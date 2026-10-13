@@ -127,7 +127,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ScrollBar">
                         <Grid x:Name="ScrollTrackHost" Width="6" Background="Transparent">
-                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                            <Track x:Name="PART_Track" Orientation="{TemplateBinding Orientation}" IsDirectionReversed="True">
                                 <Track.DecreaseRepeatButton><RepeatButton Command="ScrollBar.LineUpCommand" Background="Transparent" BorderThickness="0" IsTabStop="False" Focusable="False"/></Track.DecreaseRepeatButton>
                                 <Track.Thumb>
                                     <Thumb Margin="0,1" Background="#34373F" BorderThickness="0" Cursor="Hand">
