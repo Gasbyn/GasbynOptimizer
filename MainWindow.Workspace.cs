@@ -44,13 +44,13 @@ public partial class MainWindow
                 "Windows Game Mode",
                 "Povolí herní režim Windows. Jeho přínos se liší podle PC a hry; FPS není garantováno.",
                 "game-mode",
-                "ON: uloží původní hodnoty a nastaví AutoGameModeEnabled=1 a AllowAutoGameMode=1. OFF: obnoví původní hodnoty včetně původně neexistujících hodnot.");
+                "ON: uloží původní hodnoty a nastaví AutoGameModeEnabled=1 a AllowAutoGameMode=1. OFF: obnoví původní hodnoty včetně původně neexistujících hodnot.", "DOPORUČENO", "FPS", "GAMING");
 
             AddWorkspaceTweakCard(
                 "Vypnout Game DVR na pozadí",
                 "Omezí zachytávání a nahrávání Windows na pozadí. Může vypnout nahrávání klipů přes Xbox Game Bar.",
                 "game-dvr",
-                "ON: nastaví GameDVR_Enabled=0 a AppCaptureEnabled=0. OFF: vrátí přesné původní hodnoty.");
+                "ON: nastaví GameDVR_Enabled=0 a AppCaptureEnabled=0. OFF: vrátí přesné původní hodnoty.", "PODMÍNĚNĚ", "FPS", "ZÁZNAMY");
 
             _ = RefreshWorkspaceTweakStatesAsync();
             return;
@@ -60,25 +60,25 @@ public partial class MainWindow
             "Výkonové vizuální efekty",
             "Přepne Windows do režimu nejlepšího výkonu. Některé animace a vizuální efekty se mohou změnit.",
             "visual-effects",
-            "ON: nastaví VisualFXSetting=2. OFF: obnoví původní režim nebo hodnotu odstraní, pokud původně nebyla nastavena.");
+            "ON: nastaví VisualFXSetting=2. OFF: obnoví původní režim nebo hodnotu odstraní, pokud původně nebyla nastavena.", "VOLITELNÉ", "VZHLED", "ODEZVA");
 
         AddWorkspaceTweakCard(
             "High Performance power plan",
             "Aktivuje vestavěný plán Vysoký výkon. Může zvýšit spotřebu energie a teploty.",
             "power-plan",
-            "ON: spustí powercfg.exe /setactive SCHEME_MIN. OFF: aktivuje původní ID plánu uložené před změnou.");
+            "ON: spustí powercfg.exe /setactive SCHEME_MIN. OFF: aktivuje původní ID plánu uložené před změnou.", "POKROČILÉ", "VÝKON", "SPOTŘEBA");
 
         AddWorkspaceTweakCard(
             "Vypnout efekty průhlednosti",
             "Vypne průhledné prvky Windows. Jde hlavně o změnu vzhledu, nikoliv o garantované herní FPS.",
             "transparency",
-            "ON: nastaví EnableTransparency=0. OFF: obnoví původní hodnotu nebo odstraní novou hodnotu, pokud dříve neexistovala.");
+            "ON: nastaví EnableTransparency=0. OFF: obnoví původní hodnotu nebo odstraní novou hodnotu, pokud dříve neexistovala.", "VOLITELNÉ", "VZHLED");
 
         AddWorkspaceTweakCard(
             "Rychlejší nabídky a animace oken",
             "Zkrátí prodlevu nabídek a vypne animaci minimalizace/maximalizace. Změní chování uživatelského rozhraní.",
             "fast-menus",
-            "ON: nastaví MenuShowDelay=100 a MinAnimate=0. OFF: obnoví původní hodnoty.");
+            "ON: nastaví MenuShowDelay=100 a MinAnimate=0. OFF: obnoví původní hodnoty.", "VOLITELNÉ", "ODEZVA", "UI");
 
         var hw = _hardwareInventory;
         var advanced = OptimizerPreferencesStore.Load().AdvancedRecommendations;
@@ -128,8 +128,9 @@ public partial class MainWindow
         SecondaryContent.Children.Add(card);
     }
 
-    private void AddWorkspaceTweakCard(string title, string description, string id, string tooltip)
+    private void AddWorkspaceTweakCard(string title, string description, string id, string tooltip, params string[] badges)
     {
+        var detailForHover = BuildTweakToolTip(title, description, tooltip);
         var card = new Border
         {
             Background = (Brush)FindResource("Panel"),
@@ -138,9 +139,19 @@ public partial class MainWindow
             CornerRadius = new CornerRadius(14),
             Padding = new Thickness(18),
             Margin = new Thickness(0, 0, 0, 12),
-            ToolTip = tooltip
+            ToolTip = detailForHover
         };
         ToolTipService.SetShowDuration(card, 30000);
+        ToolTipService.SetInitialShowDelay(card, 400);
+
+        card.MouseEnter += (_, _) =>
+        {
+            card.BorderBrush = new SolidColorBrush(Color.FromRgb(91, 54, 30));
+        };
+        card.MouseLeave += (_, _) =>
+        {
+            card.BorderBrush = (Brush)FindResource("Border");
+        };
 
         var root = new Grid();
         root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -150,11 +161,10 @@ public partial class MainWindow
         text.Children.Add(new TextBlock
         {
             Text = title,
-            FontSize = 18,
+            FontSize = 19,
             FontWeight = FontWeights.Bold,
             FontFamily = (FontFamily)FindResource("DisplayFont"),
-            Foreground = (Brush)FindResource("OrangeLight"),
-            ToolTip = tooltip
+            Foreground = (Brush)FindResource("OrangeLight")
         });
         text.Children.Add(new TextBlock
         {
@@ -162,16 +172,22 @@ public partial class MainWindow
             FontSize = 12,
             Foreground = (Brush)FindResource("TextMuted"),
             TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, 5, 0, 0),
-            ToolTip = tooltip
+            Margin = new Thickness(0, 5, 0, 0)
         });
+
+        var badgePanel = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
+        foreach (var badge in badges.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase))
+            badgePanel.Children.Add(CreateTweakBadge(badge));
+        if (badgePanel.Children.Count > 0)
+            text.Children.Add(badgePanel);
+
         var status = new TextBlock
         {
             Text = "Načítám aktuální stav…",
             FontSize = 11,
             Foreground = (Brush)FindResource("TextDim"),
             TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, 9, 0, 0)
+            Margin = new Thickness(0, 10, 0, 0)
         };
         _workspaceSwitchStatuses[id] = status;
         text.Children.Add(status);
@@ -184,8 +200,10 @@ public partial class MainWindow
             IsChecked = false,
             VerticalAlignment = VerticalAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Right,
-            ToolTip = tooltip
+            ToolTip = BuildTweakToolTip(title, description, tooltip)
         };
+        ToolTipService.SetShowDuration(toggle, 30000);
+        ToolTipService.SetInitialShowDelay(toggle, 400);
         System.Windows.Automation.AutomationProperties.SetName(toggle, title);
         toggle.Checked += async (_, _) =>
         {
@@ -202,6 +220,158 @@ public partial class MainWindow
         root.Children.Add(toggle);
         card.Child = root;
         SecondaryContent.Children.Add(card);
+    }
+
+    private Border CreateTweakBadge(string label)
+    {
+        var palette = label.Trim().ToUpperInvariant() switch
+        {
+            "DOPORUČENO" => ("#143126", "#285D45", "#67E0A8"),
+            "PODMÍNĚNĚ" => ("#302516", "#644824", "#FFD08A"),
+            "EXPERIMENTÁLNÍ" => ("#351C18", "#6D342A", "#FF9B87"),
+            "POKROČILÉ" => ("#271D3A", "#4D3676", "#D0B5FF"),
+            "NOVÉ" => ("#152B3D", "#2D5575", "#94D0FF"),
+            "FPS" or "GAMING" or "VÝKON" => ("#21150E", "#4A2814", "#FF9A52"),
+            "PING" or "INTERNET" or "DELAY" or "ODEZVA" or "SÍŤ" => ("#122434", "#2A4F6A", "#91CFFF"),
+            "SPOTŘEBA" => ("#2D2116", "#55402A", "#DDBB90"),
+            _ => ("#1A1D23", "#343842", "#B8BDC6")
+        };
+
+        var badge = new Border
+        {
+            Background = WorkspaceBrush(palette.Item1),
+            BorderBrush = WorkspaceBrush(palette.Item2),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(5),
+            Padding = new Thickness(7, 3, 7, 3),
+            Margin = new Thickness(0, 0, 6, 5),
+            VerticalAlignment = VerticalAlignment.Center,
+            Child = new TextBlock
+            {
+                Text = label.Trim().ToUpperInvariant(),
+                FontSize = 9,
+                FontWeight = FontWeights.Bold,
+                Foreground = WorkspaceBrush(palette.Item3),
+                TextOptions.TextFormattingMode = TextFormattingMode.Display
+            }
+        };
+        badge.ToolTip = label.Trim().ToUpperInvariant() switch
+        {
+            "DOPORUČENO" => "Obecně rozumná volba; skutečný přínos závisí na PC a použití.",
+            "PODMÍNĚNĚ" => "Zapni pouze tehdy, když ti nevadí uvedené vedlejší účinky.",
+            "EXPERIMENTÁLNÍ" => "Může mít nečekané výsledky. Používej pouze po přečtení detailů.",
+            "POKROČILÉ" => "Změna může mít vedlejší dopady; před zapnutím zkontroluj detaily.",
+            "NOVÉ" => "Nově přidaná funkce v Gasbyn Optimizeru.",
+            "FPS" => "Primární cíl: herní snímková frekvence. Zvýšení FPS není zaručeno.",
+            "PING" or "INTERNET" or "DELAY" or "ODEZVA" or "SÍŤ" => "Primární cíl: síťová odezva nebo diagnostika spojení; změna pingu není zaručena.",
+            "VZHLED" or "UI" => "Primární dopad: vzhled nebo odezva rozhraní Windows.",
+            "SPOTŘEBA" => "Může ovlivnit spotřebu energie a teploty.",
+            "ZÁZNAMY" => "Může ovlivnit nahrávání či zachytávání herních klipů.",
+            _ => "Štítek označuje hlavní oblast nebo možný dopad tohoto tweaku."
+        };
+        return badge;
+    }
+
+    private ToolTip BuildTweakToolTip(string title, string description, string details)
+    {
+        var onStart = details.IndexOf("ON:", StringComparison.OrdinalIgnoreCase);
+        var offStart = details.IndexOf("OFF:", StringComparison.OrdinalIgnoreCase);
+
+        var onDescription = onStart >= 0
+            ? details.Substring(onStart + 3, (offStart > onStart ? offStart : details.Length) - (onStart + 3)).Trim().TrimEnd('.', ' ')
+            : details.Trim();
+        var offDescription = offStart >= 0
+            ? details[(offStart + 4)..].Trim().TrimEnd('.', ' ')
+            : "Přepnutí na OFF obnoví původní uložené nastavení.";
+
+        var tooltipContent = new StackPanel { Width = 360 };
+        tooltipContent.Children.Add(new TextBlock
+        {
+            Text = "DETAILNÍ POPIS",
+            FontSize = 9,
+            FontWeight = FontWeights.Bold,
+            Foreground = (Brush)FindResource("Orange"),
+            Margin = new Thickness(0, 0, 0, 5)
+        });
+        tooltipContent.Children.Add(new TextBlock
+        {
+            Text = title,
+            FontSize = 17,
+            FontWeight = FontWeights.Bold,
+            FontFamily = (FontFamily)FindResource("DisplayFont"),
+            Foreground = Brushes.White,
+            TextWrapping = TextWrapping.Wrap
+        });
+        tooltipContent.Children.Add(new TextBlock
+        {
+            Text = description,
+            FontSize = 11,
+            Foreground = WorkspaceBrush("#BEC3CC"),
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 6, 0, 10)
+        });
+        tooltipContent.Children.Add(new Border
+        {
+            Height = 1,
+            Background = WorkspaceBrush("#343842"),
+            Margin = new Thickness(0, 0, 0, 10)
+        });
+        tooltipContent.Children.Add(BuildTweakStateRow("ON", onDescription, "#48D597", "#143126"));
+        tooltipContent.Children.Add(BuildTweakStateRow("OFF", offDescription, "#FFB36B", "#302116"));
+
+        return new ToolTip
+        {
+            Content = new Border
+            {
+                Background = WorkspaceBrush("#111318"),
+                BorderBrush = WorkspaceBrush("#454A54"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(14),
+                Child = tooltipContent
+            },
+            Background = Brushes.Transparent,
+            BorderBrush = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(0),
+            HasDropShadow = true,
+            Placement = PlacementMode.Mouse
+        };
+    }
+
+    private FrameworkElement BuildTweakStateRow(string label, string description, string accentHex, string backgroundHex)
+    {
+        var row = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        row.Children.Add(new Border
+        {
+            Background = WorkspaceBrush(backgroundHex),
+            BorderBrush = WorkspaceBrush(accentHex),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(7, 3, 7, 3),
+            Margin = new Thickness(0, 0, 9, 0),
+            VerticalAlignment = VerticalAlignment.Top,
+            Child = new TextBlock
+            {
+                Text = label,
+                FontSize = 10,
+                FontWeight = FontWeights.Bold,
+                Foreground = WorkspaceBrush(accentHex)
+            }
+        });
+        row.Children.Add(new TextBlock
+        {
+            Text = description,
+            FontSize = 11,
+            Foreground = WorkspaceBrush("#D1D5DB"),
+            TextWrapping = TextWrapping.Wrap,
+            MaxWidth = 295
+        });
+        return row;
     }
 
     private async Task RefreshWorkspaceTweakStatesAsync()
