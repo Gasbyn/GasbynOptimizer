@@ -37,7 +37,7 @@ jobs:
           }
 
       - name: Publish self-contained Windows app
-        run: dotnet publish GasbynOptimizer.csproj --configuration Release --runtime win-x64 --self-contained true --output publish
+        run: dotnet publish GasbynOptimizer.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:IncludeAllContentForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false --output publish
 
       - name: Upload ready-to-run app
         uses: actions/upload-artifact@v4
@@ -47,10 +47,20 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Package release ZIP
+      - name: Prepare standalone EXE and updater ZIP
         if: startsWith(github.ref, 'refs/heads/release/')
         shell: pwsh
-        run: Compress-Archive -Path publish\* -DestinationPath GasbynOptimizer-win-x64.zip -Force
+        run: |
+          $exe = Join-Path $env:GITHUB_WORKSPACE "publish\GasbynOptimizer.exe"
+          if (-not (Test-Path -LiteralPath $exe)) {
+            throw "PublishSingleFile did not produce publish\GasbynOptimizer.exe."
+          }
+          Copy-Item -LiteralPath $exe -Destination (Join-Path $env:GITHUB_WORKSPACE "GasbynOptimizer.exe") -Force
+          Compress-Archive -LiteralPath $exe -DestinationPath (Join-Path $env:GITHUB_WORKSPACE "GasbynOptimizer-win-x64.zip") -Force
+          $otherFiles = @(Get-ChildItem -LiteralPath "publish" -File | Where-Object { $_.Name -ne "GasbynOptimizer.exe" })
+          if ($otherFiles.Count -gt 0) {
+            Write-Host "The standalone release asset is GasbynOptimizer.exe; other publish files are not included in the user download."
+          }
 
       - name: Derive release tag
         if: startsWith(github.ref, 'refs/heads/release/')
@@ -89,8 +99,11 @@ jobs:
             - Automatic in-app updates from official GitHub Releases.
             - Downloaded packages are verified against GitHub's SHA-256 digest.
             - Updates are applied by a separate process after the app closes, with a backup and rollback attempt if replacing files fails.
+            - Download GasbynOptimizer.exe for a one-file app; the ZIP asset is kept for the built-in updater.
           target_commitish: ${{ github.sha }}
-          files: GasbynOptimizer-win-x64.zip
+          files: |
+            GasbynOptimizer.exe
+            GasbynOptimizer-win-x64.zip
           overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
