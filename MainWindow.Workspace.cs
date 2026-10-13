@@ -24,6 +24,7 @@ public partial class MainWindow
     private static readonly string WorkspacePresentMonPath = Path.Combine(WorkspaceDataDirectory, "presentmon-path.txt");
 
     private readonly Dictionary<string, ToggleButton> _workspaceSwitches = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<string> _workspaceDriftedTweaks = new();
     private readonly Dictionary<string, TextBlock> _workspaceSwitchStatuses = new(StringComparer.OrdinalIgnoreCase);
     private bool _loadingWorkspaceSwitches;
     private bool _workspaceTweakBusy;
@@ -52,9 +53,33 @@ public partial class MainWindow
                 "game-dvr",
                 "ON: nastaví GameDVR_Enabled=0 a AppCaptureEnabled=0. OFF: vrátí přesné původní hodnoty.", "PODMÍNĚNĚ", "FPS", "ZÁZNAMY");
 
+            AddWorkspaceTweakCard(
+                "Vypnout akceleraci myši",
+                "Vypne Windows pointer acceleration (Enhance pointer precision). Může pomoct se stálým pohybem myši; osobní preference se liší.",
+                "mouse-acceleration",
+                "ON: nastaví MouseSpeed, MouseThreshold1 a MouseThreshold2 na 0. OFF: obnoví původní hodnoty.", "VOLITELNÉ", "GAMING", "AIM");
+
+            AddWorkspaceTweakCard(
+                "Fortnite – preferovat výkonnou GPU",
+                "Požádá Windows, aby pro Fortnite preferoval výkonnou grafiku. Na PC s jedinou GPU se nemusí projevit.",
+                "gpu-preference",
+                "ON: nastaví uživatelskou DirectX preferenci GpuPreference=2 pro Fortnite. OFF: obnoví původní hodnotu. Pokud detekce GPU selže, tweak je označen jako nepodporovaný; pokročilý režim dovolí ruční obejití upozornění.", "PODMÍNĚNĚ", "FPS", "POKROČILÉ");
+
+            AddWorkspaceTweakCard(
+                "Vypnout Fullscreen Optimizations pro Fortnite",
+                "Nastaví kompatibilitní volbu Windows pro Fortnite. Účinek závisí na cestě ke skutečné instalaci hry; po změně hru restartuj.",
+                "fullscreen-optimizations",
+                "ON: nastaví DISABLEDXMAXIMIZEDWINDOWEDMODE pro nalezený Fortnite executable. OFF: obnoví původní hodnotu. Není-li executable nalezen, modul je označen jako nepodporovaný.", "POKROČILÉ", "FORTNITE");
+
             _ = RefreshWorkspaceTweakStatesAsync();
             return;
         }
+
+        AddWorkspaceTweakCard(
+            "Hardware-accelerated GPU scheduling (HAGS)",
+            "Zapne HAGS ve Windows. Podpora a přínos závisí na GPU, ovladači a verzi Windows; po změně může být nutný restart.",
+            "hags",
+            "ON: nastaví HwSchMode=2 v HKLM. OFF: obnoví původní hodnotu. Pokud ovladač nebo Windows tuto funkci nepodporuje, nemusí mít změna účinek.", "POKROČILÉ", "GPU", "RESTART");
 
         AddWorkspaceTweakCard(
             "Výkonové vizuální efekty",
@@ -66,7 +91,7 @@ public partial class MainWindow
             "High Performance power plan",
             "Aktivuje vestavěný plán Vysoký výkon. Může zvýšit spotřebu energie a teploty.",
             "power-plan",
-            "ON: spustí powercfg.exe /setactive SCHEME_MIN. OFF: aktivuje původní ID plánu uložené před změnou.", "POKROČILÉ", "VÝKON", "SPOTŘEBA");
+            "ON: aktivuje plán napájení Vysoký výkon. OFF: aktivuje původní ID plánu uložené před změnou. Vyšší spotřeba a teploty jsou možné.", "POKROČILÉ", "VÝKON", "SPOTŘEBA");
 
         AddWorkspaceTweakCard(
             "Vypnout efekty průhlednosti",
@@ -80,6 +105,36 @@ public partial class MainWindow
             "fast-menus",
             "ON: nastaví MenuShowDelay=100 a MinAnimate=0. OFF: obnoví původní hodnoty.", "VOLITELNÉ", "ODEZVA", "UI");
 
+        AddWorkspaceTweakCard(
+            "Zkrátit odklad spouštění aplikací",
+            "Nastaví uživatelský odklad při spouštění aplikací na 0 ms. Nezrychluje samotné aplikace a přínos závisí na systému.",
+            "startup-delay",
+            "ON: nastaví StartupDelayInMSec=0 pro aktuálního uživatele. OFF: obnoví původní hodnotu.", "VOLITELNÉ", "STARTUP");
+
+        AddWorkspaceTweakCard(
+            "Vypnout animace hlavního panelu",
+            "Vypne animace hlavního panelu Windows. Jde hlavně o vizuální změnu; vyšší FPS ve hrách není garantováno.",
+            "taskbar-animations",
+            "ON: nastaví TaskbarAnimations=0. OFF: obnoví původní hodnotu.", "VOLITELNÉ", "UI", "ODEZVA");
+
+        AddWorkspaceTweakCard(
+            "Skrýt tlačítko Widgets",
+            "Skryje tlačítko Widgetů na hlavním panelu. Samotná funkce Widgets se tím neodinstaluje.",
+            "widgets",
+            "ON: nastaví TaskbarDa=0 pro aktuálního uživatele. OFF: obnoví původní hodnotu.", "VOLITELNÉ", "UI");
+
+        AddWorkspaceTweakCard(
+            "Omezit webové návrhy ve vyhledávání",
+            "Vypne návrhy z webu v hledání Windows pro aktuálního uživatele. Dostupnost nastavení závisí na edici a verzi Windows.",
+            "search-suggestions",
+            "ON: nastaví DisableSearchBoxSuggestions=1 v uživatelských zásadách Průzkumníka. OFF: obnoví původní hodnotu.", "SOUKROMÍ", "SEARCH");
+
+        AddWorkspaceTweakCard(
+            "Omezit reklamní tipy a doporučení Windows",
+            "Vypne několik uživatelských návrhů, reklamní ID a doporučený obsah Windows. Nejde o měřitelnou FPS optimalizaci.",
+            "recommendations",
+            "ON: nastaví vypnutí vybraných doporučení a reklamního ID pro aktuálního uživatele. OFF: obnoví všechny původní hodnoty.", "SOUKROMÍ", "UI");
+
         var hw = _hardwareInventory;
         var advanced = OptimizerPreferencesStore.Load().AdvancedRecommendations;
         var note = hw is null
@@ -88,6 +143,21 @@ public partial class MainWindow
         AddInfoCard("HARDWARE-AWARE DOPORUČENÍ", note, "Hardware Detection");
         AddAmdCompatibilityInfo(hw, advanced);
         _ = RefreshWorkspaceTweakStatesAsync();
+    }
+
+    private bool IsWorkspaceTweakIncompatible(string id)
+    {
+        if (string.Equals(id, "gpu-preference", StringComparison.OrdinalIgnoreCase))
+        {
+            var gpu = _hardwareInventory?.Gpu;
+            return string.IsNullOrWhiteSpace(gpu) ||
+                   gpu.Contains("GPU nedostupné", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (string.Equals(id, "fullscreen-optimizations", StringComparison.OrdinalIgnoreCase))
+            return !File.Exists(FindFortniteExecutablePath());
+
+        return false;
     }
 
     private void AddAmdCompatibilityInfo(GasbynOptimizer.Services.HardwareInventory? hardware, bool advanced)
@@ -130,7 +200,12 @@ public partial class MainWindow
 
     private void AddWorkspaceTweakCard(string title, string description, string id, string tooltip, params string[] badges)
     {
-        var detailForHover = BuildTweakToolTip(title, description, tooltip);
+        var incompatible = IsWorkspaceTweakIncompatible(id);
+        var advanced = OptimizerPreferencesStore.Load().AdvancedRecommendations;
+        var locked = incompatible && !advanced;
+        object detailForHover = locked
+            ? "🔒 Tato optimalizace není podporována na zjištěné konfiguraci. Zapni pokročilý režim v Settings, pokud ji chceš odemknout na vlastní odpovědnost."
+            : BuildTweakToolTip(title, description, tooltip);
         var card = new Border
         {
             Background = (Brush)FindResource("Panel"),
@@ -141,6 +216,7 @@ public partial class MainWindow
             Margin = new Thickness(0, 0, 0, 12),
             ToolTip = detailForHover
         };
+        card.Opacity = locked ? 0.48 : 1.0;
         ToolTipService.SetShowDuration(card, 30000);
         ToolTipService.SetInitialShowDelay(card, 400);
 
@@ -178,6 +254,10 @@ public partial class MainWindow
         var badgePanel = new WrapPanel { Margin = new Thickness(0, 10, 0, 0) };
         foreach (var badge in badges.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase))
             badgePanel.Children.Add(CreateTweakBadge(badge));
+        if (incompatible)
+            badgePanel.Children.Add(CreateTweakBadge(advanced ? "NEPODPOROVÁNO" : "NEKOMPATIBILNÍ"));
+        if (locked)
+            badgePanel.Children.Add(CreateTweakBadge("ZAMČENO"));
         if (badgePanel.Children.Count > 0)
             text.Children.Add(badgePanel);
 
@@ -194,13 +274,33 @@ public partial class MainWindow
         Grid.SetColumn(text, 0);
         root.Children.Add(text);
 
+        var switchPanel = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        if (locked)
+        {
+            var lockIcon = new TextBlock
+            {
+                Text = "🔒",
+                FontSize = 16,
+                Foreground = (Brush)FindResource("TextDim"),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 10, 0),
+                ToolTip = "Zamčeno — zapni pokročilý režim v Settings."
+            };
+            switchPanel.Children.Add(lockIcon);
+        }
+
         var toggle = new ToggleButton
         {
             Style = (Style)FindResource("SwitchToggleButton"),
             IsChecked = false,
+            IsEnabled = !locked,
             VerticalAlignment = VerticalAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Right,
-            ToolTip = BuildTweakToolTip(title, description, tooltip)
+            ToolTip = locked
+                ? "🔒 Nepodporováno na této konfiguraci. Pokročilý režim v Settings umožní obejít toto omezení."
+                : incompatible && advanced
+                    ? "NEPODPOROVÁNO — povoleno pouze díky pokročilému režimu. Změna může selhat nebo nemít účinek."
+                    : BuildTweakToolTip(title, description, tooltip)
         };
         ToolTipService.SetShowDuration(toggle, 30000);
         ToolTipService.SetInitialShowDelay(toggle, 400);
@@ -216,8 +316,9 @@ public partial class MainWindow
                 await ChangeWorkspaceTweakAsync(id, false, toggle, status);
         };
         _workspaceSwitches[id] = toggle;
-        Grid.SetColumn(toggle, 1);
-        root.Children.Add(toggle);
+        switchPanel.Children.Add(toggle);
+        Grid.SetColumn(switchPanel, 1);
+        root.Children.Add(switchPanel);
         card.Child = root;
         SecondaryContent.Children.Add(card);
     }
@@ -231,6 +332,10 @@ public partial class MainWindow
             "EXPERIMENTÁLNÍ" => ("#351C18", "#6D342A", "#FF9B87"),
             "POKROČILÉ" => ("#271D3A", "#4D3676", "#D0B5FF"),
             "NOVÉ" => ("#152B3D", "#2D5575", "#94D0FF"),
+            "NEKOMPATIBILNÍ" => ("#3B171B", "#812B34", "#FF7B86"),
+            "ZAMČENO" => ("#24262B", "#454952", "#A8ADB7"),
+            "SOUKROMÍ" => ("#1D2433", "#364B71", "#B7C9FF"),
+            "STARTUP" or "SEARCH" or "UI" or "AIM" or "MOUSE" => ("#1A1D23", "#343842", "#B8BDC6"),
             "FPS" or "GAMING" or "VÝKON" => ("#21150E", "#4A2814", "#FF9A52"),
             "PING" or "INTERNET" or "DELAY" or "ODEZVA" or "SÍŤ" => ("#122434", "#2A4F6A", "#91CFFF"),
             "SPOTŘEBA" => ("#2D2116", "#55402A", "#DDBB90"),
@@ -458,8 +563,17 @@ public partial class MainWindow
 
     private static string WorkspaceTweakName(string id) => id switch
     {
+        "hags" => "Hardware-accelerated GPU scheduling (HAGS)",
         "game-mode" => "Windows Game Mode",
         "game-dvr" => "Vypnout Game DVR na pozadí",
+        "mouse-acceleration" => "Vypnout akceleraci myši",
+        "gpu-preference" => "Fortnite – preferovat výkonnou GPU",
+        "fullscreen-optimizations" => "Vypnout Fullscreen Optimizations pro Fortnite",
+        "startup-delay" => "Zkrátit odklad spouštění aplikací",
+        "taskbar-animations" => "Vypnout animace hlavního panelu",
+        "widgets" => "Skrýt tlačítko Widgets",
+        "search-suggestions" => "Omezit webové návrhy ve vyhledávání",
+        "recommendations" => "Omezit reklamní tipy a doporučení Windows",
         "visual-effects" => "Výkonové vizuální efekty",
         "power-plan" => "High Performance power plan",
         "transparency" => "Vypnout efekty průhlednosti",
@@ -494,6 +608,9 @@ public partial class MainWindow
 
                 switch (id)
                 {
+                    case "hags":
+                        SetWorkspaceMachineDword(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, operations);
+                        break;
                     case "game-mode":
                         SetWorkspaceDword(@"Software\Microsoft\GameBar", "AutoGameModeEnabled", 1, operations);
                         SetWorkspaceDword(@"Software\Microsoft\GameBar", "AllowAutoGameMode", 1, operations);
@@ -502,12 +619,48 @@ public partial class MainWindow
                         SetWorkspaceDword(@"System\GameConfigStore", "GameDVR_Enabled", 0, operations);
                         SetWorkspaceDword(@"Software\Microsoft\Windows\CurrentVersion\GameDVR", "AppCaptureEnabled", 0, operations);
                         break;
+                    case "mouse-acceleration":
+                        SetWorkspaceString(@"Control Panel\Mouse", "MouseSpeed", "0", operations);
+                        SetWorkspaceString(@"Control Panel\Mouse", "MouseThreshold1", "0", operations);
+                        SetWorkspaceString(@"Control Panel\Mouse", "MouseThreshold2", "0", operations);
+                        break;
+                    case "gpu-preference":
+                        SetWorkspaceString(@"Software\Microsoft\DirectX\UserGpuPreferences", "FortniteClient-Win64-Shipping.exe", "GpuPreference=2;", operations);
+                        break;
+                    case "fullscreen-optimizations":
+                    {
+                        var executable = FindFortniteExecutablePath();
+                        if (!File.Exists(executable))
+                            throw new InvalidOperationException("Fortnite executable nebyl nalezen. Tento tweak je na této instalaci nepodporovaný.");
+                        SetWorkspaceString(@"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers", executable, "~ DISABLEDXMAXIMIZEDWINDOWEDMODE", operations);
+                        break;
+                    }
+                    case "startup-delay":
+                        SetWorkspaceDword(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize", "StartupDelayInMSec", 0, operations);
+                        break;
+                    case "taskbar-animations":
+                        SetWorkspaceDword(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarAnimations", 0, operations);
+                        break;
+                    case "widgets":
+                        SetWorkspaceDword(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarDa", 0, operations);
+                        break;
+                    case "search-suggestions":
+                        SetWorkspaceDword(@"Software\Policies\Microsoft\Windows\Explorer", "DisableSearchBoxSuggestions", 1, operations);
+                        break;
+                    case "recommendations":
+                        SetWorkspaceDword(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SystemPaneSuggestionsEnabled", 0, operations);
+                        SetWorkspaceDword(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SoftLandingEnabled", 0, operations);
+                        SetWorkspaceDword(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SilentInstalledAppsEnabled", 0, operations);
+                        SetWorkspaceDword(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338388Enabled", 0, operations);
+                        SetWorkspaceDword(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-353694Enabled", 0, operations);
+                        SetWorkspaceDword(@"Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", 0, operations);
+                        break;
                     case "visual-effects":
                         SetWorkspaceDword(@"Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", "VisualFXSetting", 2, operations);
                         break;
                     case "power-plan":
-                        operations.Add("COMMAND: powercfg.exe /setactive SCHEME_MIN");
-                        operations.Add("COMMAND OUTPUT: " + RunWorkspacePowerCfg("/setactive SCHEME_MIN").Trim());
+                        operations.Add("COMMAND: powercfg.exe /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
+                        operations.Add("COMMAND OUTPUT: " + RunWorkspacePowerCfg("/setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c").Trim());
                         break;
                     case "transparency":
                         SetWorkspaceDword(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 0, operations);
@@ -557,6 +710,39 @@ public partial class MainWindow
     private static WorkspaceTweakSnapshot CaptureWorkspaceTweak(string id)
     {
         var snapshot = new WorkspaceTweakSnapshot();
+        if (id == "hags")
+        {
+            const string path = @"SYSTEM\CurrentControlSet\Control\GraphicsDrivers";
+            const string name = "HwSchMode";
+            using var key = Registry.LocalMachine.OpenSubKey(path);
+            var value = key?.GetValue(name);
+            snapshot.RegistryValues.Add(new WorkspaceTweakRegistrySnapshot
+            {
+                Hive = "HKLM", Path = path, Name = name, Exists = value is not null,
+                Kind = value is null ? RegistryValueKind.DWord.ToString() : key!.GetValueKind(name).ToString(),
+                Data = value is null ? "" : SerializeWorkspaceRegistryValue(value)
+            });
+            return snapshot;
+        }
+
+        if (id == "fullscreen-optimizations")
+        {
+            var executable = FindFortniteExecutablePath();
+            if (!File.Exists(executable))
+                throw new InvalidOperationException("Fortnite executable nebyl nalezen.");
+            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers");
+            var current = key?.GetValue(executable);
+            snapshot.RegistryValues.Add(new WorkspaceTweakRegistrySnapshot
+            {
+                Path = @"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers",
+                Name = executable,
+                Exists = current is not null,
+                Kind = current is null ? RegistryValueKind.String.ToString() : key!.GetValueKind(executable).ToString(),
+                Data = current is null ? "" : SerializeWorkspaceRegistryValue(current)
+            });
+            return snapshot;
+        }
+
         if (id == "power-plan")
         {
             var output = RunWorkspacePowerCfg("/getactivescheme");
@@ -577,6 +763,42 @@ public partial class MainWindow
             {
                 (Path: @"System\GameConfigStore", Name: "GameDVR_Enabled"),
                 (Path: @"Software\Microsoft\Windows\CurrentVersion\GameDVR", Name: "AppCaptureEnabled")
+            },
+            "mouse-acceleration" => new[]
+            {
+                (Path: @"Control Panel\Mouse", Name: "MouseSpeed"),
+                (Path: @"Control Panel\Mouse", Name: "MouseThreshold1"),
+                (Path: @"Control Panel\Mouse", Name: "MouseThreshold2")
+            },
+            "gpu-preference" => new[]
+            {
+                (Path: @"Software\Microsoft\DirectX\UserGpuPreferences", Name: "FortniteClient-Win64-Shipping.exe")
+            },
+            "fullscreen-optimizations" => throw new InvalidOperationException("Fullscreen optimization backup se musí zachytit podle konkrétní cesty k Fortnite."),
+            "startup-delay" => new[]
+            {
+                (Path: @"Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize", Name: "StartupDelayInMSec")
+            },
+            "taskbar-animations" => new[]
+            {
+                (Path: @"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", Name: "TaskbarAnimations")
+            },
+            "widgets" => new[]
+            {
+                (Path: @"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", Name: "TaskbarDa")
+            },
+            "search-suggestions" => new[]
+            {
+                (Path: @"Software\Policies\Microsoft\Windows\Explorer", Name: "DisableSearchBoxSuggestions")
+            },
+            "recommendations" => new[]
+            {
+                (Path: @"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", Name: "SystemPaneSuggestionsEnabled"),
+                (Path: @"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", Name: "SoftLandingEnabled"),
+                (Path: @"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", Name: "SilentInstalledAppsEnabled"),
+                (Path: @"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", Name: "SubscribedContent-338388Enabled"),
+                (Path: @"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", Name: "SubscribedContent-353694Enabled"),
+                (Path: @"Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", Name: "Enabled")
             },
             "visual-effects" => new[]
             {
@@ -628,11 +850,13 @@ public partial class MainWindow
 
         foreach (var item in snapshot.RegistryValues)
         {
-            var fullName = $"HKCU\\{item.Path}\\{item.Name}";
+            var fullName = $"{item.Hive}\\{item.Path}\\{item.Name}";
             if (item.Exists)
             {
                 operations.Add($"REGISTRY RESTORE: {fullName}; Type={item.Kind}; OriginalValue={item.Data}");
-                using var key = Registry.CurrentUser.CreateSubKey(item.Path)
+                var root = string.Equals(item.Hive, "HKLM", StringComparison.OrdinalIgnoreCase)
+                    ? Registry.LocalMachine : Registry.CurrentUser;
+                using var key = root.CreateSubKey(item.Path)
                     ?? throw new InvalidOperationException("Nepodařilo se obnovit " + fullName);
                 var kind = Enum.TryParse<RegistryValueKind>(item.Kind, out var parsed) ? parsed : RegistryValueKind.String;
                 object value = kind switch
@@ -648,10 +872,19 @@ public partial class MainWindow
             else
             {
                 operations.Add("REGISTRY DELETE: " + fullName + "; hodnota před zapnutím neexistovala.");
-                using var key = Registry.CurrentUser.OpenSubKey(item.Path, writable: true);
+                var root = string.Equals(item.Hive, "HKLM", StringComparison.OrdinalIgnoreCase)
+                    ? Registry.LocalMachine : Registry.CurrentUser;
+                using var key = root.OpenSubKey(item.Path, writable: true);
                 key?.DeleteValue(item.Name, throwOnMissingValue: false);
             }
         }
+    }
+
+    private static void SetWorkspaceMachineDword(string path, string name, int value, List<string> operations)
+    {
+        operations.Add($"REGISTRY SET: HKLM\\{path}\\{name}; Type=REG_DWORD; Value={value}");
+        using var key = Registry.LocalMachine.CreateSubKey(path) ?? throw new InvalidOperationException("Nepodařilo se otevřít HKLM\\" + path);
+        key.SetValue(name, value, RegistryValueKind.DWord);
     }
 
     private static void SetWorkspaceDword(string path, string name, int value, List<string> operations)
@@ -696,7 +929,7 @@ public partial class MainWindow
         if (!string.IsNullOrWhiteSpace(snapshot.PowerScheme))
             operations.Add("BACKUP POWER PLAN: original scheme ID=" + snapshot.PowerScheme);
         foreach (var item in snapshot.RegistryValues)
-            operations.Add($"BACKUP REGISTRY: HKCU\\{item.Path}\\{item.Name}; Exists={item.Exists}; Kind={item.Kind}; Data={item.Data}");
+            operations.Add($"BACKUP REGISTRY: {item.Hive}\\{item.Path}\\{item.Name}; Exists={item.Exists}; Kind={item.Kind}; Data={item.Data}");
     }
 
     private static string ReadWorkspaceActualStatus(string id)
@@ -719,11 +952,31 @@ public partial class MainWindow
 
             return id switch
             {
+                "hags" => (Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers")?.GetValue("HwSchMode") is int hags && hags == 2)
+                    ? "HAGS zapnutý (restart může být nutný)" : "HAGS výchozí/vypnutý",
                 "game-mode" => Read(@"Software\Microsoft\GameBar", "AutoGameModeEnabled") is int mode && mode == 1
                     ? "Game Mode zapnutý" : "Game Mode výchozí/vypnutý",
                 "game-dvr" => Read(@"System\GameConfigStore", "GameDVR_Enabled") is int capture && capture == 0 &&
                               Read(@"Software\Microsoft\Windows\CurrentVersion\GameDVR", "AppCaptureEnabled") is int app && app == 0
                     ? "Game DVR vypnutý" : "Game DVR výchozí/zapnutý",
+                "mouse-acceleration" => Read(@"Control Panel\Mouse", "MouseSpeed")?.ToString() == "0" &&
+                                        Read(@"Control Panel\Mouse", "MouseThreshold1")?.ToString() == "0" &&
+                                        Read(@"Control Panel\Mouse", "MouseThreshold2")?.ToString() == "0"
+                    ? "akcelerace myši vypnutá" : "nastavení myši výchozí/jiné",
+                "gpu-preference" => Read(@"Software\Microsoft\DirectX\UserGpuPreferences", "FortniteClient-Win64-Shipping.exe")?.ToString() == "GpuPreference=2;"
+                    ? "Windows preferuje výkonnou GPU pro Fortnite" : "výchozí preference GPU",
+                "fullscreen-optimizations" => Read(@"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers", FindFortniteExecutablePath())?.ToString()?.Contains("DISABLEDXMAXIMIZEDWINDOWEDMODE", StringComparison.OrdinalIgnoreCase) == true
+                    ? "Fullscreen Optimizations vypnuté pro Fortnite" : "Fullscreen Optimizations ve výchozím stavu",
+                "startup-delay" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize", "StartupDelayInMSec") is int delay && delay == 0
+                    ? "odklad spuštění nastaven na 0 ms" : "odklad spuštění výchozí/jiný",
+                "taskbar-animations" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarAnimations") is int animations && animations == 0
+                    ? "animace hlavního panelu vypnuté" : "animace výchozí/zapnuté",
+                "widgets" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarDa") is int widgets && widgets == 0
+                    ? "tlačítko Widgets skryté" : "tlačítko Widgets výchozí/zobrazené",
+                "search-suggestions" => Read(@"Software\Policies\Microsoft\Windows\Explorer", "DisableSearchBoxSuggestions") is int search && search == 1
+                    ? "webové návrhy ve vyhledávání vypnuté" : "webové návrhy výchozí/zapnuté",
+                "recommendations" => Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SystemPaneSuggestionsEnabled") is int suggestions && suggestions == 0
+                    ? "vybrané tipy a reklamní doporučení vypnuté" : "tipy a doporučení výchozí/jiné",
                 "visual-effects" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", "VisualFXSetting") is int visual && visual == 2
                     ? "režim nejlepšího výkonu" : "výchozí/jiný režim",
                 "transparency" => Read(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency") is int transparency && transparency == 0
@@ -733,6 +986,142 @@ public partial class MainWindow
             };
         }
         catch (Exception ex) { return "stav nelze přečíst: " + ex.Message; }
+    }
+
+    private void CheckWorkspaceDriftOnStartup()
+    {
+        _workspaceDriftedTweaks.Clear();
+        Dictionary<string, WorkspaceTweakSnapshot> saved;
+        try { saved = LoadWorkspaceState(); }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Nepodařilo se přečíst zálohy optimalizací. Žádná změna nebyla provedena.\n\n" + ex.Message,
+                "Kontrola optimalizací", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        foreach (var id in saved.Keys)
+        {
+            if (!IsWorkspaceTweakAtOptimizedState(id))
+                _workspaceDriftedTweaks.Add(id);
+        }
+
+        if (_workspaceDriftedTweaks.Count == 0)
+            return;
+
+        var lines = _workspaceDriftedTweaks.Select(id =>
+            "• " + WorkspaceTweakName(id) + "\n  Poslední stav Gasbyn: ZAPNUTO\n  Aktuálně ve Windows: " + ReadWorkspaceActualStatus(id));
+        DriftDifferences.Text = string.Join("\n\n", lines);
+        DriftOverlay.Visibility = Visibility.Visible;
+    }
+
+    private static bool IsWorkspaceTweakAtOptimizedState(string id)
+    {
+        object? Read(string path, string name)
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(path);
+            return key?.GetValue(name);
+        }
+
+        return id switch
+        {
+            "hags" => Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers")?.GetValue("HwSchMode") is int hags && hags == 2,
+            "game-mode" => Read(@"Software\Microsoft\GameBar", "AutoGameModeEnabled") is int gm && gm == 1 &&
+                           Read(@"Software\Microsoft\GameBar", "AllowAutoGameMode") is int allow && allow == 1,
+            "game-dvr" => Read(@"System\GameConfigStore", "GameDVR_Enabled") is int capture && capture == 0 &&
+                          Read(@"Software\Microsoft\Windows\CurrentVersion\GameDVR", "AppCaptureEnabled") is int app && app == 0,
+            "mouse-acceleration" => Read(@"Control Panel\Mouse", "MouseSpeed")?.ToString() == "0" &&
+                                    Read(@"Control Panel\Mouse", "MouseThreshold1")?.ToString() == "0" &&
+                                    Read(@"Control Panel\Mouse", "MouseThreshold2")?.ToString() == "0",
+            "gpu-preference" => Read(@"Software\Microsoft\DirectX\UserGpuPreferences", "FortniteClient-Win64-Shipping.exe")?.ToString() == "GpuPreference=2;",
+            "fullscreen-optimizations" => Read(@"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers", FindFortniteExecutablePath())?.ToString()?.Contains("DISABLEDXMAXIMIZEDWINDOWEDMODE", StringComparison.OrdinalIgnoreCase) == true,
+            "startup-delay" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize", "StartupDelayInMSec") is int delay && delay == 0,
+            "taskbar-animations" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarAnimations") is int anim && anim == 0,
+            "widgets" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarDa") is int widgets && widgets == 0,
+            "search-suggestions" => Read(@"Software\Policies\Microsoft\Windows\Explorer", "DisableSearchBoxSuggestions") is int search && search == 1,
+            "recommendations" => Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SystemPaneSuggestionsEnabled") is int suggestions && suggestions == 0 &&
+                                 Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SoftLandingEnabled") is int soft && soft == 0 &&
+                                 Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SilentInstalledAppsEnabled") is int silent && silent == 0 &&
+                                 Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338388Enabled") is int subA && subA == 0 &&
+                                 Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-353694Enabled") is int subB && subB == 0 &&
+                                 Read(@"Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled") is int ads && ads == 0,
+            "visual-effects" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", "VisualFXSetting") is int visual && visual == 2,
+            "transparency" => Read(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency") is int trans && trans == 0,
+            "fast-menus" => Read(@"Control Panel\Desktop", "MenuShowDelay")?.ToString() == "100" &&
+                            Read(@"Control Panel\Desktop\WindowMetrics", "MinAnimate")?.ToString() == "0",
+            "power-plan" => RunWorkspacePowerCfg("/getactivescheme").Contains("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", StringComparison.OrdinalIgnoreCase),
+            _ => true
+        };
+    }
+
+    private void KeepCurrentDrift_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var saved = LoadWorkspaceState();
+            foreach (var id in _workspaceDriftedTweaks)
+            {
+                saved.Remove(id);
+                OptimizerAuditLog.WriteChange(id, WorkspaceTweakName(id), "KEEP_CURRENT", true,
+                    new[] { "Startup drift: uživatel zvolil ponechat aktuální nastavení Windows." },
+                    "Aktuální stav ponechán; původní návratová záloha pro tuto optimalizaci byla odpojena.");
+            }
+            SaveWorkspaceState(saved);
+            DriftOverlay.Visibility = Visibility.Collapsed;
+            ShowPage("Tweaks");
+        }
+        catch (Exception ex)
+        {
+            DriftDifferences.Text += "\n\nNepodařilo se uložit volbu: " + ex.Message;
+        }
+    }
+
+    private void RestoreOriginalDrift_Click(object sender, RoutedEventArgs e)
+    {
+        var errors = new List<string>();
+        foreach (var id in _workspaceDriftedTweaks.ToArray())
+        {
+            try { ApplyWorkspaceTweak(id, false); }
+            catch (Exception ex) { errors.Add(WorkspaceTweakName(id) + ": " + ex.Message); }
+        }
+
+        DriftOverlay.Visibility = Visibility.Collapsed;
+        if (errors.Count > 0)
+            MessageBox.Show("Některá nastavení se nepodařilo obnovit:\n\n" + string.Join("\n", errors),
+                "Obnovení optimalizací", MessageBoxButton.OK, MessageBoxImage.Warning);
+        ShowPage("Tweaks");
+    }
+
+    private static string FindFortniteExecutablePath()
+    {
+        var candidates = new List<string>();
+        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        candidates.Add(Path.Combine(programFiles, "Epic Games", "Fortnite", "FortniteGame", "Binaries", "Win64", "FortniteClient-Win64-Shipping.exe"));
+        candidates.Add(Path.Combine(programFilesX86, "Epic Games", "Fortnite", "FortniteGame", "Binaries", "Win64", "FortniteClient-Win64-Shipping.exe"));
+        candidates.Add(Path.Combine(local, "FortniteGame", "Binaries", "Win64", "FortniteClient-Win64-Shipping.exe"));
+        foreach (var drive in new[] { "C:", "D:", "E:" })
+            candidates.Add(Path.Combine(drive + Path.DirectorySeparatorChar, "Epic Games", "Fortnite", "FortniteGame", "Binaries", "Win64", "FortniteClient-Win64-Shipping.exe"));
+
+        var manifestRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Epic", "EpicGamesLauncher", "Data", "Manifests");
+        try
+        {
+            if (Directory.Exists(manifestRoot))
+            {
+                foreach (var manifest in Directory.EnumerateFiles(manifestRoot, "*.item"))
+                {
+                    var json = File.ReadAllText(manifest);
+                    if (!json.Contains("Fortnite", StringComparison.OrdinalIgnoreCase)) continue;
+                    var match = System.Text.RegularExpressions.Regex.Match(json, @"""InstallLocation""\s*:\s*""(?<path>[^""]+)""");
+                    if (match.Success)
+                        candidates.Insert(0, Path.Combine(match.Groups["path"].Value.Replace("\\\\", "\\"), "FortniteGame", "Binaries", "Win64", "FortniteClient-Win64-Shipping.exe"));
+                }
+            }
+        }
+        catch { }
+
+        return candidates.FirstOrDefault(File.Exists) ?? candidates[0];
     }
 
     private static string RunWorkspacePowerCfg(string arguments)
@@ -759,6 +1148,7 @@ public partial class MainWindow
     private sealed class WorkspaceTweakRegistrySnapshot
     {
         public WorkspaceTweakRegistrySnapshot() { }
+        public string Hive { get; set; } = "HKCU";
         public string Path { get; set; } = "";
         public string Name { get; set; } = "";
         public bool Exists { get; set; }

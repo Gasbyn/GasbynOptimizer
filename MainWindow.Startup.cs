@@ -7,7 +7,10 @@ public partial class MainWindow
 {
     private void OpenStartupManager()
     {
-        var window = new StartupManagerWindow { Owner = this };
-        window.ShowDialog();
+        var view = new StartupManagerWindow();
+        view.CloseRequested += (_, _) => ShowPage("Startup");
+        SecondaryContent.Children.Clear();
+        AddPageHeader("Startup");
+        SecondaryContent.Children.Add(view);
     }
 }

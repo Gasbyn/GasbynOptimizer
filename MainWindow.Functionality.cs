@@ -110,8 +110,7 @@ public partial class MainWindow
 
     private void OpenAppsManager()
     {
-        var window = new Apps.AppsManagerWindow { Owner = this };
-        window.ShowDialog();
+        ShowPage("Apps Manager");
     }
 
     private string[] GetTempPaths() => new[]

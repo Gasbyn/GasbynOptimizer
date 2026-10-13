@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -7,6 +8,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Win32;
@@ -33,7 +35,20 @@ public partial class MainWindow
         StartupScanOverlay.Visibility = Visibility.Visible;
         UpdateAvailablePanel.Visibility = Visibility.Collapsed;
         _latestReleaseUrl = null;
+        StartupScanAdminButton.Visibility = Visibility.Collapsed;
         StartupScanContinue.IsEnabled = false;
+        if (!IsRunningAsAdministrator())
+        {
+            StartupScanSpinner.Visibility = Visibility.Collapsed;
+            StartupScanProgress.Visibility = Visibility.Collapsed;
+            StartupScanStatus.Text = "SPUŠTĚNÍ JAKO SPRÁVCE JE POVINNÉ";
+            StartupScanDetails.Text = "Gasbyn Optimizer potřebuje oprávnění správce pro systémovou diagnostiku a změny. Aplikace zatím neumožní pokračovat. Klikni na „SPUSTIT JAKO SPRÁVCE“ a potvrď dialog Windows.";
+            CompleteStartupCheck(false);
+            StartupScanAdminButton.Visibility = Visibility.Visible;
+            StartupScanContinue.IsEnabled = false;
+            return;
+        }
+        StartupScanContinue.Visibility = Visibility.Visible;
         StartupScanSpinner.Visibility = Visibility.Visible;
         StartupScanCompleteIcon.Visibility = Visibility.Collapsed;
         StartupScanProgress.Visibility = Visibility.Visible;
@@ -119,6 +134,46 @@ public partial class MainWindow
         }
     }
 
+    private static bool IsRunningAsAdministrator()
+    {
+        try
+        {
+            using var identity = WindowsIdentity.GetCurrent();
+            return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private void RelaunchAsAdministrator_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var executablePath = Environment.ProcessPath;
+            if (string.IsNullOrWhiteSpace(executablePath))
+                throw new InvalidOperationException("Nepodařilo se zjistit cestu ke spuštěné aplikaci.");
+
+            Process.Start(new ProcessStartInfo(executablePath)
+            {
+                UseShellExecute = true,
+                Verb = "runas"
+            });
+            Application.Current.Shutdown();
+        }
+        catch (Win32Exception)
+        {
+            StartupScanStatus.Text = "Zvýšení oprávnění bylo zrušeno.";
+            StartupScanDetails.Text = "Pro použití Gasbyn Optimizeru spusť aplikaci jako správce a potvrď UAC dialog Windows.";
+        }
+        catch (Exception ex)
+        {
+            StartupScanStatus.Text = "Aplikaci se nepodařilo spustit jako správce.";
+            StartupScanDetails.Text = ex.Message;
+        }
+    }
+
     private void CompleteStartupCheck(bool success)
     {
         StartupScanSpinner.Visibility = Visibility.Collapsed;
@@ -131,7 +186,29 @@ public partial class MainWindow
     }
 
     private static Version GetCurrentAppVersion() =>
-        typeof(MainWindow).Assembly.GetName().Version ?? new Version(0, 2, 0);
+        typeof(MainWindow).Assembly.GetName().Version ?? new Version(2, 0, 3);
+
+    private static bool TryParseReleaseVersion(string tag, out Version version)
+    {
+        var normalizedTag = tag.Trim();
+        if (normalizedTag.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+            normalizedTag = normalizedTag[1..];
+
+        // Gasbyn's release sequence uses tags such as v2.0.B2, v2.0.B3.
+        var betaMatch = Regex.Match(normalizedTag, @"^(?<major>\d+)\.(?<minor>\d+)\.B(?<build>\d+)$",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (betaMatch.Success)
+        {
+            version = new Version(
+                int.Parse(betaMatch.Groups["major"].Value),
+                int.Parse(betaMatch.Groups["minor"].Value),
+                int.Parse(betaMatch.Groups["build"].Value));
+            return true;
+        }
+
+        var versionPart = normalizedTag.Split('-', '+')[0];
+        return Version.TryParse(versionPart, out version!);
+    }
 
     private static async Task<(string Tag, string Url)?> CheckForLatestReleaseAsync()
     {
@@ -160,11 +237,7 @@ public partial class MainWindow
             !parsedUrl.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
             return null;
 
-        var normalizedTag = tag.Trim();
-        if (normalizedTag.StartsWith("v", StringComparison.OrdinalIgnoreCase))
-            normalizedTag = normalizedTag[1..];
-        var versionPart = normalizedTag.Split('-', '+')[0];
-        if (!Version.TryParse(versionPart, out var latestVersion))
+        if (!TryParseReleaseVersion(tag, out var latestVersion))
             return null;
 
         return latestVersion > GetCurrentAppVersion()
@@ -237,5 +310,6 @@ public partial class MainWindow
     private void StartupScanContinue_Click(object sender, RoutedEventArgs e)
     {
         StartupScanOverlay.Visibility = Visibility.Collapsed;
+        CheckWorkspaceDriftOnStartup();
     }
 }

@@ -1,6 +1,10 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 namespace GasbynOptimizer;
 
@@ -13,6 +17,40 @@ public partial class MainWindow
             UIElement.PreviewMouseLeftButtonDownEvent,
             new MouseButtonEventHandler(RouteDynamicAction),
             true);
+
+        EventManager.RegisterClassHandler(typeof(Button), UIElement.MouseEnterEvent,
+            new MouseEventHandler(AnimateInteractiveControl), true);
+        EventManager.RegisterClassHandler(typeof(Button), UIElement.MouseLeaveEvent,
+            new MouseEventHandler(AnimateInteractiveControl), true);
+        EventManager.RegisterClassHandler(typeof(ToggleButton), UIElement.MouseEnterEvent,
+            new MouseEventHandler(AnimateInteractiveControl), true);
+        EventManager.RegisterClassHandler(typeof(ToggleButton), UIElement.MouseLeaveEvent,
+            new MouseEventHandler(AnimateInteractiveControl), true);
+    }
+
+    private static void AnimateInteractiveControl(object sender, MouseEventArgs e)
+    {
+        if (sender is not FrameworkElement control || !control.IsEnabled)
+            return;
+
+        if (control.RenderTransform is not ScaleTransform scale)
+        {
+            if (control.RenderTransform != Transform.Identity)
+                return;
+
+            scale = new ScaleTransform(1, 1);
+            control.RenderTransformOrigin = new Point(0.5, 0.5);
+            control.RenderTransform = scale;
+        }
+
+        var hovering = e.RoutedEvent == UIElement.MouseEnterEvent;
+        var target = hovering ? 1.035 : 1.0;
+        var animation = new DoubleAnimation(target, TimeSpan.FromMilliseconds(125))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, animation);
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, animation.Clone());
     }
 
     private static void RouteDynamicAction(object sender, MouseButtonEventArgs e)

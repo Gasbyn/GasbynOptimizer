@@ -88,7 +88,6 @@ public partial class MainWindow
         {
             case "Tweaks":
                 BuildTweaksWorkspace();
-                AddInfoCard("Hardware Accelerated GPU Scheduling", "Zkontroluj aktuální stav HAGS. Změna HAGS není automaticky aplikována, protože závisí na GPU, ovladači a verzi Windows.", "GPU Scheduling");
                 break;
             case "Cleanup":
                 AddInfoCard("User TEMP", "Zkontroluje a nabídne odstranění dočasných souborů aktuálního uživatele.", "User TEMP");
@@ -108,13 +107,12 @@ public partial class MainWindow
                 AddInfoCard("Startup Registry Entries", "Zobrazí běžné Run položky registru.", "Startup Registry Entries");
                 break;
             case "Apps Manager":
-                AddInfoCard("Installed Applications", "Zobrazí nainstalované aplikace a dostupné akce správce aplikací.", "Installed Applications");
+                SecondaryContent.Children.Add(new Apps.AppsManagerWindow());
                 break;
             case "Gaming":
                 BuildTweaksWorkspace(gamingOnly: true);
                 AddInfoCard("GAMING AUDIT", "Zkontroluje Game Mode, HAGS, plán napájení a Fortnite. Audit nic nemění.", "GAMING OPTIMIZER");
                 AddInfoCard("Windows Gaming Services", "Zobrazí stav souvisejících herních služeb; nic nevypíná.", "Windows Gaming Services");
-                AddInfoCard("Fullscreen Optimization Check", "Zobrazí aktuální stav relevantního nastavení.", "Fullscreen Optimization Check");
                 AddInfoCard("Fortnite Optimization Profile", "Zkontroluje, zda existuje konfigurace Fortnite.", "Fortnite Optimization Profile");
                 AddInfoCard("NVIDIA Gaming Profile", "Zkontroluje dostupné lokální NVIDIA profilové soubory.", "NVIDIA Gaming Profile");
                 break;

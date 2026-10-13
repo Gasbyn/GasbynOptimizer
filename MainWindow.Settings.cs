@@ -46,12 +46,13 @@ public partial class MainWindow
             });
 
         AddPreferenceRow(content, "Pokročilý režim doporučení",
-            "Zobrazí i nedoporučené/nekompatibilní moduly jako méně výraznou informaci. Hardware-nekompatibilní operace zůstávají blokované.",
+            "Odemkne i tweaky označené jako nekompatibilní. Zapínej je jen tehdy, když rozumíš omezením; neimplementované nebo bezpečnostně rizikové zásahy zůstávají blokované.",
             preferences.AdvancedRecommendations,
             enabled =>
             {
                 preferences.AdvancedRecommendations = enabled;
                 OptimizerPreferencesStore.Save(preferences);
+                // The next Tweaks/Gaming navigation rebuilds cards with the new compatibility state.
             });
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 14, 0, 0) };

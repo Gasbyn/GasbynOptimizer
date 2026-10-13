@@ -2,12 +2,14 @@ name: Build Windows app
 
 on:
   push:
-    branches: [ main, "feature/**" ]
+    branches: [ main, "feature/**", "release/**" ]
   pull_request:
     branches: [ main ]
+  release:
+    types: [ published ]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -29,3 +31,39 @@ jobs:
           path: publish/
           if-no-files-found: error
           retention-days: 30
+
+      - name: Package release ZIP
+        if: github.event_name == 'release' || startsWith(github.ref, 'refs/heads/release/')
+        shell: pwsh
+        run: Compress-Archive -Path publish\* -DestinationPath GasbynOptimizer-win-x64.zip -Force
+
+      - name: Publish B4 release from release branch
+        if: github.ref == 'refs/heads/release/v2.0.B4'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.0.B4
+          name: Gasbyn Optimizer v2.0.B4
+          body: |
+            ## Gasbyn Optimizer v2.0.B4
+
+            - Embedded Apps Manager and Startup Manager inside the main window.
+            - Modern thin vertical and horizontal scrollbars.
+            - Startup check for changes to previously managed optimization settings.
+            - ON/OFF controls for HAGS and Fortnite Fullscreen Optimizations.
+            - Advanced mode indicates unsupported tweaks and locks them by default.
+            - Windows executable icon generated from Logo.png.
+          target_commitish: ${{ github.sha }}
+          files: GasbynOptimizer-win-x64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Attach ZIP to published GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          name: ${{ github.event.release.name }}
+          files: GasbynOptimizer-win-x64.zip
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
