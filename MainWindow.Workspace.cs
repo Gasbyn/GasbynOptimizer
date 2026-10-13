@@ -565,8 +565,8 @@ public partial class MainWindow
         _workspacePresentMonPath = new TextBox
         {
             Text = LoadWorkspacePresentMonPath(), Height = 34, Padding = new Thickness(9),
-            VerticalContentAlignment = VerticalAlignment.Center, Background = Brush("#0D0F13"),
-            Foreground = Brush("#F4F4F5"), BorderBrush = Brush("#343842")
+            VerticalContentAlignment = VerticalAlignment.Center, Background = WorkspaceBrush("#0D0F13"),
+            Foreground = WorkspaceBrush("#F4F4F5"), BorderBrush = WorkspaceBrush("#343842")
         };
         _workspacePresentMonPath.ToolTip = "Cesta k oficiálnímu PresentMon.exe";
         Grid.SetColumn(_workspacePresentMonPath, 0);
@@ -804,6 +804,9 @@ public partial class MainWindow
         catch (Exception ex) { status.Text = "Bod obnovení selhal: " + ex.Message; }
         finally { button.IsEnabled = true; }
     }
+
+    private static SolidColorBrush WorkspaceBrush(string hex) =>
+        new((Color)ColorConverter.ConvertFromString(hex));
 
     private Border WorkspaceCard() => new()
     {
