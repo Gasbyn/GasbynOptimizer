@@ -6,7 +6,9 @@
         Width="1280" Height="800" MinWidth="1050" MinHeight="680"
         WindowStartupLocation="CenterScreen"
         Background="#08090B" Foreground="#F4F4F5"
-        FontFamily="Segoe UI" ResizeMode="CanResize" WindowStyle="None">
+        FontFamily="Segoe UI" ResizeMode="CanResize" WindowStyle="None"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType">
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="36" ResizeBorderThickness="6" GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
     </shell:WindowChrome.WindowChrome>
@@ -141,7 +143,7 @@
                 CornerRadius="18" HorizontalAlignment="Center" VerticalAlignment="Center">
             <StackPanel>
                 <TextBlock Text="INITIAL SYSTEM CHECK" FontSize="20" FontWeight="Bold" Foreground="#FF6A00"/>
-                <TextBlock Text="Analyzuji hardware a důležitá nastavení Windows. Během kontroly je aplikace záměrně překrytá; žádné změny systému se neprovádějí."
+                <TextBlock Text="Analyzuji hardware a důležitá nastavení Windows. Pozadí je pouze ztmavené; žádné změny systému se neprovádějí."
                            Margin="0,8,0,18" Foreground="#A8ADB7" TextWrapping="Wrap"/>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
                     <Grid Width="28" Height="28" Margin="0,0,12,0">
