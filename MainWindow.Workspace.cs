@@ -24,6 +24,7 @@ public partial class MainWindow
     private static readonly string WorkspacePresentMonPath = Path.Combine(WorkspaceDataDirectory, "presentmon-path.txt");
 
     private readonly Dictionary<string, ToggleButton> _workspaceSwitches = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<string> _workspaceDriftedTweaks = new();
     private readonly Dictionary<string, TextBlock> _workspaceSwitchStatuses = new(StringComparer.OrdinalIgnoreCase);
     private bool _loadingWorkspaceSwitches;
     private bool _workspaceTweakBusy;
@@ -947,6 +948,105 @@ public partial class MainWindow
             };
         }
         catch (Exception ex) { return "stav nelze přečíst: " + ex.Message; }
+    }
+
+    private void CheckWorkspaceDriftOnStartup()
+    {
+        _workspaceDriftedTweaks.Clear();
+        Dictionary<string, WorkspaceTweakSnapshot> saved;
+        try { saved = LoadWorkspaceState(); }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Nepodařilo se přečíst zálohy optimalizací. Žádná změna nebyla provedena.\n\n" + ex.Message,
+                "Kontrola optimalizací", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        foreach (var id in saved.Keys)
+        {
+            if (!IsWorkspaceTweakAtOptimizedState(id))
+                _workspaceDriftedTweaks.Add(id);
+        }
+
+        if (_workspaceDriftedTweaks.Count == 0)
+            return;
+
+        var lines = _workspaceDriftedTweaks.Select(id =>
+            "• " + WorkspaceTweakName(id) + "\n  Poslední stav Gasbyn: ZAPNUTO\n  Aktuálně ve Windows: " + ReadWorkspaceActualStatus(id));
+        DriftDifferences.Text = string.Join("\n\n", lines);
+        DriftOverlay.Visibility = Visibility.Visible;
+    }
+
+    private static bool IsWorkspaceTweakAtOptimizedState(string id)
+    {
+        object? Read(string path, string name)
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(path);
+            return key?.GetValue(name);
+        }
+
+        return id switch
+        {
+            "game-mode" => Read(@"Software\Microsoft\GameBar", "AutoGameModeEnabled") is int gm && gm == 1 &&
+                           Read(@"Software\Microsoft\GameBar", "AllowAutoGameMode") is int allow && allow == 1,
+            "game-dvr" => Read(@"System\GameConfigStore", "GameDVR_Enabled") is int capture && capture == 0 &&
+                          Read(@"Software\Microsoft\Windows\CurrentVersion\GameDVR", "AppCaptureEnabled") is int app && app == 0,
+            "mouse-acceleration" => Read(@"Control Panel\Mouse", "MouseSpeed")?.ToString() == "0" &&
+                                    Read(@"Control Panel\Mouse", "MouseThreshold1")?.ToString() == "0" &&
+                                    Read(@"Control Panel\Mouse", "MouseThreshold2")?.ToString() == "0",
+            "gpu-preference" => Read(@"Software\Microsoft\DirectX\UserGpuPreferences", "FortniteClient-Win64-Shipping.exe")?.ToString() == "GpuPreference=2;",
+            "fullscreen-optimizations" => Read(@"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers", FindFortniteExecutablePath())?.ToString()?.Contains("DISABLEDXMAXIMIZEDWINDOWEDMODE", StringComparison.OrdinalIgnoreCase) == true,
+            "startup-delay" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize", "StartupDelayInMSec") is int delay && delay == 0,
+            "taskbar-animations" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarAnimations") is int anim && anim == 0,
+            "widgets" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarDa") is int widgets && widgets == 0,
+            "search-suggestions" => Read(@"Software\Policies\Microsoft\Windows\Explorer", "DisableSearchBoxSuggestions") is int search && search == 1,
+            "recommendations" => Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SystemPaneSuggestionsEnabled") is int suggestions && suggestions == 0 &&
+                                 Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SoftLandingEnabled") is int soft && soft == 0,
+            "visual-effects" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", "VisualFXSetting") is int visual && visual == 2,
+            "transparency" => Read(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency") is int trans && trans == 0,
+            "fast-menus" => Read(@"Control Panel\Desktop", "MenuShowDelay")?.ToString() == "100" &&
+                            Read(@"Control Panel\Desktop\WindowMetrics", "MinAnimate")?.ToString() == "0",
+            "power-plan" => RunWorkspacePowerCfg("/getactivescheme").Contains("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", StringComparison.OrdinalIgnoreCase),
+            _ => true
+        };
+    }
+
+    private void KeepCurrentDrift_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var saved = LoadWorkspaceState();
+            foreach (var id in _workspaceDriftedTweaks)
+            {
+                saved.Remove(id);
+                OptimizerAuditLog.WriteChange(id, WorkspaceTweakName(id), "KEEP_CURRENT", true,
+                    new[] { "Startup drift: uživatel zvolil ponechat aktuální nastavení Windows." },
+                    "Aktuální stav ponechán; původní návratová záloha pro tuto optimalizaci byla odpojena.");
+            }
+            SaveWorkspaceState(saved);
+            DriftOverlay.Visibility = Visibility.Collapsed;
+            ShowPage("Tweaks");
+        }
+        catch (Exception ex)
+        {
+            DriftDifferences.Text += "\n\nNepodařilo se uložit volbu: " + ex.Message;
+        }
+    }
+
+    private void RestoreOriginalDrift_Click(object sender, RoutedEventArgs e)
+    {
+        var errors = new List<string>();
+        foreach (var id in _workspaceDriftedTweaks.ToArray())
+        {
+            try { ApplyWorkspaceTweak(id, false); }
+            catch (Exception ex) { errors.Add(WorkspaceTweakName(id) + ": " + ex.Message); }
+        }
+
+        DriftOverlay.Visibility = Visibility.Collapsed;
+        if (errors.Count > 0)
+            MessageBox.Show("Některá nastavení se nepodařilo obnovit:\n\n" + string.Join("\n", errors),
+                "Obnovení optimalizací", MessageBoxButton.OK, MessageBoxImage.Warning);
+        ShowPage("Tweaks");
     }
 
     private static string FindFortniteExecutablePath()
