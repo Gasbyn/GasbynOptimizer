@@ -120,8 +120,9 @@ public partial class MainWindow
             Cursor = System.Windows.Input.Cursors.Hand, VerticalAlignment = VerticalAlignment.Center,
             ToolTip = enabled ? "Kliknutím vypneš tuto možnost." : "Kliknutím zapneš tuto možnost."
         };
-        toggle.Checked += (_, _) => Persist(true);
-        toggle.Unchecked += (_, _) => Persist(false);
+        var updatingToggle = false;
+        toggle.Checked += (_, _) => { if (!updatingToggle) Persist(true); };
+        toggle.Unchecked += (_, _) => { if (!updatingToggle) Persist(false); };
         void Persist(bool value)
         {
             try
@@ -134,7 +135,10 @@ public partial class MainWindow
             catch (Exception ex)
             {
                 MessageBox.Show("Nastavení se nepodařilo uložit: " + ex.Message, "Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
+                updatingToggle = true;
                 toggle.IsChecked = !value;
+                toggle.Content = !value ? "ON" : "OFF";
+                updatingToggle = false;
             }
         }
         Grid.SetColumn(toggle, 1);
