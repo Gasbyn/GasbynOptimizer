@@ -392,7 +392,12 @@ public sealed class FullOptimizerWindow : Window
             await Task.Run(() => ApplySetting(id, enable));
             _scanStatus.Text = "Změna dokončena. Ověřuji stav Windows…";
             await ScanCurrentStateAsync();
-            status.Text += enable ? "\nPoslední akce: úspěšné zapnutí." : "\nPoslední akce: úspěšné obnovení.";
+            status.Text += enable
+                ? "\nPoslední akce: úspěšné zapnutí. Pro úplné použití doporučuji restart PC."
+                : "\nPoslední akce: úspěšné obnovení původních hodnot.";
+            _scanStatus.Text = enable
+                ? "Optimalizace zapnuta. Původní hodnoty jsou zálohované; restart PC doporučuji pro plné použití změn."
+                : "Původní hodnoty byly obnoveny a záloha této aktivní změny byla odebrána.";
         }
         catch (Exception ex)
         {
