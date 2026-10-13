@@ -214,6 +214,16 @@
                     <TextBlock x:Name="StartupScanDetails" Text="Čekám na kontrolu CPU, GPU, RAM, základní desky, disků a konfigurace Windows…"
                                Foreground="#B8BDC6" TextWrapping="Wrap" FontSize="12"/>
                 </Border>
+                <Border x:Name="UpdateAvailablePanel" Visibility="Collapsed" Background="#152B3D" BorderBrush="#2D5575" BorderThickness="1" CornerRadius="10" Padding="13" Margin="0,14,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="JE DOSTUPNÁ AKTUALIZACE" FontSize="10" FontWeight="Bold" Foreground="#94D0FF"/>
+                            <TextBlock x:Name="UpdateAvailableText" Text="Nová verze je připravena." Margin="0,5,12,0" Foreground="#E6F4FF" TextWrapping="Wrap" FontSize="12"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="ZOBRAZIT" Click="OpenLatestRelease_Click" VerticalAlignment="Center" Padding="12,8" Background="#24435A" Foreground="White" BorderBrush="#3B6887" BorderThickness="1" Cursor="Hand" FontWeight="SemiBold"/>
+                    </Grid>
+                </Border>
                 <Button x:Name="StartupScanContinue" Content="POKRAČOVAT" Click="StartupScanContinue_Click"
                         IsEnabled="False" HorizontalAlignment="Right" Margin="0,18,0,0" Padding="16,11"
                         Background="#FF6A00" Foreground="White" BorderThickness="0" Cursor="Hand" FontWeight="Bold"/>
