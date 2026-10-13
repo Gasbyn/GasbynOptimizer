@@ -596,8 +596,8 @@ public partial class MainWindow
         _workspaceBenchmarkProcess = new TextBox
         {
             Text = "FortniteClient-Win64-Shipping.exe", Height = 34, Padding = new Thickness(9),
-            VerticalContentAlignment = VerticalAlignment.Center, Background = Brush("#0D0F13"),
-            Foreground = Brush("#F4F4F5"), BorderBrush = Brush("#343842")
+            VerticalContentAlignment = VerticalAlignment.Center, Background = WorkspaceBrush("#0D0F13"),
+            Foreground = WorkspaceBrush("#F4F4F5"), BorderBrush = WorkspaceBrush("#343842")
         };
         var label = WorkspaceBody("Proces:");
         label.Margin = new Thickness(0, 0, 10, 0);
