@@ -38,9 +38,9 @@
                     <Border Margin="10,0,0,0" Background="#17191D" CornerRadius="6" Padding="7,3"><TextBlock Text="v0.2" FontSize="8" Foreground="{StaticResource TextDim}"/></Border>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Style="{StaticResource TinyWindowButton}" Content="—" Click="MinimizeWindow_Click"/>
-                    <Button Style="{StaticResource TinyWindowButton}" Content="□" Click="MaximizeWindow_Click"/>
-                    <Button Style="{StaticResource TinyCloseButton}" Content="×" Click="CloseWindow_Click"/>
+                    <Button Style="{StaticResource TinyWindowButton}" Content="—" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="MinimizeWindow_Click"/>
+                    <Button Style="{StaticResource TinyWindowButton}" Content="□" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="MaximizeWindow_Click"/>
+                    <Button Style="{StaticResource TinyCloseButton}" Content="×" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="CloseWindow_Click"/>
                 </StackPanel>
             </Grid>
         </Border>
