@@ -252,7 +252,6 @@ public partial class MainWindow
                 FontSize = 9,
                 FontWeight = FontWeights.Bold,
                 Foreground = WorkspaceBrush(palette.Item3),
-                TextOptions.TextFormattingMode = TextFormattingMode.Display
             }
         };
         badge.ToolTip = label.Trim().ToUpperInvariant() switch
