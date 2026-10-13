@@ -131,7 +131,7 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Border Width="23" Height="23" Background="{StaticResource Orange}" CornerRadius="6" ClipToBounds="True"><Image Source="Logo.png" Stretch="UniformToFill"/></Border>
                     <TextBlock Text="GASBYN OPTIMIZER" Margin="9,0,0,0" FontSize="12" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}" Foreground="#B8BBC2" VerticalAlignment="Center"/>
-                    <Border Margin="10,0,0,0" Background="#17191D" CornerRadius="6" Padding="7,3"><TextBlock Text="v0.2" FontSize="8" Foreground="{StaticResource TextDim}"/></Border>
+                    <Border Margin="10,0,0,0" Background="#17191D" CornerRadius="6" Padding="7,3"><TextBlock Text="v2.0.B3" FontSize="8" Foreground="{StaticResource TextDim}"/></Border>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Style="{StaticResource TinyWindowButton}" Content="—" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="MinimizeWindow_Click"/>
@@ -221,12 +221,17 @@
                             <TextBlock Text="JE DOSTUPNÁ AKTUALIZACE" FontSize="10" FontWeight="Bold" Foreground="#94D0FF"/>
                             <TextBlock x:Name="UpdateAvailableText" Text="Nová verze je připravena." Margin="0,5,12,0" Foreground="#E6F4FF" TextWrapping="Wrap" FontSize="12"/>
                         </StackPanel>
-                        <Button Grid.Column="1" Content="ZOBRAZIT" Click="OpenLatestRelease_Click" VerticalAlignment="Center" Padding="12,8" Background="#24435A" Foreground="White" BorderBrush="#3B6887" BorderThickness="1" Cursor="Hand" FontWeight="SemiBold"/>
+                        <Button Grid.Column="1" Style="{StaticResource ActionButton}" Content="ZOBRAZIT" Click="OpenLatestRelease_Click" VerticalAlignment="Center" Padding="12,8" Background="#24435A" Foreground="White" BorderBrush="#3B6887" BorderThickness="1" Cursor="Hand" FontWeight="SemiBold"/>
                     </Grid>
                 </Border>
-                <Button x:Name="StartupScanContinue" Content="POKRAČOVAT" Click="StartupScanContinue_Click"
-                        IsEnabled="False" HorizontalAlignment="Right" Margin="0,18,0,0" Padding="16,11"
-                        Background="#FF6A00" Foreground="White" BorderThickness="0" Cursor="Hand" FontWeight="Bold"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+                    <Button x:Name="StartupScanAdminButton" Style="{StaticResource ActionButton}" Content="SPUSTIT JAKO SPRÁVCE" Click="RelaunchAsAdministrator_Click"
+                            Visibility="Collapsed" Padding="16,11" Margin="0,0,9,0"
+                            Background="#FF6A00" Foreground="White" BorderThickness="0" Cursor="Hand" FontWeight="Bold"/>
+                    <Button x:Name="StartupScanContinue" Style="{StaticResource ActionButton}" Content="POKRAČOVAT" Click="StartupScanContinue_Click"
+                            IsEnabled="False" Padding="16,11"
+                            Background="#FF6A00" Foreground="White" BorderThickness="0" Cursor="Hand" FontWeight="Bold"/>
+                </StackPanel>
             </StackPanel>
         </Border>
     </Grid>
