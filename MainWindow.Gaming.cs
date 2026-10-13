@@ -1,3 +1,4 @@
+using System.Windows;
 using System;
 using System.IO;
 using System.Text;
@@ -24,7 +25,7 @@ public partial class MainWindow
         sb.AppendLine("No settings were changed.");
         sb.AppendLine("Use the individual modules below to apply supported changes.");
 
-        MessageBox.Show(sb.ToString(), "Gaming Optimizer", MessageBoxButton.OK, MessageBoxImage.Information);
+        System.Windows.MessageBox.Show(sb.ToString(), "Gaming Optimizer", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private static void CheckGameMode(StringBuilder sb)
