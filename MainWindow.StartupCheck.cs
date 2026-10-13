@@ -21,6 +21,9 @@ public partial class MainWindow
         AppSurface.Effect = new BlurEffect { Radius = 12, KernelType = KernelType.Gaussian };
         StartupScanOverlay.Visibility = Visibility.Visible;
         StartupScanContinue.IsEnabled = false;
+        StartupScanSpinner.Visibility = Visibility.Visible;
+        StartupScanCompleteIcon.Visibility = Visibility.Collapsed;
+        StartupScanProgress.Visibility = Visibility.Visible;
         StartupScanStatus.Text = "1/3 · Skenuji procesor, grafiku, RAM, desku a disky…";
         StartupScanDetails.Text = "Načítám hardwarový profil. Kontrola je pouze čtecí.";
 
@@ -58,7 +61,8 @@ public partial class MainWindow
             notes.AppendLine(HardwareInventoryServiceForSettings(_hardwareInventory));
             notes.AppendLine("Před změnou se uloží původní stav. Přínos FPS není garantovaný.");
             StartupScanDetails.Text = notes.ToString();
-            StartupScanStatus.Text = "Kontrola dokončena · žádné systémové změny nebyly provedeny.";
+            StartupScanStatus.Text = "✓ Kontrola dokončena · žádné systémové změny nebyly provedeny.";
+            CompleteStartupCheck(true);
             StartupScanContinue.IsEnabled = true;
         }
         catch (Exception ex)
@@ -67,8 +71,20 @@ public partial class MainWindow
             notes.AppendLine("Kontrola skončila s upozorněním: " + ex.Message);
             StartupScanDetails.Text = notes.ToString();
             StartupScanStatus.Text = "Kontrola dokončena s upozorněním.";
+            CompleteStartupCheck(false);
             StartupScanContinue.IsEnabled = true;
         }
+    }
+
+    private void CompleteStartupCheck(bool success)
+    {
+        StartupScanSpinner.Visibility = Visibility.Collapsed;
+        StartupScanProgress.Visibility = Visibility.Collapsed;
+        StartupScanCompleteIcon.Visibility = Visibility.Visible;
+        StartupScanCompleteIcon.Text = success ? "✓" : "!";
+        StartupScanCompleteIcon.Foreground = success
+            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(72, 213, 151))
+            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 154, 82));
     }
 
     private static string HardwareInventoryServiceForSettings(HardwareInventory inventory) =>
