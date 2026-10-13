@@ -120,7 +120,47 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style TargetType="ScrollBar"><Setter Property="Width" Value="7"/><Setter Property="MinWidth" Value="7"/><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="#3A3D45"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ScrollBar"><Grid Width="7" Background="Transparent"><Track x:Name="PART_Track" IsDirectionReversed="True"><Track.DecreaseRepeatButton><RepeatButton Command="ScrollBar.LineUpCommand" Background="Transparent" BorderThickness="0" IsTabStop="False"/></Track.DecreaseRepeatButton><Track.Thumb><Thumb Margin="0,1" Background="#34373F" BorderThickness="0" Cursor="Hand"><Thumb.Template><ControlTemplate TargetType="Thumb"><Border x:Name="ThumbBorder" Background="{TemplateBinding Background}" CornerRadius="3.5"/><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ThumbBorder" Property="Background" Value="#FF6A00"/></Trigger><Trigger Property="IsDragging" Value="True"><Setter TargetName="ThumbBorder" Property="Background" Value="#FF8A38"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Thumb.Template></Thumb></Track.Thumb><Track.IncreaseRepeatButton><RepeatButton Command="ScrollBar.LineDownCommand" Background="Transparent" BorderThickness="0" IsTabStop="False"/></Track.IncreaseRepeatButton></Track></Grid></ControlTemplate></Setter.Value></Setter></Style>
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="6"/><Setter Property="MinWidth" Value="6"/>
+            <Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="#34373F"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid x:Name="ScrollTrackHost" Width="6" Background="Transparent">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.DecreaseRepeatButton><RepeatButton Command="ScrollBar.LineUpCommand" Background="Transparent" BorderThickness="0" IsTabStop="False" Focusable="False"/></Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Margin="0,1" Background="#34373F" BorderThickness="0" Cursor="Hand">
+                                        <Thumb.Template><ControlTemplate TargetType="Thumb">
+                                            <Border x:Name="ThumbBorder" Background="{TemplateBinding Background}" CornerRadius="3"/>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ThumbBorder" Property="Background" Value="#FF6A00"/></Trigger>
+                                                <Trigger Property="IsDragging" Value="True"><Setter TargetName="ThumbBorder" Property="Background" Value="#FF8A38"/></Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate></Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton><RepeatButton Command="ScrollBar.LineDownCommand" Background="Transparent" BorderThickness="0" IsTabStop="False" Focusable="False"/></Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Orientation" Value="Horizontal">
+                                <Setter TargetName="ScrollTrackHost" Property="Width" Value="Auto"/>
+                                <Setter TargetName="ScrollTrackHost" Property="Height" Value="6"/>
+                                <Setter Property="Width" Value="Auto"/><Setter Property="MinWidth" Value="0"/>
+                                <Setter Property="Height" Value="6"/><Setter Property="MinHeight" Value="6"/>
+                            </Trigger>
+                            <Trigger Property="Orientation" Value="Vertical">
+                                <Setter TargetName="ScrollTrackHost" Property="Width" Value="6"/>
+                                <Setter TargetName="ScrollTrackHost" Property="Height" Value="Auto"/>
+                                <Setter Property="Width" Value="6"/><Setter Property="MinWidth" Value="6"/>
+                                <Setter Property="Height" Value="Auto"/><Setter Property="MinHeight" Value="0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Storyboard x:Key="PageEnter"><DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.22"/><DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="9" To="0" Duration="0:0:0.22"/></Storyboard>
     </Window.Resources>
     <Grid>
@@ -131,7 +171,7 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Border Width="23" Height="23" Background="{StaticResource Orange}" CornerRadius="6" ClipToBounds="True"><Image Source="Logo.png" Stretch="UniformToFill"/></Border>
                     <TextBlock Text="GASBYN OPTIMIZER" Margin="9,0,0,0" FontSize="12" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}" Foreground="#B8BBC2" VerticalAlignment="Center"/>
-                    <Border Margin="10,0,0,0" Background="#17191D" CornerRadius="6" Padding="7,3"><TextBlock Text="v2.0.B3" FontSize="8" Foreground="{StaticResource TextDim}"/></Border>
+                    <Border Margin="10,0,0,0" Background="#17191D" CornerRadius="6" Padding="7,3"><TextBlock Text="v2.0.B4" FontSize="8" Foreground="{StaticResource TextDim}"/></Border>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Style="{StaticResource TinyWindowButton}" Content="—" shell:WindowChrome.IsHitTestVisibleInChrome="True" Click="MinimizeWindow_Click"/>
@@ -162,7 +202,7 @@
                         <Button Style="{StaticResource NavButton}" Content="▣   PC Info" Tag="PC Info" Click="Nav_Click"/>
                         <Button Style="{StaticResource NavButton}" Content="⚙   Settings" Tag="Settings" Click="Nav_Click"/>
                     </StackPanel></ScrollViewer>
-                    <Border Grid.Row="3" Background="#121419" BorderBrush="#252830" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,12,0,0"><StackPanel><StackPanel Orientation="Horizontal"><Ellipse Width="8" Height="8" Fill="{StaticResource Green}" VerticalAlignment="Center"/><TextBlock Text="  SYSTEM READY" FontSize="9" FontWeight="Bold" Foreground="#B9BDC5"/></StackPanel><TextBlock Text="Gasbyn Optimizer  •  v0.2" Margin="0,8,0,0" FontSize="9" Foreground="{StaticResource TextDim}"/></StackPanel></Border>
+                    <Border Grid.Row="3" Background="#121419" BorderBrush="#252830" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,12,0,0"><StackPanel><StackPanel Orientation="Horizontal"><Ellipse Width="8" Height="8" Fill="{StaticResource Green}" VerticalAlignment="Center"/><TextBlock Text="  SYSTEM READY" FontSize="9" FontWeight="Bold" Foreground="#B9BDC5"/></StackPanel><TextBlock Text="Gasbyn Optimizer  •  v2.0.B4" Margin="0,8,0,0" FontSize="9" Foreground="{StaticResource TextDim}"/></StackPanel></Border>
                 </Grid>
             </Border>
             <Grid Grid.Column="1" Margin="34,28,34,28"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
