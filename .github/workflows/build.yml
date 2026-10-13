@@ -5,9 +5,11 @@ on:
     branches: [ main, "feature/**" ]
   pull_request:
     branches: [ main ]
+  release:
+    types: [ published ]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -29,3 +31,19 @@ jobs:
           path: publish/
           if-no-files-found: error
           retention-days: 30
+
+      - name: Package release ZIP
+        if: github.event_name == 'release'
+        shell: pwsh
+        run: Compress-Archive -Path publish\* -DestinationPath GasbynOptimizer-win-x64.zip -Force
+
+      - name: Attach ZIP to published GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          name: ${{ github.event.release.name }}
+          files: GasbynOptimizer-win-x64.zip
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
