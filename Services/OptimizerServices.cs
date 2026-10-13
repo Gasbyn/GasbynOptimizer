@@ -173,7 +173,7 @@ public static class HardwareInventoryService
         var motherboard = string.Join(" ", new[] { boardManufacturer, boardProduct }.Where(x => !string.IsNullOrWhiteSpace(x)));
         if (string.IsNullOrWhiteSpace(motherboard)) motherboard = "Základní deska nedostupná";
 
-        var diskValues = WmiValues("SELECT Model, Size, MediaType FROM Win32_DiskDrive", "Model");
+        var diskValues = GetDiskSummaries();
         var disks = diskValues.Count == 0 ? "Disky nedostupné" : string.Join("; ", diskValues.Take(6));
         var memory = "RAM nedostupná";
         try
@@ -190,6 +190,31 @@ public static class HardwareInventoryService
         }
         catch { }
         return new HardwareInventory(cpu, gpu, motherboard, disks, memory, windows);
+    }
+
+    private static List<string> GetDiskSummaries()
+    {
+        try
+        {
+            using var searcher = new ManagementObjectSearcher("SELECT Model, Size, MediaType, InterfaceType FROM Win32_DiskDrive");
+            return searcher.Get().Cast<ManagementObject>().Select(disk =>
+            {
+                var model = disk["Model"]?.ToString() ?? "Neznámý disk";
+                var interfaceType = disk["InterfaceType"]?.ToString();
+                var mediaType = disk["MediaType"]?.ToString();
+                var sizeText = "";
+                try
+                {
+                    var bytes = Convert.ToDouble(disk["Size"] ?? 0);
+                    if (bytes > 0) sizeText = $"{bytes / 1024d / 1024d / 1024d:0.#} GB";
+                }
+                catch { }
+                var details = string.Join(", ", new[] { interfaceType, mediaType, sizeText }
+                    .Where(value => !string.IsNullOrWhiteSpace(value)));
+                return string.IsNullOrWhiteSpace(details) ? model : $"{model} ({details})";
+            }).Where(value => !string.IsNullOrWhiteSpace(value)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        }
+        catch { return new List<string>(); }
     }
 
     private static string FirstWmiValue(string query, string property, string fallback)
