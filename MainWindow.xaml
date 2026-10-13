@@ -84,7 +84,7 @@
         </Grid>
     </Grid>
     <Grid x:Name="StartupScanOverlay" Grid.RowSpan="2" Panel.ZIndex="100" Background="#B808090B" Visibility="Collapsed">
-        <Border Width="650" MaxWidth="90%" Padding="28" Background="#121419" BorderBrush="#3C2619" BorderThickness="1"
+        <Border Width="650" Padding="28" Background="#121419" BorderBrush="#3C2619" BorderThickness="1"
                 CornerRadius="18" HorizontalAlignment="Center" VerticalAlignment="Center">
             <StackPanel>
                 <TextBlock Text="INITIAL SYSTEM CHECK" FontSize="20" FontWeight="Bold" Foreground="#FF6A00"/>
