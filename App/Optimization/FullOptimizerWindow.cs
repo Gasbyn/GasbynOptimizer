@@ -34,10 +34,10 @@ public sealed class FullOptimizerWindow : Window
     private TextBlock _amdGpuStatus = new();
     private Border? _amdGpuCard;
 
-    private static readonly string DataFolder = Path.Combine(
+    private static readonly string DataFolder = System.IO.Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppFolderName);
-    private static readonly string StatePath = Path.Combine(DataFolder, "optimization-state.json");
-    private static readonly string BenchmarkPath = Path.Combine(DataFolder, "fps-tests.json");
+    private static readonly string StatePath = System.IO.Path.Combine(DataFolder, "optimization-state.json");
+    private static readonly string BenchmarkPath = System.IO.Path.Combine(DataFolder, "fps-tests.json");
 
     public FullOptimizerWindow()
     {
@@ -760,7 +760,7 @@ public sealed class FullOptimizerWindow : Window
             return;
         }
         var processName = _processName.Text.Trim();
-        if (string.IsNullOrWhiteSpace(processName) || processName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        if (string.IsNullOrWhiteSpace(processName) || processName.IndexOfAny(System.IO.Path.GetInvalidFileNameChars()) >= 0)
         {
             MessageBox.Show("Zadej platný název procesu, například FortniteClient-Win64-Shipping.exe.", "FPS tester", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
@@ -771,9 +771,9 @@ public sealed class FullOptimizerWindow : Window
         _benchmarkStatus.Text = "Spouštím záznam. Nech hru běžet a během testu neměň nastavení…";
         try
         {
-            var folder = Path.Combine(DataFolder, "FpsTests");
+            var folder = System.IO.Path.Combine(DataFolder, "FpsTests");
             Directory.CreateDirectory(folder);
-            var output = Path.Combine(folder, $"presentmon-{DateTime.Now:yyyyMMdd-HHmmss}.csv");
+            var output = System.IO.Path.Combine(folder, $"presentmon-{DateTime.Now:yyyyMMdd-HHmmss}.csv");
             using var process = new Process { StartInfo = new ProcessStartInfo(exePath) { UseShellExecute = false, CreateNoWindow = true } };
             process.StartInfo.ArgumentList.Add("--process_name");
             process.StartInfo.ArgumentList.Add(processName);
@@ -853,14 +853,14 @@ public sealed class FullOptimizerWindow : Window
 
     private static string LoadPresentMonPath()
     {
-        var file = Path.Combine(DataFolder, "presentmon-path.txt");
+        var file = System.IO.Path.Combine(DataFolder, "presentmon-path.txt");
         try { return File.Exists(file) ? File.ReadAllText(file).Trim() : ""; } catch { return ""; }
     }
 
     private static void SavePresentMonPath(string path)
     {
         Directory.CreateDirectory(DataFolder);
-        File.WriteAllText(Path.Combine(DataFolder, "presentmon-path.txt"), path);
+        File.WriteAllText(System.IO.Path.Combine(DataFolder, "presentmon-path.txt"), path);
     }
 
     private static string RunPowerCfg(string arguments)
