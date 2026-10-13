@@ -94,8 +94,9 @@ public sealed record HardwareInventory(
     string Windows)
 {
     public bool HasNvidiaGpu => Gpu.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase);
-    public bool HasAmdGpu => Gpu.Contains("AMD", StringComparison.OrdinalIgnoreCase) ||
-                            Gpu.Contains("Radeon", StringComparison.OrdinalIgnoreCase);
+    public bool HasAmdGpu => !HasNvidiaGpu &&
+                            (Gpu.Contains("AMD", StringComparison.OrdinalIgnoreCase) ||
+                             Gpu.Contains("Radeon", StringComparison.OrdinalIgnoreCase));
     public bool HasAmdCpu => Cpu.Contains("AMD", StringComparison.OrdinalIgnoreCase) ||
                             Cpu.Contains("Ryzen", StringComparison.OrdinalIgnoreCase);
 
