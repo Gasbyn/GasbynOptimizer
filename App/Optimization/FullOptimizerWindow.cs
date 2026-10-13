@@ -178,7 +178,7 @@ public sealed class FullOptimizerWindow : Window
         var prompt = enable
             ? $"Zapnout modul „{label}“? Původní stav se uloží, aby šel vrátit. Některé změny mohou vyžadovat restart Windows."
             : $"Vrátit modul „{label}“ do původního stavu uloženého při zapnutí?";
-        if (MessageBox.Show(this, prompt, "Gasbyn Optimizer", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        if (System.Windows.MessageBox.Show(this, prompt, "Gasbyn Optimizer", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
 
         SetBusy(true);
         status.Text = enable ? "Ukládám původní stav a zapínám…" : "Obnovuji uložený původní stav…";
@@ -486,13 +486,16 @@ public sealed class FullOptimizerWindow : Window
         _scanStatus.Opacity = busy ? 0.7 : 1;
     }
 
-    private Border Card()
+    private CardPanel Card() => new()
     {
-        return new Border
-        {
-            Background = Brush("#121419"), BorderBrush = Brush("#24272E"), BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(14), Padding = new Thickness(18), Margin = new Thickness(0, 0, 0, 12)
-        };
+        Background = Brush("#121419"), BorderBrush = Brush("#24272E"), BorderThickness = new Thickness(1),
+        CornerRadius = new CornerRadius(14), Padding = new Thickness(18), Margin = new Thickness(0, 0, 0, 12)
+    };
+
+    private sealed class CardPanel : Border
+    {
+        public StackPanel Children { get; } = new() { };
+        public CardPanel() => Child = Children;
     }
 
     private static TextBlock Heading(string text) => new()
