@@ -18,12 +18,10 @@ public partial class MainWindow
     {
         InitializeComponent();
         _tweakEngine.Register(GameMode.Create());
-        Loaded += (_, _) =>
+        Loaded += async (_, _) =>
         {
-            LoadSystemInfo();
             ShowPage("Dashboard");
-            var scan = new StartupScanWindow { Owner = this };
-            scan.ShowDialog();
+            await RunStartupCheckAsync();
         };
     }
 
