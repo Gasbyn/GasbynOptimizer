@@ -32,8 +32,32 @@ public partial class MainWindow
             ShowPage(page);
     }
 
+    private void UpdateNavigationSelection(string page)
+    {
+        foreach (var button in NavPanel.Children.OfType<Button>())
+        {
+            var selected = string.Equals(button.Tag as string, page, StringComparison.OrdinalIgnoreCase);
+            button.Background = selected
+                ? (Brush)FindResource("OrangeSoft")
+                : Brushes.Transparent;
+            button.Foreground = selected
+                ? (Brush)FindResource("OrangeLight")
+                : new SolidColorBrush(Color.FromRgb(144, 149, 159));
+            button.BorderBrush = selected
+                ? new SolidColorBrush(Color.FromRgb(74, 40, 20))
+                : Brushes.Transparent;
+            button.BorderThickness = selected ? new Thickness(1) : new Thickness(0);
+            button.FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal;
+
+            button.ApplyTemplate();
+            if (button.Template.FindName("NavActiveIndicator", button) is FrameworkElement indicator)
+                indicator.Visibility = selected ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
     private void ShowPage(string page)
     {
+        UpdateNavigationSelection(page);
         PageTitle.Text = page;
         PageSubtitle.Text = page switch
         {
