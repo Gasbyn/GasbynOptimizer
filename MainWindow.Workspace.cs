@@ -62,7 +62,13 @@ public partial class MainWindow
                 "Fortnite – preferovat výkonnou GPU",
                 "Požádá Windows, aby pro Fortnite preferoval výkonnou grafiku. Na PC s jedinou GPU se nemusí projevit.",
                 "gpu-preference",
-                "ON: nastaví uživatelskou DirectX preferenci GpuPreference=2 pro Fortnite. OFF: obnoví původní hodnotu. Pokud detekce GPU selže, tweak je zamčený; pokročilý režim dovolí ruční obejití tohoto upozornění.", "PODMÍNĚNĚ", "FPS", "POKROČILÉ");
+                "ON: nastaví uživatelskou DirectX preferenci GpuPreference=2 pro Fortnite. OFF: obnoví původní hodnotu. Pokud detekce GPU selže, tweak je označen jako nepodporovaný; pokročilý režim dovolí ruční obejití upozornění.", "PODMÍNĚNĚ", "FPS", "POKROČILÉ");
+
+            AddWorkspaceTweakCard(
+                "Vypnout Fullscreen Optimizations pro Fortnite",
+                "Nastaví kompatibilitní volbu Windows pro Fortnite. Účinek závisí na cestě ke skutečné instalaci hry; po změně hru restartuj.",
+                "fullscreen-optimizations",
+                "ON: nastaví DISABLEDXMAXIMIZEDWINDOWEDMODE pro nalezený Fortnite executable. OFF: obnoví původní hodnotu. Není-li executable nalezen, modul je označen jako nepodporovaný.", "POKROČILÉ", "FORTNITE");
 
             _ = RefreshWorkspaceTweakStatesAsync();
             return;
@@ -134,12 +140,17 @@ public partial class MainWindow
 
     private bool IsWorkspaceTweakIncompatible(string id)
     {
-        if (!string.Equals(id, "gpu-preference", StringComparison.OrdinalIgnoreCase))
-            return false;
+        if (string.Equals(id, "gpu-preference", StringComparison.OrdinalIgnoreCase))
+        {
+            var gpu = _hardwareInventory?.Gpu;
+            return string.IsNullOrWhiteSpace(gpu) ||
+                   gpu.Contains("GPU nedostupné", StringComparison.OrdinalIgnoreCase);
+        }
 
-        var gpu = _hardwareInventory?.Gpu;
-        return string.IsNullOrWhiteSpace(gpu) ||
-               gpu.Contains("GPU nedostupné", StringComparison.OrdinalIgnoreCase);
+        if (string.Equals(id, "fullscreen-optimizations", StringComparison.OrdinalIgnoreCase))
+            return !File.Exists(FindFortniteExecutablePath());
+
+        return false;
     }
 
     private void AddAmdCompatibilityInfo(GasbynOptimizer.Services.HardwareInventory? hardware, bool advanced)
@@ -186,7 +197,7 @@ public partial class MainWindow
         var advanced = OptimizerPreferencesStore.Load().AdvancedRecommendations;
         var locked = incompatible && !advanced;
         object detailForHover = locked
-            ? "🔒 Tweak je nekompatibilní s tvým PC, pro obejití zajdi do Settings a zapni Pokročilý režim doporučení."
+            ? "🔒 Tato optimalizace není podporována na zjištěné konfiguraci. Zapni pokročilý režim v Settings, pokud ji chceš odemknout na vlastní odpovědnost."
             : BuildTweakToolTip(title, description, tooltip);
         var card = new Border
         {
@@ -237,7 +248,7 @@ public partial class MainWindow
         foreach (var badge in badges.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase))
             badgePanel.Children.Add(CreateTweakBadge(badge));
         if (incompatible)
-            badgePanel.Children.Add(CreateTweakBadge("NEKOMPATIBILNÍ"));
+            badgePanel.Children.Add(CreateTweakBadge(advanced ? "NEPODPOROVÁNO" : "NEKOMPATIBILNÍ"));
         if (locked)
             badgePanel.Children.Add(CreateTweakBadge("ZAMČENO"));
         if (badgePanel.Children.Count > 0)
@@ -256,6 +267,21 @@ public partial class MainWindow
         Grid.SetColumn(text, 0);
         root.Children.Add(text);
 
+        var switchPanel = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        if (locked)
+        {
+            var lockIcon = new TextBlock
+            {
+                Text = "🔒",
+                FontSize = 16,
+                Foreground = (Brush)FindResource("TextDim"),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 10, 0),
+                ToolTip = "Zamčeno — zapni pokročilý režim v Settings."
+            };
+            switchPanel.Children.Add(lockIcon);
+        }
+
         var toggle = new ToggleButton
         {
             Style = (Style)FindResource("SwitchToggleButton"),
@@ -264,8 +290,10 @@ public partial class MainWindow
             VerticalAlignment = VerticalAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Right,
             ToolTip = locked
-                ? "Tweak je nekompatibilní s tvým PC, pro obejití zajdi do Settings a zapni Pokročilý režim doporučení."
-                : BuildTweakToolTip(title, description, tooltip)
+                ? "🔒 Nepodporováno na této konfiguraci. Pokročilý režim v Settings umožní obejít toto omezení."
+                : incompatible && advanced
+                    ? "NEPODPOROVÁNO — povoleno pouze díky pokročilému režimu. Změna může selhat nebo nemít účinek."
+                    : BuildTweakToolTip(title, description, tooltip)
         };
         ToolTipService.SetShowDuration(toggle, 30000);
         ToolTipService.SetInitialShowDelay(toggle, 400);
@@ -281,8 +309,9 @@ public partial class MainWindow
                 await ChangeWorkspaceTweakAsync(id, false, toggle, status);
         };
         _workspaceSwitches[id] = toggle;
-        Grid.SetColumn(toggle, 1);
-        root.Children.Add(toggle);
+        switchPanel.Children.Add(toggle);
+        Grid.SetColumn(switchPanel, 1);
+        root.Children.Add(switchPanel);
         card.Child = root;
         SecondaryContent.Children.Add(card);
     }
@@ -531,6 +560,7 @@ public partial class MainWindow
         "game-dvr" => "Vypnout Game DVR na pozadí",
         "mouse-acceleration" => "Vypnout akceleraci myši",
         "gpu-preference" => "Fortnite – preferovat výkonnou GPU",
+        "fullscreen-optimizations" => "Vypnout Fullscreen Optimizations pro Fortnite",
         "startup-delay" => "Zkrátit odklad spouštění aplikací",
         "taskbar-animations" => "Vypnout animace hlavního panelu",
         "widgets" => "Skrýt tlačítko Widgets",
@@ -586,6 +616,14 @@ public partial class MainWindow
                     case "gpu-preference":
                         SetWorkspaceString(@"Software\Microsoft\DirectX\UserGpuPreferences", "FortniteClient-Win64-Shipping.exe", "GpuPreference=2;", operations);
                         break;
+                    case "fullscreen-optimizations":
+                    {
+                        var executable = FindFortniteExecutablePath();
+                        if (!File.Exists(executable))
+                            throw new InvalidOperationException("Fortnite executable nebyl nalezen. Tento tweak je na této instalaci nepodporovaný.");
+                        SetWorkspaceString(@"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers", executable, "~ DISABLEDXMAXIMIZEDWINDOWEDMODE", operations);
+                        break;
+                    }
                     case "startup-delay":
                         SetWorkspaceDword(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize", "StartupDelayInMSec", 0, operations);
                         break;
@@ -661,6 +699,24 @@ public partial class MainWindow
     private static WorkspaceTweakSnapshot CaptureWorkspaceTweak(string id)
     {
         var snapshot = new WorkspaceTweakSnapshot();
+        if (id == "fullscreen-optimizations")
+        {
+            var executable = FindFortniteExecutablePath();
+            if (!File.Exists(executable))
+                throw new InvalidOperationException("Fortnite executable nebyl nalezen.");
+            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers");
+            var current = key?.GetValue(executable);
+            snapshot.RegistryValues.Add(new WorkspaceTweakRegistrySnapshot
+            {
+                Path = @"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers",
+                Name = executable,
+                Exists = current is not null,
+                Kind = current is null ? RegistryValueKind.String.ToString() : key!.GetValueKind(executable).ToString(),
+                Data = current is null ? "" : SerializeWorkspaceRegistryValue(current)
+            });
+            return snapshot;
+        }
+
         if (id == "power-plan")
         {
             var output = RunWorkspacePowerCfg("/getactivescheme");
@@ -692,6 +748,7 @@ public partial class MainWindow
             {
                 (Path: @"Software\Microsoft\DirectX\UserGpuPreferences", Name: "FortniteClient-Win64-Shipping.exe")
             },
+            "fullscreen-optimizations" => throw new InvalidOperationException("Fullscreen optimization backup se musí zachytit podle konkrétní cesty k Fortnite."),
             "startup-delay" => new[]
             {
                 (Path: @"Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize", Name: "StartupDelayInMSec")
@@ -869,6 +926,8 @@ public partial class MainWindow
                     ? "akcelerace myši vypnutá" : "nastavení myši výchozí/jiné",
                 "gpu-preference" => Read(@"Software\Microsoft\DirectX\UserGpuPreferences", "FortniteClient-Win64-Shipping.exe")?.ToString() == "GpuPreference=2;"
                     ? "Windows preferuje výkonnou GPU pro Fortnite" : "výchozí preference GPU",
+                "fullscreen-optimizations" => Read(@"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers", FindFortniteExecutablePath())?.ToString()?.Contains("DISABLEDXMAXIMIZEDWINDOWEDMODE", StringComparison.OrdinalIgnoreCase) == true
+                    ? "Fullscreen Optimizations vypnuté pro Fortnite" : "Fullscreen Optimizations ve výchozím stavu",
                 "startup-delay" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize", "StartupDelayInMSec") is int delay && delay == 0
                     ? "odklad spuštění nastaven na 0 ms" : "odklad spuštění výchozí/jiný",
                 "taskbar-animations" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarAnimations") is int animations && animations == 0
@@ -888,6 +947,38 @@ public partial class MainWindow
             };
         }
         catch (Exception ex) { return "stav nelze přečíst: " + ex.Message; }
+    }
+
+    private static string FindFortniteExecutablePath()
+    {
+        var candidates = new List<string>();
+        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        candidates.Add(Path.Combine(programFiles, "Epic Games", "Fortnite", "FortniteGame", "Binaries", "Win64", "FortniteClient-Win64-Shipping.exe"));
+        candidates.Add(Path.Combine(programFilesX86, "Epic Games", "Fortnite", "FortniteGame", "Binaries", "Win64", "FortniteClient-Win64-Shipping.exe"));
+        candidates.Add(Path.Combine(local, "FortniteGame", "Binaries", "Win64", "FortniteClient-Win64-Shipping.exe"));
+        foreach (var drive in new[] { "C:", "D:", "E:" })
+            candidates.Add(Path.Combine(drive + Path.DirectorySeparatorChar, "Epic Games", "Fortnite", "FortniteGame", "Binaries", "Win64", "FortniteClient-Win64-Shipping.exe"));
+
+        var manifestRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Epic", "EpicGamesLauncher", "Data", "Manifests");
+        try
+        {
+            if (Directory.Exists(manifestRoot))
+            {
+                foreach (var manifest in Directory.EnumerateFiles(manifestRoot, "*.item"))
+                {
+                    var json = File.ReadAllText(manifest);
+                    if (!json.Contains("Fortnite", StringComparison.OrdinalIgnoreCase)) continue;
+                    var match = System.Text.RegularExpressions.Regex.Match(json, @"""InstallLocation""\s*:\s*""(?<path>[^""]+)""");
+                    if (match.Success)
+                        candidates.Insert(0, Path.Combine(match.Groups["path"].Value.Replace("\\\\", "\\"), "FortniteGame", "Binaries", "Win64", "FortniteClient-Win64-Shipping.exe"));
+                }
+            }
+        }
+        catch { }
+
+        return candidates.FirstOrDefault(File.Exists) ?? candidates[0];
     }
 
     private static string RunWorkspacePowerCfg(string arguments)
