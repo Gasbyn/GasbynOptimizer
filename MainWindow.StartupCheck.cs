@@ -55,11 +55,7 @@ public partial class MainWindow
 
             notes.AppendLine();
             notes.AppendLine("DOPORUČENÍ");
-            notes.AppendLine(_hardwareInventory.HasNvidiaGpu
-                ? "Detekována NVIDIA GPU. Obecné vratné Windows tweaky mohou být použitelné; AMD Radeon-only nastavení se nedoporučuje."
-                : _hardwareInventory.HasAmdGpu
-                    ? "Detekována AMD Radeon GPU. Doporučení budou upřednostňovat obecné vratné změny; ovladačové zásahy zůstávají ruční."
-                    : "Neznámý výrobce GPU. Použij jen obecné vratné tweaky a nejprve ověř popis každého modulu.");
+            notes.AppendLine(HardwareInventoryServiceForSettings(_hardwareInventory));
             notes.AppendLine("Před změnou se uloží původní stav. Přínos FPS není garantovaný.");
             StartupScanDetails.Text = notes.ToString();
             StartupScanStatus.Text = "Kontrola dokončena · žádné systémové změny nebyly provedeny.";
@@ -74,6 +70,9 @@ public partial class MainWindow
             StartupScanContinue.IsEnabled = true;
         }
     }
+
+    private static string HardwareInventoryServiceForSettings(HardwareInventory inventory) =>
+        inventory.BuildRecommendations(OptimizerPreferencesStore.Load().AdvancedRecommendations);
 
     private static string ReadStartupSettings()
     {
