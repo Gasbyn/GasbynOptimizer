@@ -165,7 +165,7 @@ public partial class MainWindow
         var ids = _workspaceSwitchStatuses.Keys.ToArray();
         if (ids.Length == 0) return;
 
-        Dictionary<string, WorkspaceSnapshot> state;
+        Dictionary<string, WorkspaceTweakSnapshot> state;
         Dictionary<string, string> actual;
         try
         {
@@ -259,7 +259,7 @@ public partial class MainWindow
         Directory.CreateDirectory(WorkspaceDataDirectory);
         var state = LoadWorkspaceState();
         var operations = new List<string>();
-        WorkspaceSnapshot? snapshot = null;
+        WorkspaceTweakSnapshot? snapshot = null;
         var name = WorkspaceTweakName(id);
         var action = enable ? "ENABLE" : "RESTORE";
 
@@ -341,9 +341,9 @@ public partial class MainWindow
         }
     }
 
-    private static WorkspaceSnapshot CaptureWorkspaceTweak(string id)
+    private static WorkspaceTweakSnapshot CaptureWorkspaceTweak(string id)
     {
-        var snapshot = new WorkspaceSnapshot();
+        var snapshot = new WorkspaceTweakSnapshot();
         if (id == "power-plan")
         {
             var output = RunWorkspacePowerCfg("/getactivescheme");
@@ -385,7 +385,7 @@ public partial class MainWindow
         {
             using var key = Registry.CurrentUser.OpenSubKey(item.Path);
             var value = key?.GetValue(item.Name, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-            snapshot.RegistryValues.Add(new WorkspaceRegistrySnapshot
+            snapshot.RegistryValues.Add(new WorkspaceTweakRegistrySnapshot
             {
                 Path = item.Path, Name = item.Name, Exists = value is not null,
                 Kind = value is null ? RegistryValueKind.String.ToString() : key!.GetValueKind(item.Name).ToString(),
@@ -402,7 +402,7 @@ public partial class MainWindow
         _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? ""
     };
 
-    private static void RestoreWorkspaceTweak(string id, WorkspaceSnapshot snapshot, List<string> operations)
+    private static void RestoreWorkspaceTweak(string id, WorkspaceTweakSnapshot snapshot, List<string> operations)
     {
         if (id == "power-plan")
         {
@@ -455,14 +455,14 @@ public partial class MainWindow
         key.SetValue(name, value, RegistryValueKind.String);
     }
 
-    private static Dictionary<string, WorkspaceSnapshot> LoadWorkspaceState()
+    private static Dictionary<string, WorkspaceTweakSnapshot> LoadWorkspaceState()
     {
         try
         {
             if (!File.Exists(WorkspaceStatePath))
-                return new Dictionary<string, WorkspaceSnapshot>(StringComparer.OrdinalIgnoreCase);
-            return JsonSerializer.Deserialize<Dictionary<string, WorkspaceSnapshot>>(File.ReadAllText(WorkspaceStatePath))
-                ?? new Dictionary<string, WorkspaceSnapshot>(StringComparer.OrdinalIgnoreCase);
+                return new Dictionary<string, WorkspaceTweakSnapshot>(StringComparer.OrdinalIgnoreCase);
+            return JsonSerializer.Deserialize<Dictionary<string, WorkspaceTweakSnapshot>>(File.ReadAllText(WorkspaceStatePath))
+                ?? new Dictionary<string, WorkspaceTweakSnapshot>(StringComparer.OrdinalIgnoreCase);
         }
         catch
         {
@@ -470,7 +470,7 @@ public partial class MainWindow
         }
     }
 
-    private static void SaveWorkspaceState(Dictionary<string, WorkspaceSnapshot> state)
+    private static void SaveWorkspaceState(Dictionary<string, WorkspaceTweakSnapshot> state)
     {
         Directory.CreateDirectory(WorkspaceDataDirectory);
         var temp = WorkspaceStatePath + ".tmp";
@@ -478,7 +478,7 @@ public partial class MainWindow
         File.Move(temp, WorkspaceStatePath, overwrite: true);
     }
 
-    private static void AddWorkspaceBackupLog(List<string> operations, WorkspaceSnapshot snapshot)
+    private static void AddWorkspaceBackupLog(List<string> operations, WorkspaceTweakSnapshot snapshot)
     {
         if (!string.IsNullOrWhiteSpace(snapshot.PowerScheme))
             operations.Add("BACKUP POWER PLAN: original scheme ID=" + snapshot.PowerScheme);
@@ -536,13 +536,13 @@ public partial class MainWindow
         return stdout;
     }
 
-    private sealed class WorkspaceSnapshot
+    private sealed class WorkspaceTweakSnapshot
     {
         public string? PowerScheme { get; set; }
-        public List<WorkspaceRegistrySnapshot> RegistryValues { get; set; } = new();
+        public List<WorkspaceTweakRegistrySnapshot> RegistryValues { get; set; } = new();
     }
 
-    private sealed class WorkspaceRegistrySnapshot
+    private sealed class WorkspaceTweakRegistrySnapshot
     {
         public string Path { get; set; } = "";
         public string Name { get; set; } = "";
@@ -839,13 +839,13 @@ public partial class MainWindow
         Cursor = System.Windows.Input.Cursors.Hand
     };
 
-    private sealed class WorkspaceSnapshot
+    private sealed class WorkspaceTweakSnapshot
     {
         public string? PowerScheme { get; set; }
-        public List<WorkspaceRegistrySnapshot> RegistryValues { get; set; } = new();
+        public List<WorkspaceTweakRegistrySnapshot> RegistryValues { get; set; } = new();
     }
 
-    private sealed class WorkspaceRegistrySnapshot
+    private sealed class WorkspaceTweakRegistrySnapshot
     {
         public string Path { get; set; } = "";
         public string Name { get; set; } = "";
