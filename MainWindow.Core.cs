@@ -3,6 +3,8 @@ using System.Linq;
 using System.Management;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using GasbynOptimizer.Core;
 using GasbynOptimizer.Models;
 using GasbynOptimizer.Tweaks.Gaming;
@@ -56,7 +58,7 @@ public partial class MainWindow
         DashboardView.Visibility = dashboard ? Visibility.Visible : Visibility.Collapsed;
         SecondaryView.Visibility = dashboard ? Visibility.Collapsed : Visibility.Visible;
         SecondaryContent.Children.Clear();
-        if (dashboard) return;
+        if (dashboard) { AnimateContent(); return; }
 
         AddPageHeader(page);
         switch (page)
@@ -129,6 +131,25 @@ public partial class MainWindow
             default:
                 AddInfoCard("Open Full Optimizer", "Reverzibilní optimalizace a FPS testy.", "Open Full Optimizer");
                 break;
+        }
+        AnimateContent();
+    }
+
+    private void AnimateContent()
+    {
+        ContentHost.Opacity = 0;
+        ContentHost.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(220))
+        {
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+        });
+
+        if (ContentHost.RenderTransform is TranslateTransform transform)
+        {
+            transform.Y = 9;
+            transform.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(9, 0, TimeSpan.FromMilliseconds(220))
+            {
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            });
         }
     }
 
