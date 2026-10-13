@@ -68,14 +68,14 @@ jobs:
           git tag -f v2.0.B5 $env:GITHUB_SHA
           git push origin +refs/tags/v2.0.B5
 
-      - name: Point B8 release tag at the exact build commit
-        if: github.ref == 'refs/heads/release/v2.0.B8'
+      - name: Point release tag at the exact build commit
+        if: startsWith(github.ref, 'refs/heads/release/')
         shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f v2.0.B8 $env:GITHUB_SHA
-          git push origin +refs/tags/v2.0.B8
+          git tag -f "$env:RELEASE_TAG" $env:GITHUB_SHA
+          git push origin "+refs/tags/$env:RELEASE_TAG"
 
       - name: Publish release from release branch
         if: startsWith(github.ref, 'refs/heads/release/')

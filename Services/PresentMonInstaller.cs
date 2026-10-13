@@ -100,9 +100,16 @@ internal static class PresentMonInstaller
                 await source.CopyToAsync(destination);
 
             progress?.Report("Ověřuji SHA-256 staženého souboru…");
-            await using var verifyStream = File.OpenRead(tempPath);
-            var actualBytes = await SHA256.HashDataAsync(verifyStream);
-            var actualDigest = Convert.ToHexString(actualBytes);
+            string actualDigest;
+            // Close the verification stream before moving the file. On Windows, File.OpenRead
+            // does not allow delete/rename sharing, so keeping this handle alive makes File.Move
+            // fail with "The process cannot access the file because it is being used by another process".
+            await using (var verifyStream = File.OpenRead(tempPath))
+            {
+                var actualBytes = await SHA256.HashDataAsync(verifyStream);
+                actualDigest = Convert.ToHexString(actualBytes);
+            }
+
             if (!string.Equals(actualDigest, expectedDigest, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("SHA-256 nesouhlasí. Stažený soubor nebyl nainstalován.");
 
