@@ -52,6 +52,7 @@ public partial class MainWindow
             {
                 preferences.AdvancedRecommendations = enabled;
                 OptimizerPreferencesStore.Save(preferences);
+                // The next Tweaks/Gaming navigation rebuilds cards with the new compatibility state.
             });
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 14, 0, 0) };
