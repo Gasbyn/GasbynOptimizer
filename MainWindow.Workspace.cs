@@ -1366,6 +1366,24 @@ public partial class MainWindow
             "Otevři aplikaci ručně a test zkus znovu.");
     }
 
+    private static List<int> GetBenchmarkTargetProcessIds(string processName)
+    {
+        var executableName = Path.GetFileNameWithoutExtension(processName.Trim());
+        if (string.IsNullOrWhiteSpace(executableName))
+            return new List<int>();
+
+        var processes = Process.GetProcessesByName(executableName);
+        try
+        {
+            return processes.Select(process => process.Id).ToList();
+        }
+        finally
+        {
+            foreach (var process in processes)
+                process.Dispose();
+        }
+    }
+
     private async Task RunWorkspaceFpsTestAsync(string exePath, string processName, TextBlock status, TextBlock history, Button button)
     {
         if (button is null) return;
@@ -1393,30 +1411,76 @@ public partial class MainWindow
                 throw new FileNotFoundException("PresentMon.exe nebyl nalezen.");
 
             SaveWorkspacePresentMonPath(exePath);
-            status.Text = "Spouštím měření…";
+            var targetProcessIds = GetBenchmarkTargetProcessIds(processName);
+            if (targetProcessIds.Count == 0)
+                throw new InvalidOperationException($"Proces {Path.GetFileName(processName)} už neběží. Spusť hru/aplikaci a zkus test znovu.");
+
+            status.Text = "Spouštím PresentMon jako správce… potvrď případné okno Řízení uživatelských účtů.";
             var folder = Path.Combine(WorkspaceDataDirectory, "FpsTests");
             Directory.CreateDirectory(folder);
             var output = Path.Combine(folder, $"presentmon-{DateTime.Now:yyyyMMdd-HHmmss}.csv");
-            using var process = new Process { StartInfo = new ProcessStartInfo(exePath) { UseShellExecute = false, CreateNoWindow = true } };
-            process.StartInfo.ArgumentList.Add("--process_name");
-            process.StartInfo.ArgumentList.Add(processName);
-            process.StartInfo.ArgumentList.Add("--output_file");
-            process.StartInfo.ArgumentList.Add(output);
-            if (!process.Start()) throw new InvalidOperationException("PresentMon se nepodařilo spustit.");
+            var sessionName = "GasbynOptimizer-" + Guid.NewGuid().ToString("N");
+            var processIdArguments = string.Join(" ", targetProcessIds.Select(id => $"--process_id {id}"));
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = exePath,
+                // Elevate only PresentMon, not the whole optimizer. Windows will show its standard UAC consent prompt.
+                UseShellExecute = true,
+                Verb = "runas",
+                WindowStyle = ProcessWindowStyle.Hidden,
+                WorkingDirectory = Path.GetDirectoryName(exePath) ?? AppContext.BaseDirectory,
+                Arguments = $"{processIdArguments} --output_file \"{output}\" --timed 60 --terminate_after_timed --session_name {sessionName}"
+            };
+            using var process = new Process { StartInfo = startInfo };
+            try
+            {
+                if (!process.Start()) throw new InvalidOperationException("PresentMon se nepodařilo spustit.");
+            }
+            catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+            {
+                throw new InvalidOperationException("Spuštění PresentMon jako správce bylo zrušeno. Pro měření potvrď okno Windows UAC.", ex);
+            }
 
+            var finished = false;
             for (var seconds = 60; seconds > 0; seconds--)
             {
                 status.Text = $"Měření běží… zbývá {seconds} s. Nech hru běžet.";
                 await Task.Delay(1000);
-                if (process.HasExited) break;
+                if (process.HasExited)
+                {
+                    finished = true;
+                    break;
+                }
             }
-            if (!process.HasExited) process.Kill(entireProcessTree: true);
+
+            if (!finished && !process.HasExited)
+            {
+                status.Text = "Měření dokončeno, čekám na uložení CSV…";
+                try
+                {
+                    await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(15));
+                    finished = true;
+                }
+                catch (TimeoutException)
+                {
+                    try { process.Kill(entireProcessTree: true); } catch { /* PresentMon may be elevated; timed capture should normally exit by itself. */ }
+                    throw new TimeoutException("PresentMon se po 60sekundovém testu neukončil včas. Zkus test znovu; pokud problém přetrvá, restartuj optimizer.");
+                }
+            }
+
+            if (!finished && process.HasExited) finished = true;
             try { await process.WaitForExitAsync(); } catch { }
             await Task.Delay(800);
 
             var frameTimes = ParseWorkspaceFrameTimes(output);
             if (frameTimes.Count < 30)
-                throw new InvalidOperationException("PresentMon nezapsal dost snímků. Ověř název procesu, nech hru běžet a případně spusť PresentMon jako správce.");
+            {
+                var exitInfo = process.HasExited ? $" Kód ukončení PresentMon: {process.ExitCode}." : "";
+                throw new InvalidOperationException(
+                    $"PresentMon zapsal jen {frameTimes.Count} použitelných snímků.{exitInfo} " +
+                    "Ověř, že hra skutečně vykresluje (ne jen launcher/menu), a potvrď spuštění PresentMon jako správce. " +
+                    "Pokud už je hra spuštěná, zkus přepnout do jejího okna a test opakovat.");
+            }
 
             var sorted = frameTimes.OrderBy(x => x).ToArray();
             var averageFps = 1000d / frameTimes.Average();
