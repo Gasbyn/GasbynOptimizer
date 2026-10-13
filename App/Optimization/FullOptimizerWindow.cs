@@ -255,11 +255,7 @@ public sealed class FullOptimizerWindow : Window
             var advanced = OptimizerPreferencesStore.Load().AdvancedRecommendations;
             _hardwareSummary.Text =
                 $"CPU: {hw.Cpu}\nGPU: {hw.Gpu}\nRAM: {hw.Memory}\nZákladní deska: {hw.Motherboard}\nDisky: {hw.Disks}\nWindows: {hw.Windows}";
-            _hardwareRecommendationStatus.Text = hw.HasNvidiaGpu
-                ? "DOPORUČENÍ · Detekována NVIDIA GPU. Obecné vratné Windows tweaky jsou dostupné; AMD Radeon-only úpravy nejsou použity."
-                : hw.HasAmdGpu
-                    ? "DOPORUČENÍ · Detekována AMD Radeon GPU. Používej obecné vratné změny; ovladačové zásahy nejsou automatizované."
-                    : "DOPORUČENÍ · Výrobce GPU není jasný. Používej pouze obecné, vratné změny a čti popisky.";
+            _hardwareRecommendationStatus.Text = hw.BuildRecommendations(advanced);
             _amdGpuStatus.Text = !hw.HasAmdGpu
                 ? (advanced
                     ? "INFO · AMD Radeon GPU nebyla detekována. Modul zůstává zakázaný, protože není kompatibilní s hardwarem."
