@@ -235,5 +235,23 @@
             </StackPanel>
         </Border>
     </Grid>
+    <Grid x:Name="DriftOverlay" Panel.ZIndex="110" Background="#C808090B" Visibility="Collapsed">
+        <Border Width="760" MaxHeight="690" Padding="28" Background="#121419" BorderBrush="#6A3B20" BorderThickness="1"
+                CornerRadius="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="ZMĚNY V OPTIMALIZACÍCH DETEKOVÁNY" FontSize="19" FontWeight="Bold" Foreground="#FF6A00"/>
+                <TextBlock Grid.Row="1" Text="Některá nastavení, která Gasbyn Optimizer dříve zapnul, se ve Windows změnila. Vyber, co s nimi udělat." 
+                           Foreground="#AEB3BD" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,14"/>
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="420">
+                    <TextBlock x:Name="DriftDifferences" TextWrapping="Wrap" Foreground="#F4F4F5" FontSize="12" LineHeight="19"/>
+                </ScrollViewer>
+                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                    <Button Style="{StaticResource NavButton}" Content="NECHAT AKTUÁLNÍ" Click="KeepCurrentDrift_Click" Margin="0,0,10,0"/>
+                    <Button Style="{StaticResource ActionButton}" Content="VRÁTIT PŮVODNÍ" Click="RestoreOriginalDrift_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
     </Grid>
 </Window>
