@@ -1264,6 +1264,108 @@ public partial class MainWindow
         RefreshWorkspaceBenchmarkHistory();
     }
 
+    private static bool IsBenchmarkTargetProcessRunning(string processName)
+    {
+        var executableName = Path.GetFileNameWithoutExtension(processName.Trim());
+        if (string.IsNullOrWhiteSpace(executableName))
+            return false;
+
+        var processes = Process.GetProcessesByName(executableName);
+        try
+        {
+            return processes.Length > 0;
+        }
+        finally
+        {
+            foreach (var process in processes)
+                process.Dispose();
+        }
+    }
+
+    private async Task EnsureBenchmarkTargetProcessRunningAsync(string processName, TextBlock status)
+    {
+        var executableName = Path.GetFileName(processName.Trim());
+        var isFortnite = string.Equals(
+            Path.GetFileNameWithoutExtension(executableName),
+            "FortniteClient-Win64-Shipping",
+            StringComparison.OrdinalIgnoreCase);
+
+        if (IsBenchmarkTargetProcessRunning(processName))
+        {
+            status.Text = $"Proces {executableName} už běží. Kontroluji PresentMon…";
+            return;
+        }
+
+        if (isFortnite)
+        {
+            status.Text = "Fortnite neběží. Spouštím ho přes Epic Games Launcher…";
+            try
+            {
+                var launchInfo = new ProcessStartInfo(
+                    "com.epicgames.launcher://apps/Fortnite?action=launch&silent=true")
+                {
+                    UseShellExecute = true
+                };
+                if (Process.Start(launchInfo) is null)
+                    throw new InvalidOperationException("Windows nepotvrdil spuštění Epic Games Launcheru.");
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    "Fortnite neběží a nepodařilo se ho otevřít přes Epic Games Launcher. " +
+                    "Ověř, že je Epic Games Launcher nainstalovaný, a případně spusť Fortnite ručně. " +
+                    "Detail: " + ex.Message, ex);
+            }
+        }
+        else
+        {
+            var launchName = executableName;
+            if (string.IsNullOrWhiteSpace(Path.GetExtension(launchName)))
+                launchName += ".exe";
+
+            status.Text = $"Proces {launchName} neběží. Pokouším se ho spustit…";
+            try
+            {
+                if (Process.Start(new ProcessStartInfo(launchName) { UseShellExecute = true }) is null)
+                    throw new InvalidOperationException("Windows nepotvrdil spuštění aplikace.");
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Proces {launchName} neběží a Windows ho nedokázal spustit pouze podle názvu. " +
+                    "Spusť aplikaci ručně nebo zadej název programu, který Windows dokáže najít. " +
+                    "Detail: " + ex.Message, ex);
+            }
+        }
+
+        var timeoutSeconds = isFortnite ? 180 : 30;
+        for (var elapsed = 0; elapsed < timeoutSeconds; elapsed++)
+        {
+            if (IsBenchmarkTargetProcessRunning(processName))
+            {
+                status.Text = $"Proces {executableName} byl spuštěn. Připravuji test…";
+                // Give a newly launched game a short moment to initialize before starting capture.
+                await Task.Delay(isFortnite ? 8000 : 1500);
+                return;
+            }
+
+            if (elapsed % 5 == 0)
+                status.Text = $"Čekám na spuštění {executableName}… ({elapsed}/{timeoutSeconds} s)";
+            await Task.Delay(1000);
+        }
+
+        if (isFortnite)
+        {
+            throw new TimeoutException(
+                "Fortnite se do 180 sekund nespustil. Nech Epic Games Launcher otevřít hru, " +
+                "počkej na načtení Fortnite a potom test spusť znovu.");
+        }
+
+        throw new TimeoutException(
+            $"Proces {executableName} se do {timeoutSeconds} sekund nespustil. " +
+            "Otevři aplikaci ručně a test zkus znovu.");
+    }
+
     private async Task RunWorkspaceFpsTestAsync(string exePath, string processName, TextBlock status, TextBlock history, Button button)
     {
         if (button is null) return;
@@ -1274,9 +1376,11 @@ public partial class MainWindow
         }
 
         button.IsEnabled = false;
-        status.Text = "Kontroluji PresentMon…";
         try
         {
+            // Verify the benchmark target first and launch it when possible.
+            await EnsureBenchmarkTargetProcessRunningAsync(processName, status);
+            status.Text = "Kontroluji PresentMon…";
             var autoManagedPath = Path.GetFullPath(PresentMonInstaller.InstalledPath);
             if (!File.Exists(exePath) ||
                 string.Equals(Path.GetFullPath(exePath), autoManagedPath, StringComparison.OrdinalIgnoreCase))
