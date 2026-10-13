@@ -335,6 +335,30 @@ public partial class MainWindow
             StartupScanStatus.Text = "Aktualizace je připravena. Optimizer se nyní restartuje…";
             Application.Current.Shutdown();
         }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            UpdateLatestReleaseButton.IsEnabled = true;
+            UpdateLatestReleaseButton.Content = "ZKUSIT ZNOVU";
+            UpdateAvailableText.Text = $"ZIP verze {release.Tag} teď vrací 404.";
+            StartupScanDetails.Text += Environment.NewLine + Environment.NewLine +
+                "AKTUALIZACE SE NEPOVEDLA" + Environment.NewLine +
+                "GitHub vrátil 404 i po opakovaných pokusech. Otevírám stránku vydání, kde lze zkontrolovat dostupnost ZIPu.";
+
+            try
+            {
+                Process.Start(new ProcessStartInfo(release.Url) { UseShellExecute = true });
+            }
+            catch
+            {
+                // The update failure is already reported; opening the browser is best-effort.
+            }
+
+            MessageBox.Show(
+                $"GitHub vrátil 404 při stahování ZIPu verze {release.Tag}, a to i po opakovaných pokusech.\n\nOtevřel jsem stránku vydání v prohlížeči. Optimizer zůstává spuštěný.",
+                "Gasbyn Optimizer — aktualizace",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
         catch (Exception ex)
         {
             UpdateLatestReleaseButton.IsEnabled = true;
