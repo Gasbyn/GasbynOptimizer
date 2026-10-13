@@ -1195,6 +1195,17 @@ public partial class MainWindow
         pathRow.Children.Add(browse);
         stack.Children.Add(pathRow);
 
+        var installButton = WorkspaceButton("Automaticky stáhnout / aktualizovat PresentMon");
+        installButton.Margin = new Thickness(0, 9, 0, 0);
+        var installStatus = WorkspaceBody(File.Exists(LoadWorkspacePresentMonPath())
+            ? "PresentMon je vybraný. Tlačítkem můžeš stáhnout nejnovější oficiální verzi."
+            : "PresentMon není nastavený. Gasbyn Optimizer ho může stáhnout přímo z oficiálního vydání a sám vybrat.");
+        installStatus.Margin = new Thickness(0, 7, 0, 0);
+        installStatus.TextWrapping = TextWrapping.Wrap;
+        installButton.Click += async (_, _) => await DownloadPresentMonAsync(installButton, installStatus);
+        stack.Children.Add(installButton);
+        stack.Children.Add(installStatus);
+
         var processRow = new Grid { Margin = new Thickness(0, 10, 0, 0) };
         processRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         processRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -1238,14 +1249,39 @@ public partial class MainWindow
         RefreshWorkspaceBenchmarkHistory();
     }
 
+    private async Task DownloadPresentMonAsync(Button button, TextBlock status)
+    {
+        if (button is null || status is null) return;
+
+        button.IsEnabled = false;
+        try
+        {
+            var result = await PresentMonManager.DownloadLatestAsync(message => status.Text = message);
+            if (_workspacePresentMonPath is not null)
+                _workspacePresentMonPath.Text = result.ExecutablePath;
+            SaveWorkspacePresentMonPath(result.ExecutablePath);
+            status.Text = result.AlreadyInstalled
+                ? $"PresentMon {result.Version} už byl ověřen a je připraven. Cesta byla nastavena automaticky."
+                : $"PresentMon {result.Version} byl stažen z oficiálního vydání a ověřen. Cesta byla nastavena automaticky.";
+        }
+        catch (Exception ex)
+        {
+            status.Text = "PresentMon se nepodařilo stáhnout: " + ex.Message;
+            MessageBox.Show(
+                "PresentMon nebyl nainstalován. Stávající nastavení nebylo změněno.\n\n" + ex.Message,
+                "Gasbyn Optimizer — PresentMon",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+        finally
+        {
+            button.IsEnabled = true;
+        }
+    }
+
     private async Task RunWorkspaceFpsTestAsync(string exePath, string processName, TextBlock status, TextBlock history, Button button)
     {
         if (button is null) return;
-        if (!File.Exists(exePath))
-        {
-            status.Text = "Nejdřív vyber platný PresentMon.exe.";
-            return;
-        }
         if (string.IsNullOrWhiteSpace(processName) || processName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
         {
             status.Text = "Zadej platný název procesu, například FortniteClient-Win64-Shipping.exe.";
@@ -1253,10 +1289,31 @@ public partial class MainWindow
         }
 
         button.IsEnabled = false;
-        status.Text = "Spouštím měření…";
         try
         {
+            if (!File.Exists(exePath))
+            {
+                var answer = MessageBox.Show(
+                    "PresentMon nebyl nalezen. Chceš stáhnout nejnovější 64bitovou verzi z oficiálního GitHubu a nastavit ji automaticky?",
+                    "Automatická příprava PresentMonu",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+                if (answer != MessageBoxResult.Yes)
+                {
+                    status.Text = "Měření zrušeno. PresentMon můžeš stáhnout tlačítkem výše.";
+                    return;
+                }
+
+                status.Text = "Připravuji PresentMon…";
+                var install = await PresentMonManager.DownloadLatestAsync(message => status.Text = message);
+                exePath = install.ExecutablePath;
+                if (_workspacePresentMonPath is not null)
+                    _workspacePresentMonPath.Text = exePath;
+                SaveWorkspacePresentMonPath(exePath);
+            }
+
             SaveWorkspacePresentMonPath(exePath);
+            status.Text = "Spouštím měření…";
             var folder = Path.Combine(WorkspaceDataDirectory, "FpsTests");
             Directory.CreateDirectory(folder);
             var output = Path.Combine(folder, $"presentmon-{DateTime.Now:yyyyMMdd-HHmmss}.csv");
