@@ -37,21 +37,25 @@ jobs:
         shell: pwsh
         run: Compress-Archive -Path publish\* -DestinationPath GasbynOptimizer-win-x64.zip -Force
 
-      - name: Publish B4 release from release branch
-        if: github.ref == 'refs/heads/release/v2.0.B4'
+      - name: Derive release tag
+        if: startsWith(github.ref, 'refs/heads/release/')
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}" -replace '^release/', ''
+          "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
+
+      - name: Publish release from release branch
+        if: startsWith(github.ref, 'refs/heads/release/')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.0.B4
-          name: Gasbyn Optimizer v2.0.B4
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Gasbyn Optimizer ${{ env.RELEASE_TAG }}
           body: |
-            ## Gasbyn Optimizer v2.0.B4
+            ## Gasbyn Optimizer ${{ env.RELEASE_TAG }}
 
-            - Embedded Apps Manager and Startup Manager inside the main window.
-            - Modern thin vertical and horizontal scrollbars.
-            - Startup check for changes to previously managed optimization settings.
-            - ON/OFF controls for HAGS and Fortnite Fullscreen Optimizations.
-            - Advanced mode indicates unsupported tweaks and locks them by default.
-            - Windows executable icon generated from Logo.png.
+            - Automatic in-app updates from official GitHub Releases.
+            - Downloaded packages are verified against GitHub's SHA-256 digest.
+            - Updates are applied by a separate process after the app closes, with a backup and rollback attempt if replacing files fails.
           target_commitish: ${{ github.sha }}
           files: GasbynOptimizer-win-x64.zip
         env:
