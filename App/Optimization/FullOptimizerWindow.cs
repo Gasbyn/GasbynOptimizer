@@ -9,7 +9,9 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using GasbynOptimizer.Services;
 
 namespace GasbynOptimizer.Optimization;
 
@@ -23,6 +25,11 @@ public sealed class FullOptimizerWindow : Window
     private readonly TextBlock _benchmarkStatus = new();
     private bool _busy;
     private readonly Dictionary<string, TextBlock> _toggleStatuses = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ToggleButton> _toggleButtons = new(StringComparer.OrdinalIgnoreCase);
+    private bool _loadingToggles;
+    private TextBlock _hardwareSummary = new();
+    private TextBlock _compatibilityStatus = new();
+    private Border? _amdGpuCard;
 
     private static readonly string DataFolder = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppFolderName);
@@ -56,15 +63,46 @@ public sealed class FullOptimizerWindow : Window
         _scanStatus.Foreground = Brush("#FF9A52");
         _root.Children.Add(_scanStatus);
 
+        var hardwareCard = Card();
+        hardwareCard.Children.Add(Heading("HARDWARE-AWARE SCAN"));
+        _hardwareSummary = Body("Probíhá kontrola CPU, GPU, RAM, základní desky a disků…");
+        _hardwareSummary.Margin = new Thickness(0, 0, 0, 10);
+        hardwareCard.Children.Add(_hardwareSummary);
+        _compatibilityStatus = Body("Doporučení se načtou po dokončení kontroly hardwaru.");
+        hardwareCard.Children.Add(_compatibilityStatus);
+        _root.Children.Add(hardwareCard);
+
+        AddSectionHeader("GAMING");
         AddToggleCard("Windows Game Mode",
-            "Zapne herní režim Windows. Nezaručuje vyšší FPS; výsledek závisí na PC a hrách.",
-            "game-mode", "Zapnout", "Vrátit původní stav");
+            "Umožní Windows upřednostnit herní úlohy. Nezaručuje vyšší FPS; výsledek závisí na PC a hře.",
+            "game-mode",
+            "ON: Zapíše herní režim Windows jako zapnutý. OFF: Vrátí všechny upravené hodnoty do stavu před zapnutím.");
+        AddToggleCard("Vypnout Game DVR na pozadí",
+            "Vypne zachytávání/nahrávání Windows Game DVR na pozadí. Může omezit nahrávání klipů přes Xbox Game Bar.",
+            "game-dvr",
+            "ON: Vypne background capture a App Capture. OFF: Obnoví původní hodnoty a jejich typy.");
+        
+        AddSectionHeader("WINDOWS PERFORMANCE");
         AddToggleCard("Výkonové vizuální efekty",
-            "Nastaví Windows na nejlepší výkon (může vypnout některé animace a vizuální efekty).",
-            "visual-effects", "Zapnout", "Vrátit původní stav");
+            "Nastaví Windows na režim nejlepšího výkonu; některé animace a vizuální efekty se mohou vypnout.",
+            "visual-effects",
+            "ON: Nastaví VisualFXSetting=2. OFF: Vrátí původní hodnotu, nebo odstraní hodnotu, pokud původně neexistovala.");
         AddToggleCard("High Performance power plan",
             "Přepne na vestavěný plán Vysoký výkon. Může zvýšit spotřebu a teploty; původní plán se uloží.",
-            "power-plan", "Zapnout", "Vrátit původní stav");
+            "power-plan",
+            "ON: Spustí powercfg.exe /setactive SCHEME_MIN. OFF: Znovu aktivuje původní ID power plánu.");
+
+        AddSectionHeader("WINDOWS RESPONSIVENESS");
+        AddToggleCard("Vypnout efekty průhlednosti",
+            "Vypne průhlednost nabídky Start a hlavního panelu. Očekávej hlavně změnu vzhledu, ne garantované FPS.",
+            "transparency",
+            "ON: Nastaví EnableTransparency=0. OFF: Vrátí původní hodnotu nebo odstraní nově vytvořenou hodnotu.");
+        AddToggleCard("Rychlejší nabídky a animace oken",
+            "Nastaví MenuShowDelay na 100 ms a vypne animaci minimalizace/maximalizace. Změní chování UI Windows.",
+            "fast-menus",
+            "ON: Nastaví MenuShowDelay=100 a MinAnimate=0. OFF: Obnoví původní obě hodnoty."); 
+
+        AddAmdGpuCompatibilityCard();
 
         var restoreCard = Card();
         restoreCard.Children.Add(Heading("BOD OBNOVENÍ WINDOWS"));
@@ -118,24 +156,81 @@ public sealed class FullOptimizerWindow : Window
         };
     }
 
-    private void AddToggleCard(string title, string description, string id, string enableText, string restoreText)
+    private void AddSectionHeader(string title)
+    {
+        _root.Children.Add(new TextBlock
+        {
+            Text = title, FontSize = 11, FontWeight = FontWeights.Bold,
+            Foreground = Brush("#858A94"), Margin = new Thickness(2, 12, 0, 8)
+        });
+    }
+
+    private void AddToggleCard(string title, string description, string id, string onOffTooltip)
     {
         var card = Card();
-        card.Children.Add(Heading(title));
-        card.Children.Add(Body(description));
-        var status = new TextBlock { Text = "Čekám na kontrolu…", Foreground = Brush("#FF9A52"), Margin = new Thickness(0, 10, 0, 0) };
+        card.ToolTip = onOffTooltip;
+        ToolTipService.SetShowDuration(card, 30000);
+        var heading = Heading(title);
+        heading.ToolTip = onOffTooltip;
+        card.Children.Add(heading);
+        var body = Body(description);
+        body.ToolTip = onOffTooltip;
+        card.Children.Add(body);
+        var status = new TextBlock
+        {
+            Text = "Načítám aktuální stav…", Foreground = Brush("#FF9A52"),
+            Margin = new Thickness(0, 10, 0, 0), TextWrapping = TextWrapping.Wrap
+        };
         card.Children.Add(status);
         _toggleStatuses[id] = status;
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
-        var enable = ActionButton(enableText);
-        enable.Click += async (_, _) => await ChangeSettingAsync(id, true, status);
-        var restore = ActionButton(restoreText);
-        restore.Background = Brush("#292D35");
-        restore.Margin = new Thickness(8, 0, 0, 0);
-        restore.Click += async (_, _) => await ChangeSettingAsync(id, false, status);
-        row.Children.Add(enable);
-        row.Children.Add(restore);
+
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        var toggle = new ToggleButton
+        {
+            Content = "OFF", Width = 76, Height = 34, IsChecked = false,
+            Background = Brush("#292D35"), Foreground = Brushes.White,
+            BorderBrush = Brush("#3A3D45"), BorderThickness = new Thickness(1),
+            FontWeight = FontWeights.Bold, Cursor = System.Windows.Input.Cursors.Hand,
+            ToolTip = onOffTooltip
+        };
+        toggle.Checked += async (_, _) =>
+        {
+            if (!_loadingToggles) await ChangeSettingAsync(id, true, status, toggle);
+        };
+        toggle.Unchecked += async (_, _) =>
+        {
+            if (!_loadingToggles) await ChangeSettingAsync(id, false, status, toggle);
+        };
+        _toggleButtons[id] = toggle;
+        row.Children.Add(toggle);
+        var hint = Body("ON = aplikovat optimalizaci   ·   OFF = obnovit původní stav");
+        hint.Margin = new Thickness(12, 0, 0, 0);
+        hint.VerticalAlignment = VerticalAlignment.Center;
+        row.Children.Add(hint);
         card.Children.Add(row);
+        _root.Children.Add(card);
+    }
+
+    private void AddAmdGpuCompatibilityCard()
+    {
+        var card = Card();
+        card.Opacity = 0.62;
+        _amdGpuCard = card;
+        card.Children.Add(Heading("AMD RADEON-SPECIFIC GPU TUNING"));
+        var description = Body("Tento řádek ukazuje kompatibilitu podle nalezené grafiky. V této verzi nejsou přidávány neověřené ovladačové zásahy; nekompatibilní GPU moduly nikdy neprovedou příkaz.");
+        card.Children.Add(description);
+        _compatibilityStatus = Body("Čekám na kontrolu GPU…");
+        _compatibilityStatus.Margin = new Thickness(0, 8, 0, 0);
+        card.Children.Add(_compatibilityStatus);
+        var unavailable = new ToggleButton
+        {
+            Content = "NEDOSTUPNÉ", IsChecked = false, IsEnabled = false, Width = 118, Height = 32,
+            Background = Brush("#24272E"), Foreground = Brush("#858A94"),
+            BorderBrush = Brush("#343842"), BorderThickness = new Thickness(1),
+            Margin = new Thickness(0, 10, 0, 0),
+            ToolTip = "Zakázáno, pokud daný hardware není přítomen nebo neexistuje ověřená vratná implementace."
+        };
+        card.Children.Add(unavailable);
         _root.Children.Add(card);
     }
 
