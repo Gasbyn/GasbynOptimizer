@@ -33,22 +33,28 @@ public partial class MainWindow
     private TextBox? _workspaceBenchmarkProcess;
     private Button? _workspaceRunBenchmarkButton;
 
-    private void BuildTweaksWorkspace()
+    private void BuildTweaksWorkspace(bool gamingOnly = false)
     {
         _workspaceSwitches.Clear();
         _workspaceSwitchStatuses.Clear();
 
-        AddWorkspaceTweakCard(
-            "Windows Game Mode",
-            "Povolí herní režim Windows. Jeho přínos se liší podle PC a hry; FPS není garantováno.",
-            "game-mode",
-            "ON: uloží původní hodnoty a nastaví AutoGameModeEnabled=1 a AllowAutoGameMode=1. OFF: obnoví původní hodnoty včetně původně neexistujících hodnot.");
+        if (gamingOnly)
+        {
+            AddWorkspaceTweakCard(
+                "Windows Game Mode",
+                "Povolí herní režim Windows. Jeho přínos se liší podle PC a hry; FPS není garantováno.",
+                "game-mode",
+                "ON: uloží původní hodnoty a nastaví AutoGameModeEnabled=1 a AllowAutoGameMode=1. OFF: obnoví původní hodnoty včetně původně neexistujících hodnot.");
 
-        AddWorkspaceTweakCard(
-            "Vypnout Game DVR na pozadí",
-            "Omezí zachytávání a nahrávání Windows na pozadí. Může vypnout nahrávání klipů přes Xbox Game Bar.",
-            "game-dvr",
-            "ON: nastaví GameDVR_Enabled=0 a AppCaptureEnabled=0. OFF: vrátí přesné původní hodnoty.");
+            AddWorkspaceTweakCard(
+                "Vypnout Game DVR na pozadí",
+                "Omezí zachytávání a nahrávání Windows na pozadí. Může vypnout nahrávání klipů přes Xbox Game Bar.",
+                "game-dvr",
+                "ON: nastaví GameDVR_Enabled=0 a AppCaptureEnabled=0. OFF: vrátí přesné původní hodnoty.");
+
+            _ = RefreshWorkspaceTweakStatesAsync();
+            return;
+        }
 
         AddWorkspaceTweakCard(
             "Výkonové vizuální efekty",
@@ -79,8 +85,6 @@ public partial class MainWindow
             ? "Hardware nebyl zatím načten. Obecné změny zůstávají dostupné; ovladačové a BIOS zásahy se neprovádějí."
             : hw.BuildRecommendations(OptimizerPreferencesStore.Load().AdvancedRecommendations);
         AddInfoCard("HARDWARE-AWARE DOPORUČENÍ", note, "Hardware Detection");
-        AddInfoCard("Gaming audit", "Zobrazí aktuální Game Mode, HAGS, plán napájení a související herní konfiguraci bez automatických změn.", "GAMING OPTIMIZER");
-
         _ = RefreshWorkspaceTweakStatesAsync();
     }
 
