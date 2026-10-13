@@ -21,7 +21,8 @@
         <SolidColorBrush x:Key="OrangeLight" Color="#FF9A52"/>
         <SolidColorBrush x:Key="OrangeSoft" Color="#21150E"/>
         <SolidColorBrush x:Key="Green" Color="#48D597"/>
-        <FontFamily x:Key="DisplayFont">Burbank Big Condensed, Segoe UI</FontFamily>
+        <FontFamily x:Key="DisplayFont">Segoe UI Semibold</FontFamily>
+        <FontFamily x:Key="MonoFont">Consolas</FontFamily>
         <DropShadowEffect x:Key="CardShadow" BlurRadius="22" ShadowDepth="0" Opacity="0.28" Color="#000000"/>
         <Style x:Key="NavButton" TargetType="Button">
             <Setter Property="Foreground" Value="#90959F"/>
