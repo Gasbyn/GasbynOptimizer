@@ -56,7 +56,7 @@ internal static class AppUpdater
         try
         {
             reportProgress?.Invoke("Stahuji aktualizaci…");
-            using (var response = await Http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead))
+            using (var response = await GetUpdateResponseWithRetryAsync(uri, reportProgress))
             {
                 response.EnsureSuccessStatusCode();
 
@@ -145,6 +145,32 @@ internal static class AppUpdater
             try { Directory.Delete(workDirectory, recursive: true); } catch { /* Best-effort cleanup. */ }
             throw;
         }
+    }
+
+    private const int MaximumDownloadAttempts = 3;
+
+    private static async Task<HttpResponseMessage> GetUpdateResponseWithRetryAsync(
+        Uri uri,
+        Action<string>? reportProgress)
+    {
+        for (var attempt = 1; attempt <= MaximumDownloadAttempts; attempt++)
+        {
+            var response = await Http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+            var statusCode = response.StatusCode;
+            var retryable = statusCode == System.Net.HttpStatusCode.NotFound ||
+                            statusCode == System.Net.HttpStatusCode.TooManyRequests ||
+                            (int)statusCode >= 500;
+
+            if (!retryable || attempt == MaximumDownloadAttempts)
+                return response;
+
+            response.Dispose();
+            reportProgress?.Invoke(
+                $"GitHub dočasně vrátil HTTP {(int)statusCode}. Opakuji stažení ({attempt + 1}/{MaximumDownloadAttempts})…");
+            await Task.Delay(TimeSpan.FromSeconds(attempt * 2));
+        }
+
+        throw new HttpRequestException("Stažení aktualizace se nepodařilo po opakovaných pokusech.");
     }
 
     private static void CleanupOldUpdateDirectories()
