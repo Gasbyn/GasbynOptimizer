@@ -407,81 +407,202 @@ public sealed class FullOptimizerWindow : Window
     {
         Directory.CreateDirectory(DataFolder);
         var state = LoadState();
-        if (enable)
+        var operations = new List<string>();
+        Snapshot? snapshot = null;
+        var name = GetTweakName(id);
+        var action = enable ? "ENABLE" : "RESTORE";
+
+        try
         {
-            if (!state.ContainsKey(id)) state[id] = Capture(id);
-            SaveState(state);
-            switch (id)
+            if (enable)
             {
-                case "game-mode":
-                    using (var key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\GameBar"))
-                    {
-                        key!.SetValue("AutoGameModeEnabled", 1, RegistryValueKind.DWord);
-                        key.SetValue("AllowAutoGameMode", 1, RegistryValueKind.DWord);
-                    }
-                    break;
-                case "visual-effects":
-                    using (var key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"))
-                        key!.SetValue("VisualFXSetting", 2, RegistryValueKind.DWord);
-                    break;
-                case "power-plan":
-                    RunPowerCfg("/setactive SCHEME_MIN");
-                    break;
-                default: throw new InvalidOperationException("Neznámý optimalizační modul.");
+                if (!state.TryGetValue(id, out snapshot))
+                {
+                    snapshot = Capture(id);
+                    state[id] = snapshot;
+                    SaveState(state);
+                    AddBackupOperations(operations, snapshot);
+                }
+                else
+                {
+                    operations.Add("BACKUP REUSED: the original state from the first enable is kept; it is not overwritten.");
+                }
+
+                switch (id)
+                {
+                    case "game-mode":
+                        SetRegistryDword(@"Software\Microsoft\GameBar", "AutoGameModeEnabled", 1, operations);
+                        SetRegistryDword(@"Software\Microsoft\GameBar", "AllowAutoGameMode", 1, operations);
+                        break;
+                    case "game-dvr":
+                        SetRegistryDword(@"System\GameConfigStore", "GameDVR_Enabled", 0, operations);
+                        SetRegistryDword(@"Software\Microsoft\Windows\CurrentVersion\GameDVR", "AppCaptureEnabled", 0, operations);
+                        break;
+                    case "visual-effects":
+                        SetRegistryDword(@"Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", "VisualFXSetting", 2, operations);
+                        break;
+                    case "power-plan":
+                        operations.Add("COMMAND: powercfg.exe /setactive SCHEME_MIN");
+                        var output = RunPowerCfg("/setactive SCHEME_MIN");
+                        operations.Add("COMMAND OUTPUT: " + (string.IsNullOrWhiteSpace(output) ? "(no stdout)" : output.Trim()));
+                        break;
+                    case "transparency":
+                        SetRegistryDword(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 0, operations);
+                        break;
+                    case "fast-menus":
+                        SetRegistryString(@"Control Panel\Desktop", "MenuShowDelay", "100", operations);
+                        SetRegistryString(@"Control Panel\Desktop\WindowMetrics", "MinAnimate", "0", operations);
+                        break;
+                    default:
+                        throw new InvalidOperationException("Neznámý optimalizační modul.");
+                }
             }
+            else
+            {
+                if (!state.TryGetValue(id, out snapshot))
+                    throw new InvalidOperationException("Pro tento modul není uložený původní stav. Nic nebylo změněno.");
+
+                Restore(id, snapshot, operations);
+                state.Remove(id);
+                SaveState(state);
+            }
+
+            OptimizerAuditLog.WriteChange(id, name, action, true, operations,
+                enable
+                    ? "Tweak byl aplikován a jeho původní stav je uložen. Některé změny UI mohou vyžadovat odhlášení/restart."
+                    : "Obnovení původních hodnot proběhlo a záznam aktivní zálohy byl odstraněn.");
         }
-        else
+        catch (Exception ex)
         {
-            if (!state.TryGetValue(id, out var snapshot))
-                throw new InvalidOperationException("Pro tento modul není uložený původní stav. Nic nebylo změněno.");
-            Restore(id, snapshot);
-            state.Remove(id);
-            SaveState(state);
+            if (enable && snapshot is not null)
+            {
+                try
+                {
+                    operations.Add("ROLLBACK: restore captured values because the enable operation did not complete.");
+                    Restore(id, snapshot, operations);
+                    state.Remove(id);
+                    SaveState(state);
+                    operations.Add("ROLLBACK RESULT: original values were restored.");
+                }
+                catch (Exception rollbackException)
+                {
+                    operations.Add("ROLLBACK ERROR: " + rollbackException);
+                }
+            }
+
+            operations.Add("ERROR: " + ex);
+            OptimizerAuditLog.WriteChange(id, name, action, false, operations, ex.ToString());
+            throw;
         }
+    }
+
+    private static void AddBackupOperations(List<string> operations, Snapshot snapshot)
+    {
+        if (!string.IsNullOrWhiteSpace(snapshot.PowerScheme))
+            operations.Add("BACKUP POWER SCHEME: original active power scheme ID = " + snapshot.PowerScheme);
+        foreach (var item in snapshot.RegistryValues)
+            operations.Add($"BACKUP REGISTRY: HKCU\\{item.Path}\\{item.Name}; Exists={item.Exists}; Kind={item.Kind}; Data={item.Data}");
+    }
+
+    private static void SetRegistryDword(string path, string name, int value, List<string> operations)
+    {
+        operations.Add($"REGISTRY SET: HKCU\\{path}\\{name}; Type=REG_DWORD; Value={value}");
+        using var key = Registry.CurrentUser.CreateSubKey(path)
+            ?? throw new InvalidOperationException("Nepodařilo se otevřít nebo vytvořit HKCU\\" + path);
+        key.SetValue(name, value, RegistryValueKind.DWord);
+    }
+
+    private static void SetRegistryString(string path, string name, string value, List<string> operations)
+    {
+        operations.Add($"REGISTRY SET: HKCU\\{path}\\{name}; Type=REG_SZ; Value={value}");
+        using var key = Registry.CurrentUser.CreateSubKey(path)
+            ?? throw new InvalidOperationException("Nepodařilo se otevřít nebo vytvořit HKCU\\" + path);
+        key.SetValue(name, value, RegistryValueKind.String);
     }
 
     private static Snapshot Capture(string id)
     {
-        var s = new Snapshot();
+        var snapshot = new Snapshot();
         if (id == "power-plan")
         {
             var output = RunPowerCfg("/getactivescheme");
             var match = System.Text.RegularExpressions.Regex.Match(output, @"([0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})");
             if (!match.Success) throw new InvalidOperationException("Nepodařilo se zjistit aktivní plán napájení.");
-            s.PowerScheme = match.Value;
-            return s;
+            snapshot.PowerScheme = match.Value;
+            return snapshot;
         }
 
-        var values = id == "game-mode"
-            ? new[] { (Path: @"Software\Microsoft\GameBar", Name: "AutoGameModeEnabled"), (Path: @"Software\Microsoft\GameBar", Name: "AllowAutoGameMode") }
-            : new[] { (Path: @"Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", Name: "VisualFXSetting") };
+        var values = id switch
+        {
+            "game-mode" => new[]
+            {
+                (Path: @"Software\Microsoft\GameBar", Name: "AutoGameModeEnabled"),
+                (Path: @"Software\Microsoft\GameBar", Name: "AllowAutoGameMode")
+            },
+            "game-dvr" => new[]
+            {
+                (Path: @"System\GameConfigStore", Name: "GameDVR_Enabled"),
+                (Path: @"Software\Microsoft\Windows\CurrentVersion\GameDVR", Name: "AppCaptureEnabled")
+            },
+            "visual-effects" => new[]
+            {
+                (Path: @"Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", Name: "VisualFXSetting")
+            },
+            "transparency" => new[]
+            {
+                (Path: @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", Name: "EnableTransparency")
+            },
+            "fast-menus" => new[]
+            {
+                (Path: @"Control Panel\Desktop", Name: "MenuShowDelay"),
+                (Path: @"Control Panel\Desktop\WindowMetrics", Name: "MinAnimate")
+            },
+            _ => throw new InvalidOperationException("Neznámý optimalizační modul: " + id)
+        };
+
         foreach (var item in values)
         {
             using var key = Registry.CurrentUser.OpenSubKey(item.Path);
             var value = key?.GetValue(item.Name, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-            s.RegistryValues.Add(new RegistrySnapshot
+            snapshot.RegistryValues.Add(new RegistrySnapshot
             {
-                Path = item.Path, Name = item.Name, Exists = value is not null,
+                Path = item.Path,
+                Name = item.Name,
+                Exists = value is not null,
                 Kind = value is null ? RegistryValueKind.String.ToString() : key!.GetValueKind(item.Name).ToString(),
-                Data = value is null ? "" : Convert.ToString(value, CultureInfo.InvariantCulture) ?? ""
+                Data = value is null ? "" : SerializeRegistryValue(value)
             });
         }
-        return s;
+        return snapshot;
     }
 
-    private static void Restore(string id, Snapshot snapshot)
+    private static string SerializeRegistryValue(object value) => value switch
+    {
+        byte[] bytes => Convert.ToBase64String(bytes),
+        string[] strings => string.Join("|", strings),
+        _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? ""
+    };
+
+    private static void Restore(string id, Snapshot snapshot, List<string> operations)
     {
         if (id == "power-plan")
         {
-            if (string.IsNullOrWhiteSpace(snapshot.PowerScheme)) throw new InvalidOperationException("Backup plánu napájení je neplatný.");
-            RunPowerCfg("/setactive " + snapshot.PowerScheme);
+            if (string.IsNullOrWhiteSpace(snapshot.PowerScheme))
+                throw new InvalidOperationException("Backup plánu napájení je neplatný.");
+            operations.Add("COMMAND: powercfg.exe /setactive " + snapshot.PowerScheme);
+            var output = RunPowerCfg("/setactive " + snapshot.PowerScheme);
+            operations.Add("COMMAND OUTPUT: " + (string.IsNullOrWhiteSpace(output) ? "(no stdout)" : output.Trim()));
             return;
         }
+
         foreach (var item in snapshot.RegistryValues)
         {
+            var fullName = $"HKCU\\{item.Path}\\{item.Name}";
             if (item.Exists)
             {
-                using var key = Registry.CurrentUser.CreateSubKey(item.Path);
+                operations.Add($"REGISTRY RESTORE: {fullName}; Type={item.Kind}; OriginalValue={item.Data}");
+                using var key = Registry.CurrentUser.CreateSubKey(item.Path)
+                    ?? throw new InvalidOperationException("Nepodařilo se obnovit HKCU\\" + item.Path);
                 var kind = Enum.TryParse<RegistryValueKind>(item.Kind, out var parsed) ? parsed : RegistryValueKind.String;
                 object value = kind switch
                 {
@@ -491,10 +612,11 @@ public sealed class FullOptimizerWindow : Window
                     RegistryValueKind.MultiString => item.Data.Split('|'),
                     _ => item.Data
                 };
-                key!.SetValue(item.Name, value, kind);
+                key.SetValue(item.Name, value, kind);
             }
             else
             {
+                operations.Add("REGISTRY DELETE: " + fullName + "; the value did not exist before enable.");
                 using var key = Registry.CurrentUser.OpenSubKey(item.Path, writable: true);
                 key?.DeleteValue(item.Name, throwOnMissingValue: false);
             }
