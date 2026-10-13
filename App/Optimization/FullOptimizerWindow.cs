@@ -161,8 +161,9 @@ public sealed class FullOptimizerWindow : Window
             }
             if (_toggleStatuses.TryGetValue("power-plan", out var power))
             {
-                var active = System.Text.RegularExpressions.Regex.Match(scan.PowerPlan, @"([0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})").Groups[1].Value;
-                var high = active.Equals("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", StringComparison.OrdinalIgnoreCase);
+                var match = System.Text.RegularExpressions.Regex.Match(scan.PowerPlan, @"([0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})");
+                var active = match.Success ? match.Groups[1].Value : string.Empty;
+                var high = !string.IsNullOrEmpty(active) && active.Equals("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", StringComparison.OrdinalIgnoreCase);
                 power.Text = $"Aktuální plán: {(high ? "High Performance" : scan.PowerPlan.Trim())} · backup: {(scan.Saved.ContainsKey("power-plan") ? "uložen" : "není")}";
             }
             _scanStatus.Text = "Kontrola dokončena. Aktuální stav je načten; po změně proběhne další kontrola.";
@@ -178,7 +179,7 @@ public sealed class FullOptimizerWindow : Window
         var prompt = enable
             ? $"Zapnout modul „{label}“? Původní stav se uloží, aby šel vrátit. Některé změny mohou vyžadovat restart Windows."
             : $"Vrátit modul „{label}“ do původního stavu uloženého při zapnutí?";
-        if (System.Windows.MessageBox.Show(this, prompt, "Gasbyn Optimizer", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        if (MessageBox.Show(prompt, "Gasbyn Optimizer", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
 
         SetBusy(true);
         status.Text = enable ? "Ukládám původní stav a zapínám…" : "Obnovuji uložený původní stav…";
@@ -192,7 +193,7 @@ public sealed class FullOptimizerWindow : Window
         catch (Exception ex)
         {
             status.Text = "Akce se nepovedla.";
-            MessageBox.Show(this, ex.Message, "Gasbyn Optimizer", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(ex.Message, "Gasbyn Optimizer", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { SetBusy(false); }
     }
@@ -348,9 +349,9 @@ public sealed class FullOptimizerWindow : Window
                 if (p.ExitCode != 0) throw new InvalidOperationException("Windows bod obnovení nevytvořil. Ověř Ochranu systému; Windows může povolit jen jeden bod za 24 hodin.");
             });
             _scanStatus.Text = "Příkaz pro bod obnovení doběhl. Ověř jeho existenci v „Vytvořit bod obnovení“ ve Windows.";
-            MessageBox.Show(this, "Příkaz pro bod obnovení byl dokončen. Ověř jeho existenci v Ochrana systému. Pokud Windows už dnes bod vytvořil, nový mohl být odmítnut.", "Gasbyn Optimizer", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Příkaz pro bod obnovení byl dokončen. Ověř jeho existenci v Ochrana systému. Pokud Windows už dnes bod vytvořil, nový mohl být odmítnut.", "Gasbyn Optimizer", MessageBoxButton.OK, MessageBoxImage.Information);
         }
-        catch (Exception ex) { MessageBox.Show(this, "Bod obnovení se nepodařilo vytvořit. " + ex.Message, "Gasbyn Optimizer", MessageBoxButton.OK, MessageBoxImage.Warning); }
+        catch (Exception ex) { MessageBox.Show("Bod obnovení se nepodařilo vytvořit. " + ex.Message, "Gasbyn Optimizer", MessageBoxButton.OK, MessageBoxImage.Warning); }
         finally { SetBusy(false); }
     }
 
@@ -359,13 +360,13 @@ public sealed class FullOptimizerWindow : Window
         if (_busy) return;
         if (!File.Exists(exePath))
         {
-            MessageBox.Show(this, "Nejdřív vyber oficiální PresentMon.exe.", "FPS tester", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Nejdřív vyber oficiální PresentMon.exe.", "FPS tester", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         var processName = _processName.Text.Trim();
         if (string.IsNullOrWhiteSpace(processName) || processName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
         {
-            MessageBox.Show(this, "Zadej platný název procesu, například FortniteClient-Win64-Shipping.exe.", "FPS tester", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Zadej platný název procesu, například FortniteClient-Win64-Shipping.exe.", "FPS tester", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -410,7 +411,7 @@ public sealed class FullOptimizerWindow : Window
         catch (Exception ex)
         {
             _benchmarkStatus.Text = "Test se nepodařilo dokončit.";
-            MessageBox.Show(this, ex.Message, "FPS tester", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(ex.Message, "FPS tester", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { runButton.IsEnabled = true; SetBusy(false); }
     }
@@ -494,8 +495,9 @@ public sealed class FullOptimizerWindow : Window
 
     private sealed class CardPanel : Border
     {
-        public StackPanel Children { get; } = new() { };
-        public CardPanel() => Child = Children;
+        private readonly StackPanel _content = new();
+        public UIElementCollection Children => _content.Children;
+        public CardPanel() => Child = _content;
     }
 
     private static TextBlock Heading(string text) => new()
