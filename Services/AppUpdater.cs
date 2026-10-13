@@ -187,6 +187,26 @@ internal static class AppUpdater
     $originalFiles = @{}
     $copiedPaths = @()
 
+    function Get-NormalizedDirectoryPrefix {
+        param([string]$Path)
+        $fullPath = [IO.Path]::GetFullPath($Path)
+        if (-not $fullPath.EndsWith([IO.Path]::DirectorySeparatorChar.ToString()) -and
+            -not $fullPath.EndsWith([IO.Path]::AltDirectorySeparatorChar.ToString())) {
+            $fullPath += [IO.Path]::DirectorySeparatorChar
+        }
+        return $fullPath
+    }
+
+    function Get-RelativeChildPath {
+        param([string]$BaseDirectory, [string]$FullPath)
+        $basePrefix = Get-NormalizedDirectoryPrefix -Path $BaseDirectory
+        $full = [IO.Path]::GetFullPath($FullPath)
+        if (-not $full.StartsWith($basePrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Cesta souboru leží mimo očekávanou složku aktualizace.'
+        }
+        return $full.Substring($basePrefix.Length)
+    }
+
     try {
         $parent = Get-Process -Id $ParentProcessId -ErrorAction SilentlyContinue
         if ($null -ne $parent) {
@@ -204,7 +224,7 @@ internal static class AppUpdater
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         $archive = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
         try {
-            $stagePrefix = [IO.Path]::GetFullPath($stageDirectory).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
+            $stagePrefix = Get-NormalizedDirectoryPrefix -Path $stageDirectory
             foreach ($entry in $archive.Entries) {
                 if ([string]::IsNullOrWhiteSpace($entry.FullName)) { continue }
                 $destination = [IO.Path]::GetFullPath((Join-Path $stageDirectory $entry.FullName))
@@ -238,7 +258,7 @@ internal static class AppUpdater
 
         $oldFiles = @(Get-ChildItem -LiteralPath $TargetDirectory -File -Recurse -Force)
         foreach ($file in $oldFiles) {
-            $relative = [IO.Path]::GetRelativePath($TargetDirectory, $file.FullName)
+            $relative = Get-RelativeChildPath -BaseDirectory $TargetDirectory -FullPath $file.FullName
             $originalFiles[$relative] = $true
             $backupPath = Join-Path $backupDirectory $relative
             New-Item -ItemType Directory -Path (Split-Path -Parent $backupPath) -Force | Out-Null
@@ -250,7 +270,7 @@ internal static class AppUpdater
         if ($newFiles.Count -eq 0) { throw 'Balíček aktualizace je prázdný.' }
 
         foreach ($file in $newFiles) {
-            $relative = [IO.Path]::GetRelativePath($sourceDirectory, $file.FullName)
+            $relative = Get-RelativeChildPath -BaseDirectory $sourceDirectory -FullPath $file.FullName
             $copiedPaths += $relative
             $destination = Join-Path $TargetDirectory $relative
             New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
@@ -285,7 +305,7 @@ internal static class AppUpdater
 
                 $backupFiles = @(Get-ChildItem -LiteralPath $backupDirectory -File -Recurse -Force)
                 foreach ($file in $backupFiles) {
-                    $relative = [IO.Path]::GetRelativePath($backupDirectory, $file.FullName)
+                    $relative = Get-RelativeChildPath -BaseDirectory $backupDirectory -FullPath $file.FullName
                     $destination = Join-Path $TargetDirectory $relative
                     New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
                     Copy-Item -LiteralPath $file.FullName -Destination $destination -Force

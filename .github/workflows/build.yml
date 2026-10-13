@@ -44,6 +44,15 @@ jobs:
           $tag = "${{ github.ref_name }}" -replace '^release/', ''
           "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
 
+      - name: Update B5 source tag for updater hotfix
+        if: github.ref == 'refs/heads/release/v2.0.B5'
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f v2.0.B5 $env:GITHUB_SHA
+          git push origin +refs/tags/v2.0.B5
+
       - name: Publish release from release branch
         if: startsWith(github.ref, 'refs/heads/release/')
         uses: softprops/action-gh-release@v2
@@ -58,6 +67,7 @@ jobs:
             - Updates are applied by a separate process after the app closes, with a backup and rollback attempt if replacing files fails.
           target_commitish: ${{ github.sha }}
           files: GasbynOptimizer-win-x64.zip
+          overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
