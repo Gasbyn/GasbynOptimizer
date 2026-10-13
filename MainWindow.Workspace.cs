@@ -1040,7 +1040,11 @@ public partial class MainWindow
             "widgets" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarDa") is int widgets && widgets == 0,
             "search-suggestions" => Read(@"Software\Policies\Microsoft\Windows\Explorer", "DisableSearchBoxSuggestions") is int search && search == 1,
             "recommendations" => Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SystemPaneSuggestionsEnabled") is int suggestions && suggestions == 0 &&
-                                 Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SoftLandingEnabled") is int soft && soft == 0,
+                                 Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SoftLandingEnabled") is int soft && soft == 0 &&
+                                 Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SilentInstalledAppsEnabled") is int silent && silent == 0 &&
+                                 Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338388Enabled") is int subA && subA == 0 &&
+                                 Read(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-353694Enabled") is int subB && subB == 0 &&
+                                 Read(@"Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled") is int ads && ads == 0,
             "visual-effects" => Read(@"Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", "VisualFXSetting") is int visual && visual == 2,
             "transparency" => Read(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency") is int trans && trans == 0,
             "fast-menus" => Read(@"Control Panel\Desktop", "MenuShowDelay")?.ToString() == "100" &&
