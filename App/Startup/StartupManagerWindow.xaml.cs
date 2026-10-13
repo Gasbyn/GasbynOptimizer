@@ -20,7 +20,7 @@ public sealed class StartupItem
     public bool IsDisabledBackup { get; init; }
 }
 
-public partial class StartupManagerWindow : Window
+public partial class StartupManagerWindow : UserControl
 {
     private const string BackupPath = @"Software\GasbynOptimizer\StartupBackup";
     private readonly List<StartupItem> _items = new();
@@ -163,5 +163,7 @@ public partial class StartupManagerWindow : Window
     }
 
     private void Refresh_Click(object sender, RoutedEventArgs e) => LoadItems();
-    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+    public event EventHandler? CloseRequested;
+
+    private void Close_Click(object sender, RoutedEventArgs e) => CloseRequested?.Invoke(this, EventArgs.Empty);
 }
