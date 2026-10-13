@@ -108,7 +108,7 @@ public partial class MainWindow
                 AddInfoCard("Startup Registry Entries", "Zobrazí běžné Run položky registru.", "Startup Registry Entries");
                 break;
             case "Apps Manager":
-                AddInfoCard("Installed Applications", "Zobrazí nainstalované aplikace a dostupné akce správce aplikací.", "Installed Applications");
+                SecondaryContent.Children.Add(new Apps.AppsManagerWindow());
                 break;
             case "Gaming":
                 BuildTweaksWorkspace(gamingOnly: true);
