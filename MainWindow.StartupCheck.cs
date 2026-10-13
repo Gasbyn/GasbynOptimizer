@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
+using System.Reflection;
+using System.Text.Json;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -14,10 +17,22 @@ namespace GasbynOptimizer;
 public partial class MainWindow
 {
     private HardwareInventory? _hardwareInventory;
+    private static readonly HttpClient UpdateHttpClient = CreateUpdateHttpClient();
+    private string? _latestReleaseUrl;
+
+    private static HttpClient CreateUpdateHttpClient()
+    {
+        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(4) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("GasbynOptimizer-UpdateChecker/1.0");
+        client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+        return client;
+    }
 
     private async Task RunStartupCheckAsync()
     {
         StartupScanOverlay.Visibility = Visibility.Visible;
+        UpdateAvailablePanel.Visibility = Visibility.Collapsed;
+        _latestReleaseUrl = null;
         StartupScanContinue.IsEnabled = false;
         StartupScanSpinner.Visibility = Visibility.Visible;
         StartupScanCompleteIcon.Visibility = Visibility.Collapsed;
@@ -58,6 +73,36 @@ public partial class MainWindow
             notes.AppendLine("DOPORUČENÍ");
             notes.AppendLine(HardwareInventoryServiceForSettings(_hardwareInventory));
             notes.AppendLine("Před změnou se uloží původní stav. Přínos FPS není garantovaný.");
+
+            StartupScanStatus.Text = "4/4 · Kontroluji veřejné vydání Gasbyn Optimizeru…";
+            StartupScanDetails.Text = notes.ToString();
+            try
+            {
+                var release = await CheckForLatestReleaseAsync();
+                if (release is not null)
+                {
+                    _latestReleaseUrl = release.Value.Url;
+                    UpdateAvailableText.Text = $"Verze {release.Value.Tag} je dostupná. Aktuální verze: {GetCurrentAppVersion().ToString(3)}.";
+                    UpdateAvailablePanel.Visibility = Visibility.Visible;
+                    notes.AppendLine();
+                    notes.AppendLine("AKTUALIZACE");
+                    notes.AppendLine($"Dostupná verze: {release.Value.Tag}");
+                    notes.AppendLine("Před stažením ověř, že odkaz vede na oficiální vydání Gasbyn Optimizeru.");
+                }
+                else
+                {
+                    notes.AppendLine();
+                    notes.AppendLine("AKTUALIZACE");
+                    notes.AppendLine("Nebyla nalezena novější veřejná stabilní verze (nebo nejsou veřejná vydání dostupná).");
+                }
+            }
+            catch (Exception updateException)
+            {
+                // Update checks must never prevent the optimizer from opening when offline or GitHub is unavailable.
+                notes.AppendLine();
+                notes.AppendLine("Kontrola aktualizací není dostupná: " + updateException.Message);
+            }
+
             StartupScanDetails.Text = notes.ToString();
             StartupScanStatus.Text = "✓ Kontrola dokončena · žádné systémové změny nebyly provedeny.";
             CompleteStartupCheck(true);
@@ -83,6 +128,63 @@ public partial class MainWindow
         StartupScanCompleteIcon.Foreground = success
             ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(72, 213, 151))
             : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 154, 82));
+    }
+
+    private static Version GetCurrentAppVersion() =>
+        typeof(MainWindow).Assembly.GetName().Version ?? new Version(0, 2, 0);
+
+    private static async Task<(string Tag, string Url)?> CheckForLatestReleaseAsync()
+    {
+        // GitHub's latest-release endpoint only exposes published releases. Drafts and prereleases are ignored.
+        // A private repository returns 404 to unauthenticated clients, which is treated as no public update.
+        using var response = await UpdateHttpClient.GetAsync(
+            "https://api.github.com/repos/Gasbyn/GasbynOptimizer/releases/latest");
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        using var json = await JsonDocument.ParseAsync(stream);
+        var root = json.RootElement;
+        if (root.TryGetProperty("draft", out var draft) && draft.ValueKind == JsonValueKind.True)
+            return null;
+        if (root.TryGetProperty("prerelease", out var prerelease) && prerelease.ValueKind == JsonValueKind.True)
+            return null;
+
+        var tag = root.TryGetProperty("tag_name", out var tagElement) ? tagElement.GetString() : null;
+        var url = root.TryGetProperty("html_url", out var urlElement) ? urlElement.GetString() : null;
+        if (string.IsNullOrWhiteSpace(tag) || string.IsNullOrWhiteSpace(url) ||
+            !Uri.TryCreate(url, UriKind.Absolute, out var parsedUrl) ||
+            parsedUrl.Scheme != Uri.UriSchemeHttps ||
+            !parsedUrl.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var normalizedTag = tag.Trim();
+        if (normalizedTag.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+            normalizedTag = normalizedTag[1..];
+        var versionPart = normalizedTag.Split('-', '+')[0];
+        if (!Version.TryParse(versionPart, out var latestVersion))
+            return null;
+
+        return latestVersion > GetCurrentAppVersion()
+            ? (tag.Trim(), parsedUrl.AbsoluteUri)
+            : null;
+    }
+
+    private void OpenLatestRelease_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_latestReleaseUrl))
+            return;
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(_latestReleaseUrl) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            StartupScanDetails.Text += Environment.NewLine + "Odkaz na aktualizaci se nepodařilo otevřít: " + ex.Message;
+        }
     }
 
     private static string HardwareInventoryServiceForSettings(HardwareInventory inventory) =>
