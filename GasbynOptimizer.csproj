@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <Resource Include="Logo.png" />
-    <None Update="Tweaks\\custom-tweaks.json" Link="custom-tweaks.json" TargetPath="custom-tweaks.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="Tweaks\custom-tweaks.json" Link="custom-tweaks.json" TargetPath="custom-tweaks.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Target Name="GenerateApplicationIcon" BeforeTargets="PrepareForBuild">
