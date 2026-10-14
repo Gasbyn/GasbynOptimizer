@@ -2189,6 +2189,19 @@ public static class BuiltInOptimizationCatalog
     private static readonly string StatePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "GasbynOptimizer", "builtin-catalog-state.json");
+    private static readonly string BackupDirectory = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "GasbynOptimizer", "builtin-catalog-backups");
+
+    private sealed class RegistrySnapshot
+    {
+        public string Hive { get; set; } = "HKCU";
+        public string Path { get; set; } = "";
+        public string Name { get; set; } = "";
+        public bool Exists { get; set; }
+        public string Kind { get; set; } = "String";
+        public string Data { get; set; } = "";
+    }
 
     public static IReadOnlyList<Definition> All => ById.Values
         .Select(x => new Definition(GetString(x, "id"), GetString(x, "name"), GetString(x, "description"),
@@ -2228,9 +2241,33 @@ public static class BuiltInOptimizationCatalog
         var section = item.GetProperty(enable ? "on" : "off");
         var operations = section.GetProperty("operations").EnumerateArray().ToArray();
         var completed = 0;
+        Exception? operationError = null;
+        var backupPath = Path.Combine(BackupDirectory, id + ".json");
         try
         {
-            foreach (var operation in operations) { Execute(operation); completed++; }
+            if (enable && !File.Exists(backupPath))
+            {
+                var snapshots = CaptureRegistrySnapshots(item.GetProperty("on").GetProperty("operations").EnumerateArray());
+                Directory.CreateDirectory(BackupDirectory);
+                File.WriteAllText(backupPath, JsonSerializer.Serialize(snapshots, new JsonSerializerOptions { WriteIndented = true }));
+            }
+
+            try
+            {
+                foreach (var operation in operations) { Execute(operation); completed++; }
+            }
+            catch (Exception ex) { operationError = ex; }
+
+            // Registry values are restored to their exact pre-ON values after the catalog's OFF
+            // operations run. This preserves missing values and original value types as well.
+            if (!enable && File.Exists(backupPath))
+            {
+                var snapshots = JsonSerializer.Deserialize<List<RegistrySnapshot>>(File.ReadAllText(backupPath)) ?? new();
+                RestoreRegistrySnapshots(snapshots);
+                File.Delete(backupPath);
+            }
+
+            if (operationError is not null) throw operationError;
             var state = LoadState();
             state[id] = enable;
             Directory.CreateDirectory(Path.GetDirectoryName(StatePath)!);
@@ -2238,7 +2275,7 @@ public static class BuiltInOptimizationCatalog
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Optimalizace „{GetString(item, "name")}“ nebyla dokončena. Provedeno {completed}/{operations.Length} operací. Změny, které už proběhly, nemusí být automaticky vráceny. Detail: {ex.Message}", ex);
+            throw new InvalidOperationException($"Optimalizace „{GetString(item, "name")}“ nebyla dokončena. Provedeno {completed}/{operations.Length} operací. Původní registry hodnoty se obnovují při OFF, pokud se podařilo uložit jejich zálohu. Detail: {ex.Message}", ex);
         }
     }
 
@@ -2354,6 +2391,123 @@ public static class BuiltInOptimizationCatalog
                 break;
             default:
                 throw new InvalidOperationException("Nepodporovaný typ operace: " + type);
+        }
+    }
+
+    private static List<RegistrySnapshot> CaptureRegistrySnapshots(IEnumerable<JsonElement> operations)
+    {
+        var snapshots = new Dictionary<string, RegistrySnapshot>(StringComparer.OrdinalIgnoreCase);
+        void Capture(string hive, string path, string name)
+        {
+            var keyId = hive + "|" + path + "|" + name;
+            if (snapshots.ContainsKey(keyId)) return;
+            using var root = Hive(hive);
+            using var key = root.OpenSubKey(path);
+            var value = key?.GetValue(name, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+            if (value is null)
+            {
+                snapshots[keyId] = new RegistrySnapshot { Hive = hive, Path = path, Name = name, Exists = false };
+                return;
+            }
+            var kind = key!.GetValueKind(name);
+            snapshots[keyId] = new RegistrySnapshot
+            {
+                Hive = hive, Path = path, Name = name, Exists = true, Kind = kind.ToString(),
+                Data = SerializeSnapshotValue(value, kind)
+            };
+        }
+
+        void CaptureClassValues(string classPath, IEnumerable<string> names, Func<RegistryKey, bool>? filter = null)
+        {
+            using var root = Registry.LocalMachine.OpenSubKey(classPath);
+            if (root is null) return;
+            foreach (var childName in root.GetSubKeyNames().Where(x => int.TryParse(x, out _)))
+            {
+                using var child = root.OpenSubKey(childName);
+                if (child is null || (filter is not null && !filter(child))) continue;
+                foreach (var name in names) Capture("HKLM", classPath + "\\" + childName, name);
+            }
+        }
+
+        foreach (var op in operations)
+        {
+            var type = GetString(op, "type");
+            switch (type)
+            {
+                case "reg":
+                case "reg-delete":
+                    Capture(GetString(op, "hive"), GetString(op, "path"), GetString(op, "value"));
+                    break;
+                case "reg-batch":
+                    foreach (var subkey in op.GetProperty("subkeys").EnumerateArray())
+                        Capture(GetString(op, "hive"), GetString(op, "basePath").TrimEnd('\\') + "\\" + subkey.GetString(), GetString(op, "value"));
+                    break;
+                case "cmd-fornic":
+                    CaptureClassValues(@"SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}",
+                        Values(op).Select(x => GetString(x, "name")));
+                    break;
+                case "cmd-forlist":
+                    foreach (var clsid in op.GetProperty("list").EnumerateArray().Select(x => x.GetString() ?? ""))
+                        Capture(GetString(op, "hive"), GetString(op, "basePath").TrimEnd('\\') + "\\" + clsid, GetString(op, "value", "Flags"));
+                    break;
+                case "cmd-forstorport":
+                    Capture("HKLM", @"SYSTEM\CurrentControlSet\Services\storport\Parameters\Device", GetString(op, "value"));
+                    break;
+                case "cmd-forservice":
+                    foreach (var service in new[] { "storahci", "stornvme", "iaStorV", "iaStorAC" })
+                    foreach (var name in op.GetProperty("names").EnumerateArray().Select(x => x.GetString() ?? ""))
+                        Capture("HKLM", $@"SYSTEM\CurrentControlSet\Services\{service}\Parameters\Device", name);
+                    break;
+                case "cmd-forintelgpu":
+                    CaptureClassValues(@"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}",
+                        Values(op).Select(x => GetString(x, "name")),
+                        child => (child.GetValue("DriverDesc")?.ToString() ?? "").Contains("Intel", StringComparison.OrdinalIgnoreCase));
+                    break;
+                case "cmd-forstorage":
+                    CaptureClassValues(@"SYSTEM\CurrentControlSet\Control\Class\{4d36e97b-e325-11ce-bfc1-08002be10318}",
+                        Values(op).Select(x => GetString(x, "name")));
+                    break;
+            }
+        }
+        return snapshots.Values.ToList();
+    }
+
+    private static string GetString(JsonElement element, string name, string fallback) =>
+        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() ?? fallback : fallback;
+
+    private static string SerializeSnapshotValue(object value, RegistryValueKind kind) => kind switch
+    {
+        RegistryValueKind.DWord => Convert.ToInt32(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture),
+        RegistryValueKind.QWord => Convert.ToInt64(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture),
+        RegistryValueKind.Binary => Convert.ToBase64String((byte[])value),
+        RegistryValueKind.MultiString => JsonSerializer.Serialize((string[])value),
+        _ => value.ToString() ?? ""
+    };
+
+    private static void RestoreRegistrySnapshots(IEnumerable<RegistrySnapshot> snapshots)
+    {
+        foreach (var snapshot in snapshots)
+        {
+            using var root = Hive(snapshot.Hive);
+            if (!snapshot.Exists)
+            {
+                using var existing = root.OpenSubKey(snapshot.Path, writable: true);
+                existing?.DeleteValue(snapshot.Name, throwOnMissingValue: false);
+                continue;
+            }
+
+            using var key = root.CreateSubKey(snapshot.Path, writable: true)
+                ?? throw new InvalidOperationException("Nelze obnovit registry klíč: " + snapshot.Path);
+            var kind = Enum.Parse<RegistryValueKind>(snapshot.Kind);
+            object value = kind switch
+            {
+                RegistryValueKind.DWord => int.Parse(snapshot.Data, CultureInfo.InvariantCulture),
+                RegistryValueKind.QWord => long.Parse(snapshot.Data, CultureInfo.InvariantCulture),
+                RegistryValueKind.Binary => Convert.FromBase64String(snapshot.Data),
+                RegistryValueKind.MultiString => JsonSerializer.Deserialize<string[]>(snapshot.Data) ?? Array.Empty<string>(),
+                _ => snapshot.Data
+            };
+            key.SetValue(snapshot.Name, value, kind);
         }
     }
 
