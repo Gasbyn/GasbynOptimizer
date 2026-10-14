@@ -162,7 +162,7 @@ public partial class MainWindow
             {
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                Arguments = "/d /s /c \\"" + command + "\\""
+                Arguments = "/d /s /c " + command
             }
         };
         if (!process.Start()) throw new InvalidOperationException("Kontrolní příkaz se nepodařilo spustit.");
@@ -1188,8 +1188,8 @@ public partial class MainWindow
             await RefreshWorkspaceTweakStatesAsync();
             status.Text = GetCustomTweakDefinition(id) is not null
                 ? (enable
-                    ? $"Vlastní ON CMD příkaz úspěšně dokončen; stav přepínače je uložen. · {ReadWorkspaceActualStatus(id)}"
-                    : $"Vlastní OFF CMD příkaz úspěšně dokončen; stav přepínače je uložen. · {ReadWorkspaceActualStatus(id)}")
+                    ? $"Vlastní ON CMD příkaz úspěšně dokončen; stav se ověřuje podle systému. · {ReadWorkspaceActualStatus(id)}"
+                    : $"Vlastní OFF CMD příkaz úspěšně dokončen; stav se ověřuje podle systému. · {ReadWorkspaceActualStatus(id)}")
                 : (enable
                     ? $"Optimalizace zapnuta. Původní stav je uložen. Pro plné použití změn doporučuji restart PC. · {ReadWorkspaceActualStatus(id)}"
                     : $"Původní hodnoty obnoveny. · {ReadWorkspaceActualStatus(id)}");
