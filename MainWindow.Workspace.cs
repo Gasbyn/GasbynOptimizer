@@ -32,6 +32,7 @@ public partial class MainWindow
     private readonly Dictionary<string, TextBlock> _workspaceSwitchStatuses = new(StringComparer.OrdinalIgnoreCase);
     private bool _loadingWorkspaceSwitches;
     private bool _workspaceTweakBusy;
+    private bool _customTweakStartupScanned;
     private TextBlock? _workspaceBenchmarkStatus;
     private TextBlock? _workspaceBenchmarkHistory;
     private TextBox? _workspacePresentMonPath;
@@ -106,6 +107,27 @@ public partial class MainWindow
         if (!id.StartsWith(CustomTweakIdPrefix, StringComparison.OrdinalIgnoreCase)) return null;
         var customId = id[CustomTweakIdPrefix.Length..];
         return GetCustomTweakDefinitions().FirstOrDefault(x => x.Id.Equals(customId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async void CustomTweakStartupScan_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (_customTweakStartupScanned) return;
+        _customTweakStartupScanned = true;
+        try
+        {
+            await Task.Run(() =>
+            {
+                foreach (var custom in GetCustomTweakDefinitions())
+                {
+                    var actualState = ProbeCustomTweakState(custom);
+                    Debug.WriteLine($"Custom optimization startup check: {custom.Id} => {actualState}");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Custom optimization startup check failed: " + ex.Message);
+        }
     }
 
     private static string ProbeCustomTweakState(CustomTweakDefinition custom)
