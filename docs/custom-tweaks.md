@@ -1,48 +1,54 @@
-# Vlastní CMD tweaky
+# Vlastní optimalizace v Gasbyn Optimizeru
 
-Gasbyn Optimizer načítá vlastní definice z:
+Na stránce **Tweaks** klikni na **PŘIDAT VLASTNÍ OPTIMALIZACI**. Nemusíš upravovat zdrojový kód. Definice se ukládají do:
 
-`%LocalAppData%\GasbynOptimizer\custom-tweaks.json`
+%LocalAppData%\GasbynOptimizer\custom-tweaks.json
 
-Při prvním spuštění se tento soubor vytvoří z přiložené šablony. Po změně JSON aplikaci restartuj. Každý objekt v poli `[]` představuje jednu kartu s přepínačem.
+Každá optimalizace má příkaz pro ON, příkaz pro OFF a dva samostatné kontrolní příkazy, které ověřují skutečný stav Windows. Stav přepínače se neurčuje podle historie kliknutí ani podle souboru JSON. Kontroly se spouštějí při startu aplikace a při načítání stránky Tweaks.
 
-## Příklad
+## Jak fungují kontrolní příkazy
 
-```json
+- **Kontrola stavu ON** musí skončit s návratovým kódem 0, pokud je optimalizace v systému opravdu aktivní.
+- **Kontrola stavu OFF** musí skončit s návratovým kódem 0, pokud je optimalizace v systému opravdu vypnutá.
+- Když se ON i OFF kontrola shodují (obě uspějí nebo obě selžou), stav bude UNKNOWN a přepínač zůstane v neurčeném stavu, dokud kontrolu neopravíš. Aplikace nebude hádat.
+- Kontrolní příkazy mají limit 15 sekund. Příkazy ON/OFF mají limit 120 sekund.
+- U starších definic bez kontrolních příkazů se stav zobrazí jako UNKNOWN; doplň isOnCommand a isOffCommand.
+
+## JSON příklad
+
+~~~json
 [
   {
-    "id": "dns-cache-example",
-    "name": "Příklad: DNS cache",
-    "description": "Ukázková definice vlastního síťového příkazu.",
-    "category": "Internet",
-    "onCommand": "ipconfig /flushdns",
-    "offCommand": "ipconfig /displaydns",
-    "onDescription": "Vyčistí místní DNS cache.",
-    "offDescription": "Vypíše aktuální DNS cache. Neobnovuje předchozí cache.",
-    "badges": ["INTERNET", "DELAY", "EXPERIMENTAL"]
+    "id": "example-registry-toggle",
+    "name": "Příklad: testovací hodnota registru",
+    "description": "Ukázka, jak ověřit skutečnou hodnotu registru.",
+    "category": "Windows",
+    "onCommand": "reg add \\"HKCU\\\\Software\\\\GasbynExample\\" /v Enabled /t REG_DWORD /d 1 /f",
+    "offCommand": "reg add \\"HKCU\\\\Software\\\\GasbynExample\\" /v Enabled /t REG_DWORD /d 0 /f",
+    "isOnCommand": "reg query \\"HKCU\\\\Software\\\\GasbynExample\\" /v Enabled | findstr /i \\"0x1\\" >nul",
+    "isOffCommand": "reg query \\"HKCU\\\\Software\\\\GasbynExample\\" /v Enabled | findstr /i \\"0x0\\" >nul",
+    "onDescription": "Nastaví testovací hodnotu Enabled na 1.",
+    "offDescription": "Nastaví testovací hodnotu Enabled na 0.",
+    "badges": ["WINDOWS", "EXPERIMENTAL"]
   }
 ]
-```
+~~~
 
-Šablona v aplikaci je záměrně prázdná (`[]`), takže se žádný příklad automaticky nespouští.
+Tento příklad je pouze ukázka schématu, nikoliv doporučená optimalizace. Kontrolní příkazy musí být přesně přizpůsobené změně, kterou tvůj ON/OFF příkaz skutečně provádí.
 
 ## Pole
 
-- `id`: jedinečný identifikátor obsahující pouze písmena, čísla, `-` nebo `_`.
-- `name`: název karty.
-- `description`: krátký popisek pod názvem.
-- `category`: kategorie zobrazená jako štítek, např. `Internet`, `Gaming`, `Windows` nebo `Tweaks`.
-- `onCommand` / `offCommand`: příkazy, které se spustí při zapnutí a vypnutí.
-- `onDescription` / `offDescription`: vysvětlení obou stavů v tooltipu po najetí myší.
-- `badges`: volitelné další štítky, např. `EXPERIMENTAL`, `INCOMPATIBLE`, `FPS`, `PING`, `DELAY`, `INTERNET`, `RESTART` nebo `POZOR`.
+- id: jedinečný identifikátor; pouze písmena, čísla, - nebo _.
+- name, description: název karty a krátký popis.
+- category: štítek kategorie, například Internet, Gaming, Windows nebo Tweaks.
+- onCommand / offCommand: změna, která se provede při přepnutí.
+- isOnCommand / isOffCommand: kontrola skutečného stavu v systému; návratový kód 0 znamená, že daná podmínka platí.
+- onDescription / offDescription: vysvětlení účinku obou stavů v tooltipu.
+- badges: volitelné štítky oddělené čárkou v editoru, například FPS, PING, DELAY, INTERNET, RESTART, EXPERIMENTAL nebo INCOMPATIBLE.
 
-Všechny povinné textové položky musí být vyplněné. Každé `id` musí být unikátní. Texty v JSON musí mít správně escapované uvozovky a zpětná lomítka.
+## Bezpečnost
 
-## Důležité bezpečnostní informace
-
-- Příkazy spouští `cmd.exe` pod účtem, pod kterým běží aplikace; administrátorská oprávnění získají pouze tehdy, když je aplikace spuštěna jako správce.
-- Před zapnutím si vždy zkontroluj celý příkaz. Vlastní CMD příkaz může měnit systém nebo mazat data.
-- Aplikace čeká maximálně 120 sekund. Nenulový návratový kód se zobrazí jako chyba.
-- Přepínač si pamatuje, zda poslední příkaz ON úspěšně doběhl. Neumí obecně ověřit skutečný stav každého vlastního tweaku.
-- Příkaz OFF **není automatické vrácení změn**. Musíš do něj napsat vlastní reset/undo příkaz. Některé příkazy jsou jednorázové akce a nejdou vrátit.
-- Štítky jako FPS, PING nebo DELAY jsou jen informace o zamýšleném cíli. Nezaručují zlepšení výkonu ani sítě.
+- Příkazy se spouštějí přes cmd.exe pod aktuálním Windows účtem. Pokud je aplikace spuštěná jako správce, příkazy mohou mít administrátorská oprávnění.
+- Před uložením si zkontroluj všechny čtyři příkazy. Vlastní CMD příkaz může změnit systém nebo poškodit/smazat data.
+- OFF není automatická záloha. Musíš napsat vlastní příkaz, který změnu vrátí. Jednorázové příkazy, například vyčištění cache, nemusí mít smysluplný protikrok.
+- Štítky jako FPS, PING nebo DELAY neznamenají zaručené zlepšení výkonu či sítě.
