@@ -29,7 +29,7 @@ public partial class MainWindow
     private readonly Dictionary<string, TextBlock> _workspaceSwitchStatuses = new(StringComparer.OrdinalIgnoreCase);
     private bool _loadingWorkspaceSwitches;
     private bool _workspaceTweakBusy;
-    private bool _customTweakStartupScanned;
+    private bool _optimizationCatalogStartupScanned;
     private TextBlock? _workspaceBenchmarkStatus;
     private TextBlock? _workspaceBenchmarkHistory;
     private TextBox? _workspacePresentMonPath;
@@ -41,8 +41,8 @@ public partial class MainWindow
 
     private async void OptimizationCatalogStartupScan_Loaded(object sender, RoutedEventArgs e)
     {
-        if (_customTweakStartupScanned) return;
-        _customTweakStartupScanned = true;
+        if (_optimizationCatalogStartupScanned) return;
+        _optimizationCatalogStartupScanned = true;
         try
         {
             await Task.Run(() =>
@@ -66,7 +66,7 @@ public partial class MainWindow
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Custom optimization startup check failed: " + ex.Message);
+            Debug.WriteLine("Built-in optimization startup check failed: " + ex.Message);
         }
     }
 
@@ -1434,8 +1434,6 @@ public partial class MainWindow
 
         foreach (var id in saved.Keys)
         {
-            // CMD tweaks do not expose a generic, reliable way to inspect their real-world state.
-            if (id.StartsWith(CustomTweakIdPrefix, StringComparison.OrdinalIgnoreCase)) continue;
             if (!IsWorkspaceTweakAtOptimizedState(id))
                 _workspaceDriftedTweaks.Add(id);
         }
