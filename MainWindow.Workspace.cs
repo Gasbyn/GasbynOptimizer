@@ -68,7 +68,7 @@ public partial class MainWindow
             {
                 var bundledTemplate = Path.Combine(AppContext.BaseDirectory, "custom-tweaks.json");
                 if (File.Exists(bundledTemplate)) File.Copy(bundledTemplate, CustomTweakConfigPath);
-                else File.WriteAllText(CustomTweakConfigPath, "[]\\n");
+                else File.WriteAllText(CustomTweakConfigPath, "[]\n");
             }
 
             var loaded = JsonSerializer.Deserialize<List<CustomTweakDefinition>>(
@@ -745,10 +745,10 @@ public partial class MainWindow
         {
             "DOPORUČENO" => ("#143126", "#285D45", "#67E0A8"),
             "PODMÍNĚNĚ" => ("#302516", "#644824", "#FFD08A"),
-            "EXPERIMENTÁLNÍ" => ("#351C18", "#6D342A", "#FF9B87"),
+            "EXPERIMENTÁLNÍ" or "EXPERIMENTAL" => ("#351C18", "#6D342A", "#FF9B87"),
             "POKROČILÉ" => ("#271D3A", "#4D3676", "#D0B5FF"),
             "NOVÉ" => ("#152B3D", "#2D5575", "#94D0FF"),
-            "NEKOMPATIBILNÍ" => ("#3B171B", "#812B34", "#FF7B86"),
+            "NEKOMPATIBILNÍ" or "INCOMPATIBLE" => ("#3B171B", "#812B34", "#FF7B86"),
             "ZAMČENO" => ("#24262B", "#454952", "#A8ADB7"),
             "SOUKROMÍ" => ("#1D2433", "#364B71", "#B7C9FF"),
             "STARTUP" or "SEARCH" or "UI" or "AIM" or "MOUSE" => ("#1A1D23", "#343842", "#B8BDC6"),
@@ -779,7 +779,7 @@ public partial class MainWindow
         {
             "DOPORUČENO" => "Obecně rozumná volba; skutečný přínos závisí na PC a použití.",
             "PODMÍNĚNĚ" => "Zapni pouze tehdy, když ti nevadí uvedené vedlejší účinky.",
-            "EXPERIMENTÁLNÍ" => "Může mít nečekané výsledky. Používej pouze po přečtení detailů.",
+            "EXPERIMENTÁLNÍ" or "EXPERIMENTAL" => "Může mít nečekané výsledky. Používej pouze po přečtení detailů.",
             "POKROČILÉ" => "Změna může mít vedlejší dopady; před zapnutím zkontroluj detaily.",
             "NOVÉ" => "Nově přidaná funkce v Gasbyn Optimizeru.",
             "FPS" => "Primární cíl: herní snímková frekvence. Zvýšení FPS není zaručeno.",
@@ -1444,6 +1444,8 @@ public partial class MainWindow
 
         foreach (var id in saved.Keys)
         {
+            // CMD tweaks do not expose a generic, reliable way to inspect their real-world state.
+            if (GetCustomTweakDefinition(id) is not null) continue;
             if (!IsWorkspaceTweakAtOptimizedState(id))
                 _workspaceDriftedTweaks.Add(id);
         }
