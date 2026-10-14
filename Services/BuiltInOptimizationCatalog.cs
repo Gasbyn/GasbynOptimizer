@@ -2391,7 +2391,7 @@ public static class BuiltInOptimizationCatalog
 
     private static void ApplyAdapterValues(JsonElement op, bool delete)
     {
-        const string classPath = @"SYSTEM\\CurrentControlSet\\Control\\Class\\{4d36e972-e325-11ce-bfc1-08002be10318}";
+        const string classPath = @"SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}";
         using var root = Registry.LocalMachine.OpenSubKey(classPath, writable: true) ?? throw new InvalidOperationException("Registry síťových adaptérů není dostupný.");
         var found = 0;
         foreach (var childName in root.GetSubKeyNames().Where(x => int.TryParse(x, out _)))
@@ -2428,7 +2428,7 @@ public static class BuiltInOptimizationCatalog
 
     private static void ApplyStoragePort(JsonElement op)
     {
-        const string path = @"SYSTEM\\CurrentControlSet\\Services\\storport\\Parameters\\Device";
+        const string path = @"SYSTEM\CurrentControlSet\Services\storport\Parameters\Device";
         SetValue("HKLM", path, GetString(op, "value"), GetString(op, "regType"), op.GetProperty("data"));
     }
 
@@ -2436,13 +2436,13 @@ public static class BuiltInOptimizationCatalog
     {
         foreach (var service in new[] { "storahci", "stornvme", "iaStorV", "iaStorAC" })
         foreach (var name in op.GetProperty("names").EnumerateArray().Select(x => x.GetString() ?? ""))
-            SetValue("HKLM", $@"SYSTEM\\CurrentControlSet\\Services\\{service}\\Parameters\\Device", name,
+            SetValue("HKLM", $@"SYSTEM\CurrentControlSet\Services\{service}\Parameters\Device", name,
                 GetString(op, "regType"), op.GetProperty("data"));
     }
 
     private static void ApplyIntelGpu(JsonElement op)
     {
-        const string classPath = @"SYSTEM\\CurrentControlSet\\Control\\Class\\{4d36e968-e325-11ce-bfc1-08002be10318}";
+        const string classPath = @"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}";
         using var root = Registry.LocalMachine.OpenSubKey(classPath, writable: true) ?? throw new InvalidOperationException("Registry grafických adaptérů není dostupný.");
         var found = false;
         foreach (var childName in root.GetSubKeyNames().Where(x => int.TryParse(x, out _)))
@@ -2457,7 +2457,7 @@ public static class BuiltInOptimizationCatalog
 
     private static void ApplyStorageController(JsonElement op, bool delete)
     {
-        const string classPath = @"SYSTEM\\CurrentControlSet\\Control\\Class\\{4d36e97b-e325-11ce-bfc1-08002be10318}";
+        const string classPath = @"SYSTEM\CurrentControlSet\Control\Class\{4d36e97b-e325-11ce-bfc1-08002be10318}";
         using var root = Registry.LocalMachine.OpenSubKey(classPath, writable: true) ?? throw new InvalidOperationException("Registry řadičů disků není dostupný.");
         var found = false;
         foreach (var childName in root.GetSubKeyNames().Where(x => int.TryParse(x, out _)))
