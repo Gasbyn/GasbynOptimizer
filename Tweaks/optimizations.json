@@ -1,0 +1,2159 @@
+{
+  "schemaVersion": 1,
+  "sourceVersion": "2.0.B17",
+  "title": "Gasbyn Optimizer – katalog optimalizací, registrů a údržby",
+  "purpose": "Inventář stávajících definic a funkcí aplikace, vytvořený podle zdrojového kódu B17.",
+  "important": "Toto je katalog pro úpravy a migraci. Samotná editace tohoto JSON zatím nemění chování EXE, dokud aplikace nebude převedena na JSON-driven engine. Příkazy jsou null tam, kde aktuální aplikace používá C# engine se zálohami; nevymýšlí se nebezpečné náhradní CMD příkazy.",
+  "optimizations": [
+    {
+      "id": "game-mode",
+      "name": "Windows Game Mode",
+      "description": "Povolí herní režim Windows. Jeho přínos se liší podle PC a hry; FPS není garantováno.",
+      "category": "Gaming",
+      "badges": [
+        "DOPORUČENO",
+        "FPS",
+        "GAMING"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "game-mode",
+      "on": {
+        "description": "uloží původní hodnoty a nastaví AutoGameModeEnabled=1 a AllowAutoGameMode=1.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty včetně původně neexistujících hodnot.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "game-dvr",
+      "name": "Vypnout Game DVR na pozadí",
+      "description": "Omezí zachytávání a nahrávání Windows na pozadí. Může vypnout nahrávání klipů přes Xbox Game Bar.",
+      "category": "Gaming",
+      "badges": [
+        "PODMÍNĚNĚ",
+        "FPS",
+        "ZÁZNAMY"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "game-dvr",
+      "on": {
+        "description": "nastaví GameDVR_Enabled=0 a AppCaptureEnabled=0.",
+        "command": null
+      },
+      "off": {
+        "description": "vrátí přesné původní hodnoty.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "mouse-acceleration",
+      "name": "Vypnout akceleraci myši",
+      "description": "Vypne Windows pointer acceleration (Enhance pointer precision). Může pomoct se stálým pohybem myši; osobní preference se liší.",
+      "category": "Gaming",
+      "badges": [
+        "VOLITELNÉ",
+        "GAMING",
+        "AIM"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "mouse-acceleration",
+      "on": {
+        "description": "nastaví MouseSpeed, MouseThreshold1 a MouseThreshold2 na 0.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "gpu-preference",
+      "name": "Fortnite – preferovat výkonnou GPU",
+      "description": "Požádá Windows, aby pro Fortnite preferoval výkonnou grafiku. Na PC s jedinou GPU se nemusí projevit.",
+      "category": "Gaming",
+      "badges": [
+        "PODMÍNĚNĚ",
+        "FPS",
+        "POKROČILÉ"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "gpu-preference",
+      "on": {
+        "description": "nastaví uživatelskou DirectX preferenci GpuPreference=2 pro Fortnite.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnotu. Pokud detekce GPU selže, tweak je označen jako nepodporovaný; pokročilý režim dovolí ruční obejití upozornění.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "fullscreen-optimizations",
+      "name": "Vypnout Fullscreen Optimizations pro Fortnite",
+      "description": "Nastaví kompatibilitní volbu Windows pro Fortnite. Účinek závisí na cestě ke skutečné instalaci hry; po změně hru restartuj.",
+      "category": "Gaming",
+      "badges": [
+        "POKROČILÉ",
+        "FORTNITE"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "fullscreen-optimizations",
+      "on": {
+        "description": "nastaví DISABLEDXMAXIMIZEDWINDOWEDMODE pro nalezený Fortnite executable.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnotu. Není-li executable nalezen, modul je označen jako nepodporovaný.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "hags",
+      "name": "Hardware-accelerated GPU scheduling (HAGS)",
+      "description": "Zapne HAGS ve Windows. Podpora a přínos závisí na GPU, ovladači a verzi Windows; po změně může být nutný restart.",
+      "category": "Windows",
+      "badges": [
+        "POKROČILÉ",
+        "GPU",
+        "RESTART"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "hags",
+      "on": {
+        "description": "nastaví HwSchMode=2 v HKLM.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnotu. Pokud ovladač nebo Windows tuto funkci nepodporuje, nemusí mít změna účinek.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "visual-effects",
+      "name": "Výkonové vizuální efekty",
+      "description": "Přepne Windows do režimu nejlepšího výkonu. Některé animace a vizuální efekty se mohou změnit.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "VZHLED",
+        "ODEZVA"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "visual-effects",
+      "on": {
+        "description": "nastaví VisualFXSetting=2.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní režim nebo hodnotu odstraní, pokud původně nebyla nastavena.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "power-plan",
+      "name": "High Performance power plan",
+      "description": "Aktivuje vestavěný plán Vysoký výkon. Může zvýšit spotřebu energie a teploty.",
+      "category": "Windows",
+      "badges": [
+        "POKROČILÉ",
+        "VÝKON",
+        "SPOTŘEBA"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "power-plan",
+      "on": {
+        "description": "aktivuje plán napájení Vysoký výkon.",
+        "command": null
+      },
+      "off": {
+        "description": "aktivuje původní ID plánu uložené před změnou. Vyšší spotřeba a teploty jsou možné.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "transparency",
+      "name": "Vypnout efekty průhlednosti",
+      "description": "Vypne průhledné prvky Windows. Jde hlavně o změnu vzhledu, nikoliv o garantované herní FPS.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "VZHLED"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "transparency",
+      "on": {
+        "description": "nastaví EnableTransparency=0.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnotu nebo odstraní novou hodnotu, pokud dříve neexistovala.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "fast-menus",
+      "name": "Rychlejší nabídky a animace oken",
+      "description": "Zkrátí prodlevu nabídek a vypne animaci minimalizace/maximalizace. Změní chování uživatelského rozhraní.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "ODEZVA",
+        "UI"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "fast-menus",
+      "on": {
+        "description": "nastaví MenuShowDelay=100 a MinAnimate=0.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "startup-delay",
+      "name": "Zkrátit odklad spouštění aplikací",
+      "description": "Nastaví uživatelský odklad při spouštění aplikací na 0 ms. Nezrychluje samotné aplikace a přínos závisí na systému.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "STARTUP"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "startup-delay",
+      "on": {
+        "description": "nastaví StartupDelayInMSec=0 pro aktuálního uživatele.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnotu.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "taskbar-animations",
+      "name": "Vypnout animace hlavního panelu",
+      "description": "Vypne animace hlavního panelu Windows. Jde hlavně o vizuální změnu; vyšší FPS ve hrách není garantováno.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "UI",
+        "ODEZVA"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "taskbar-animations",
+      "on": {
+        "description": "nastaví TaskbarAnimations=0.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnotu.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "widgets",
+      "name": "Skrýt tlačítko Widgets",
+      "description": "Skryje tlačítko Widgetů na hlavním panelu. Samotná funkce Widgets se tím neodinstaluje.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "UI"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "widgets",
+      "on": {
+        "description": "nastaví TaskbarDa=0 pro aktuálního uživatele.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnotu.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "search-suggestions",
+      "name": "Omezit webové návrhy ve vyhledávání",
+      "description": "Vypne návrhy z webu v hledání Windows pro aktuálního uživatele. Dostupnost nastavení závisí na edici a verzi Windows.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "SEARCH"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "search-suggestions",
+      "on": {
+        "description": "nastaví DisableSearchBoxSuggestions=1 v uživatelských zásadách Průzkumníka.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnotu.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "recommendations",
+      "name": "Omezit reklamní tipy a doporučení Windows",
+      "description": "Vypne několik uživatelských návrhů, reklamní ID a doporučený obsah Windows. Nejde o měřitelnou FPS optimalizaci.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "UI"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "recommendations",
+      "on": {
+        "description": "nastaví vypnutí vybraných doporučení a reklamního ID pro aktuálního uživatele.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví všechny původní hodnoty.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": []
+    },
+    {
+      "id": "show-hidden-files",
+      "name": "Zobrazit skryté soubory",
+      "description": "Zobrazí skryté soubory v Průzkumníku; výkon her tím nestoupne.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "show-hidden-files",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+          "valueName": "Hidden",
+          "onValue": 1,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "show-file-extensions",
+      "name": "Zobrazit přípony souborů",
+      "description": "Zobrazí přípony jako .exe a .cmd pro snazší rozpoznání typu souboru.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "show-file-extensions",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+          "valueName": "HideFileExt",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-search-highlights",
+      "name": "Vypnout zvýraznění ve vyhledávání",
+      "description": "Omezí doporučený obsah ve vyhledávání Windows.",
+      "category": "Windows",
+      "badges": [
+        "WINDOWS",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-search-highlights",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\SearchSettings",
+          "valueName": "IsDynamicSearchBoxEnabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "hide-task-view",
+      "name": "Skrýt tlačítko Zobrazení úloh",
+      "description": "Skryje tlačítko Task View na hlavním panelu.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "hide-task-view",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+          "valueName": "ShowTaskViewButton",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "hide-taskbar-badges",
+      "name": "Skrýt odznaky aplikací na hlavním panelu",
+      "description": "Vypne odznaky s počtem oznámení na ikonách hlavního panelu.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "hide-taskbar-badges",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+          "valueName": "TaskbarBadges",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-sync-provider-notifications",
+      "name": "Vypnout tipy synchronizace v Průzkumníku",
+      "description": "Vypne tipy synchronizace; samotná synchronizace zůstane zapnutá.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-sync-provider-notifications",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+          "valueName": "ShowSyncProviderNotifications",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "hide-meet-now",
+      "name": "Skrýt Meet Now na hlavním panelu",
+      "description": "Skryje ikonu Meet Now, pokud ji daná verze Windows používá.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "hide-meet-now",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer",
+          "valueName": "HideSCAMeetNow",
+          "onValue": 1,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "hide-people-taskbar",
+      "name": "Skrýt ikonu Lidé",
+      "description": "Skryje starší panel Lidé na hlavním panelu, pokud je dostupný.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "hide-people-taskbar",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+          "valueName": "PeopleBand",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-start-app-tracking",
+      "name": "Vypnout sledování spouštěných aplikací",
+      "description": "Omezí sledování aplikací používané pro personalizaci nabídky Start.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-start-app-tracking",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+          "valueName": "Start_TrackProgs",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-start-recent-documents",
+      "name": "Vypnout sledování nedávných dokumentů",
+      "description": "Omezí historii nedávno otevřených dokumentů v některých částech Windows.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-start-recent-documents",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+          "valueName": "Start_TrackDocs",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-recently-added-apps",
+      "name": "Skrýt upozornění na nově přidané aplikace",
+      "description": "Vypne zvýrazňování nově nainstalovaných aplikací v nabídce Start.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-recently-added-apps",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+          "valueName": "Start_NotifyNewApps",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-toast-notifications",
+      "name": "Vypnout oznámení Windows",
+      "description": "Vypne systémová oznámení uživatele; můžeš přehlédnout důležitá upozornění.",
+      "category": "Windows",
+      "badges": [
+        "POZOR",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-toast-notifications",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\PushNotifications",
+          "valueName": "ToastEnabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-notification-center",
+      "name": "Vypnout Centrum oznámení",
+      "description": "Skryje Centrum oznámení; může omezit přístup k oznámením aplikací.",
+      "category": "Windows",
+      "badges": [
+        "POZOR",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-notification-center",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Windows\\Explorer",
+          "valueName": "DisableNotificationCenter",
+          "onValue": 1,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-cloud-app-notifications",
+      "name": "Omezit cloudová oznámení aplikací",
+      "description": "Zakáže cloudová oznámení aplikací, pokud daná verze Windows zásadu podporuje.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-cloud-app-notifications",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\PushNotifications",
+          "valueName": "NoCloudApplicationNotification",
+          "onValue": 1,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-spotlight-lockscreen",
+      "name": "Vypnout funkce Windows Spotlight",
+      "description": "Vypne vybrané funkce Spotlight; dopad na výkon je zanedbatelný.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-spotlight-lockscreen",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Windows\\CloudContent",
+          "valueName": "DisableWindowsSpotlightFeatures",
+          "onValue": 1,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-spotlight-welcome",
+      "name": "Vypnout Spotlight uvítací obrazovky",
+      "description": "Omezí doporučení Spotlight v uvítacích obrazovkách Windows.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-spotlight-welcome",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Windows\\CloudContent",
+          "valueName": "DisableWindowsSpotlightWindowsWelcomeExperience",
+          "onValue": 1,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-third-party-suggestions",
+      "name": "Vypnout návrhy aplikací třetích stran",
+      "description": "Omezí doporučení aplikací třetích stran ve Windows.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-third-party-suggestions",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Windows\\CloudContent",
+          "valueName": "DisableThirdPartySuggestions",
+          "onValue": 1,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-windows-consumer-features",
+      "name": "Omezit spotřebitelský doporučený obsah",
+      "description": "Omezí automaticky doporučovaný obsah Windows; dostupnost závisí na edici.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-windows-consumer-features",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Windows\\CloudContent",
+          "valueName": "DisableWindowsConsumerFeatures",
+          "onValue": 1,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-tailored-experiences",
+      "name": "Vypnout personalizované tipy",
+      "description": "Omezí personalizaci tipů podle diagnostických dat.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-tailored-experiences",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Privacy",
+          "valueName": "TailoredExperiencesWithDiagnosticDataEnabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-feedback-notifications",
+      "name": "Vypnout výzvy ke zpětné vazbě",
+      "description": "Omezí výzvy Windows k hodnocení a odeslání zpětné vazby.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-feedback-notifications",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Windows\\DataCollection",
+          "valueName": "DoNotShowFeedbackNotifications",
+          "onValue": 1,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-activity-feed",
+      "name": "Omezit historii aktivit Windows",
+      "description": "Vypne historii aktivit a její publikování/synchronizaci; některé funkce Windows se změní.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-activity-feed",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Windows\\System",
+          "valueName": "EnableActivityFeed",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        },
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Windows\\System",
+          "valueName": "PublishUserActivities",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        },
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Windows\\System",
+          "valueName": "UploadUserActivities",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-cross-device-resume",
+      "name": "Vypnout pokračování mezi zařízeními",
+      "description": "Vypne pokračování aktivit mezi zařízeními pro aktuálního uživatele.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-cross-device-resume",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\CrossDeviceResume\\Configuration",
+          "valueName": "IsResumeAllowed",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-bing-start-search",
+      "name": "Omezit webové výsledky v nabídce Start",
+      "description": "Vypne hodnotu BingSearchEnabled; chování závisí na verzi Windows.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-bing-start-search",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Search",
+          "valueName": "BingSearchEnabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-autoplay",
+      "name": "Vypnout automatické přehrávání médií",
+      "description": "Vypne automatické přehrávání médií pro uživatele; zařízení budeš otevírat ručně.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-autoplay",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\AutoplayHandlers",
+          "valueName": "DisableAutoplay",
+          "onValue": 1,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-autorun",
+      "name": "Omezit automatické spouštění médií",
+      "description": "Blokuje automatické spouštění obsahu v Průzkumníku pro aktuálního uživatele.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-autorun",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer",
+          "valueName": "NoDriveTypeAutoRun",
+          "onValue": 255,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-suggested-apps",
+      "name": "Vypnout návrhy aplikací v nabídce Start",
+      "description": "Omezí jeden z mechanismů doporučování aplikací Windows.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-suggested-apps",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "valueName": "SubscribedContent-338389Enabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-settings-tips",
+      "name": "Vypnout tipy Windows",
+      "description": "Omezí vybraný kanál tipů a doporučení systému.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-settings-tips",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "valueName": "SubscribedContent-338393Enabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-welcome-after-updates",
+      "name": "Vypnout uvítací tipy po aktualizacích",
+      "description": "Omezí uvítací obrazovky s tipy po aktualizacích Windows.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-welcome-after-updates",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "valueName": "SubscribedContent-310093Enabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-lockscreen-spotlight-overlay",
+      "name": "Vypnout překryvné tipy na zamykací obrazovce",
+      "description": "Vypne překryvné tipy Spotlight na zamykací obrazovce.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-lockscreen-spotlight-overlay",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "valueName": "RotatingLockScreenOverlayEnabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-lockscreen-rotation",
+      "name": "Vypnout střídání obrázků zamykací obrazovky",
+      "description": "Vypne rotaci obrázků Windows Spotlight na zamykací obrazovce.",
+      "category": "Windows",
+      "badges": [
+        "VOLITELNÉ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-lockscreen-rotation",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "valueName": "RotatingLockScreenEnabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-clipboard-sync",
+      "name": "Vypnout synchronizaci schránky mezi zařízeními",
+      "description": "Vypne synchronizaci schránky mezi zařízeními; místní schránka zůstane dostupná.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-clipboard-sync",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Clipboard",
+          "valueName": "AllowCrossDeviceClipboard",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-gamebar-startup-panel",
+      "name": "Vypnout úvodní panel Xbox Game Bar",
+      "description": "Vypne úvodní panel Game Bar, nikoliv samotnou aplikaci.",
+      "category": "Gaming",
+      "badges": [
+        "GAMING",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-gamebar-startup-panel",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\GameBar",
+          "valueName": "ShowStartupPanel",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-gamebar-nexus",
+      "name": "Vypnout přesměrování Game Bar na Nexus",
+      "description": "Změní způsob otevírání rozhraní Xbox Game Bar; chování se může lišit.",
+      "category": "Gaming",
+      "badges": [
+        "GAMING",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-gamebar-nexus",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\GameBar",
+          "valueName": "UseNexusForGameBarEnabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-edge-prelaunch",
+      "name": "Vypnout přednačítání Microsoft Edge",
+      "description": "Vypne přednačítání Edge, pokud zásadu daná verze podporuje.",
+      "category": "Windows",
+      "badges": [
+        "APLIKACE",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-edge-prelaunch",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Edge\\Main",
+          "valueName": "AllowPrelaunch",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-edge-background",
+      "name": "Vypnout běh Edge na pozadí",
+      "description": "Zakáže běh procesů Edge na pozadí přes uživatelskou zásadu.",
+      "category": "Windows",
+      "badges": [
+        "APLIKACE",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-edge-background",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Edge",
+          "valueName": "BackgroundModeEnabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "enable-edge-sleeping-tabs",
+      "name": "Povolit uspávání neaktivních panelů Edge",
+      "description": "Zapne zásadu uspávání panelů Edge; může snížit jeho využití zdrojů.",
+      "category": "Windows",
+      "badges": [
+        "APLIKACE",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "enable-edge-sleeping-tabs",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Edge",
+          "valueName": "SleepingTabsEnabled",
+          "onValue": 1,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-chrome-background",
+      "name": "Vypnout běh Chrome na pozadí",
+      "description": "Zakáže běh aplikací Chrome na pozadí přes uživatelskou zásadu.",
+      "category": "Windows",
+      "badges": [
+        "APLIKACE",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-chrome-background",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Google\\Chrome",
+          "valueName": "BackgroundModeEnabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-chrome-metrics",
+      "name": "Vypnout odesílání metrik Chrome zásadou",
+      "description": "Vypne zásadu metrik Chrome; nastavení může být spravováno prohlížečem.",
+      "category": "Windows",
+      "badges": [
+        "APLIKACE",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-chrome-metrics",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Google\\Chrome",
+          "valueName": "MetricsReportingEnabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-search-location",
+      "name": "Omezit polohu ve vyhledávání Windows",
+      "description": "Zakáže používání polohy vyhledáváním, pokud Windows zásadu podporuje.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-search-location",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Windows\\Windows Search",
+          "valueName": "AllowSearchToUseLocation",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-lockscreen-status",
+      "name": "Vypnout tipy Spotlight na zamykací obrazovce",
+      "description": "Omezí další kanál doporučeného obsahu na zamykací obrazovce.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-lockscreen-status",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "valueName": "SubscribedContent-338387Enabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-settings-suggested-content",
+      "name": "Omezit další doporučený obsah Windows",
+      "description": "Vypne další uživatelský kanál doporučení, pokud jej Windows používá.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-settings-suggested-content",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "valueName": "SubscribedContent-353696Enabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-start-tips",
+      "name": "Vypnout další tipy v nabídce Start",
+      "description": "Omezí další kanál tipů Windows v nabídce Start.",
+      "category": "Windows",
+      "badges": [
+        "SOUKROMÍ",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-start-tips",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "valueName": "SubscribedContent-338392Enabled",
+          "onValue": 0,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    },
+    {
+      "id": "disable-app-location-access",
+      "name": "Zakázat aplikacím přístup k poloze",
+      "description": "Odepře aplikacím přístup k poloze; může omezit mapy a další aplikace využívající polohu.",
+      "category": "Windows",
+      "badges": [
+        "POZOR",
+        "WINDOWS"
+      ],
+      "implementation": "existing-csharp",
+      "implementationId": "disable-app-location-access",
+      "on": {
+        "description": "uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly.",
+        "command": null
+      },
+      "off": {
+        "description": "obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.",
+        "command": null
+      },
+      "stateDetection": {
+        "method": "existing-csharp",
+        "source": "MainWindow.Workspace.cs"
+      },
+      "registryOperations": [
+        {
+          "registryPath": "Software\\Policies\\Microsoft\\Windows\\AppPrivacy",
+          "valueName": "LetAppsAccessLocation",
+          "onValue": 2,
+          "offBehavior": "restore-saved-original-value"
+        }
+      ]
+    }
+  ],
+  "maintenanceActions": [
+    {
+      "id": "user-temp",
+      "name": "Uživatelský TEMP",
+      "category": "Cleanup",
+      "description": "Vyčistí dostupný obsah aktuální TEMP složky po potvrzení.",
+      "handler": "User TEMP",
+      "source": "MainWindow.Functionality.cs",
+      "kind": "cleanup",
+      "requiresConfirmation": true,
+      "implementation": "existing-csharp",
+      "command": null,
+      "off": null,
+      "stateDetection": {
+        "method": "not-applicable"
+      },
+      "notes": "Jde o destruktivní úklid souborů, ne o přepínač ON/OFF. Kód vyžaduje potvrzení."
+    },
+    {
+      "id": "windows-update-cache",
+      "name": "Windows Update Cache",
+      "category": "Cleanup",
+      "description": "Vyčistí staženou cache Windows Update po potvrzení.",
+      "handler": "Windows Update Cache",
+      "source": "MainWindow.Functionality.cs",
+      "kind": "cleanup",
+      "requiresConfirmation": true,
+      "implementation": "existing-csharp",
+      "command": null,
+      "off": null,
+      "stateDetection": {
+        "method": "not-applicable"
+      },
+      "notes": "Jde o destruktivní úklid souborů, ne o přepínač ON/OFF. Kód vyžaduje potvrzení."
+    },
+    {
+      "id": "delivery-optimization-cache",
+      "name": "Delivery Optimization Cache",
+      "category": "Cleanup",
+      "description": "Vyčistí cache Delivery Optimization po potvrzení.",
+      "handler": "Delivery Optimization Cache",
+      "source": "MainWindow.Functionality.cs",
+      "kind": "cleanup",
+      "requiresConfirmation": true,
+      "implementation": "existing-csharp",
+      "command": null,
+      "off": null,
+      "stateDetection": {
+        "method": "not-applicable"
+      },
+      "notes": "Jde o destruktivní úklid souborů, ne o přepínač ON/OFF. Kód vyžaduje potvrzení."
+    },
+    {
+      "id": "shader-cache",
+      "name": "Shader Cache",
+      "category": "Cleanup",
+      "description": "Vyčistí dostupné DirectX/NVIDIA shader cache po potvrzení.",
+      "handler": "Shader Cache",
+      "source": "MainWindow.Functionality.cs",
+      "kind": "cleanup",
+      "requiresConfirmation": true,
+      "implementation": "existing-csharp",
+      "command": null,
+      "off": null,
+      "stateDetection": {
+        "method": "not-applicable"
+      },
+      "notes": "Jde o destruktivní úklid souborů, ne o přepínač ON/OFF. Kód vyžaduje potvrzení."
+    },
+    {
+      "id": "windows-user-temp",
+      "name": "Windows + User TEMP",
+      "category": "Cleanup",
+      "description": "Vyčistí dostupný obsah Windows TEMP a uživatelského TEMP po potvrzení.",
+      "handler": "Windows + User TEMP",
+      "source": "MainWindow.Functionality.cs",
+      "kind": "cleanup",
+      "requiresConfirmation": true,
+      "implementation": "existing-csharp",
+      "command": null,
+      "off": null,
+      "stateDetection": {
+        "method": "not-applicable"
+      },
+      "notes": "Jde o destruktivní úklid souborů, ne o přepínač ON/OFF. Kód vyžaduje potvrzení."
+    },
+    {
+      "id": "browser-cache",
+      "name": "Browser Cache",
+      "category": "Cleanup",
+      "description": "Vyčistí nalezené cache Chrome, Edge a Firefox po potvrzení; zamčené soubory se přeskočí.",
+      "handler": "Browser Cache",
+      "source": "MainWindow.Functionality.cs",
+      "kind": "cleanup",
+      "requiresConfirmation": true,
+      "implementation": "existing-csharp",
+      "command": null,
+      "off": null,
+      "stateDetection": {
+        "method": "not-applicable"
+      },
+      "notes": "Jde o destruktivní úklid souborů, ne o přepínač ON/OFF. Kód vyžaduje potvrzení."
+    },
+    {
+      "id": "crash-dumps-logs",
+      "name": "Crash Dumps & Logs",
+      "category": "Cleanup",
+      "description": "Vyčistí soubory z nakonfigurovaných složek crash dumpů a logů po potvrzení.",
+      "handler": "Crash Dumps & Logs",
+      "source": "MainWindow.Functionality.cs",
+      "kind": "cleanup",
+      "requiresConfirmation": true,
+      "implementation": "existing-csharp",
+      "command": null,
+      "off": null,
+      "stateDetection": {
+        "method": "not-applicable"
+      },
+      "notes": "Jde o destruktivní úklid souborů, ne o přepínač ON/OFF. Kód vyžaduje potvrzení."
+    },
+    {
+      "id": "gpu-shader-cache",
+      "name": "GPU / Shader Cache",
+      "category": "Cleanup",
+      "description": "Vyčistí dostupnou GPU/shader cache po potvrzení.",
+      "handler": "GPU / Shader Cache",
+      "source": "MainWindow.Functionality.cs",
+      "kind": "cleanup",
+      "requiresConfirmation": true,
+      "implementation": "existing-csharp",
+      "command": null,
+      "off": null,
+      "stateDetection": {
+        "method": "not-applicable"
+      },
+      "notes": "Jde o destruktivní úklid souborů, ne o přepínač ON/OFF. Kód vyžaduje potvrzení."
+    },
+    {
+      "id": "windows-update-delivery-cache",
+      "name": "Windows Update / Delivery Cache",
+      "category": "Cleanup",
+      "description": "Vyčistí cache Windows Update a Delivery Optimization po potvrzení.",
+      "handler": "Windows Update / Delivery Cache",
+      "source": "MainWindow.Functionality.cs",
+      "kind": "cleanup",
+      "requiresConfirmation": true,
+      "implementation": "existing-csharp",
+      "command": null,
+      "off": null,
+      "stateDetection": {
+        "method": "not-applicable"
+      },
+      "notes": "Jde o destruktivní úklid souborů, ne o přepínač ON/OFF. Kód vyžaduje potvrzení."
+    },
+    {
+      "id": "quick-optimize-temp",
+      "name": "Quick Optimize – TEMP",
+      "category": "Cleanup",
+      "description": "Rychlý úklid aktuální TEMP složky po zobrazení velikosti a potvrzení.",
+      "handler": "Quick Optimize",
+      "source": "MainWindow.Functionality.cs",
+      "kind": "cleanup",
+      "requiresConfirmation": true,
+      "implementation": "existing-csharp",
+      "command": null,
+      "off": null,
+      "stateDetection": {
+        "method": "not-applicable"
+      },
+      "notes": "Jde o destruktivní úklid souborů, ne o přepínač ON/OFF. Kód vyžaduje potvrzení."
+    }
+  ],
+  "diagnosticAndUtilityActions": [
+    {
+      "id": "deep-scan",
+      "name": "Deep Scan",
+      "description": "Změří velikost TEMP, browser cache, crash dumps, GPU cache a Windows Update; nic nemaže.",
+      "category": "scan",
+      "kind": "utility",
+      "handler": "RunDeepScan",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "large-files",
+      "name": "Large Files",
+      "description": "Najde až 20 souborů o velikosti nejméně 1 GB na systémovém disku.",
+      "category": "scan",
+      "kind": "utility",
+      "handler": "ShowLargeFiles",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "startup-registry",
+      "name": "Startup Registry Entries",
+      "description": "Zobrazí běžné Run položky HKCU a HKLM.",
+      "category": "diagnostic",
+      "kind": "utility",
+      "handler": "ShowStartupRegistry",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "startup-folder",
+      "name": "Startup Folder",
+      "description": "Zobrazí soubory složky Po spuštění.",
+      "category": "diagnostic",
+      "kind": "utility",
+      "handler": "ShowStartupFolder",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "scheduled-startup-tasks",
+      "name": "Scheduled Startup Tasks",
+      "description": "Zobrazí plánované úlohy Windows.",
+      "category": "diagnostic",
+      "kind": "utility",
+      "handler": "ShowScheduledTasks",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "connection-info",
+      "name": "Connection Info",
+      "description": "Zobrazí aktivní síťové adaptéry, rychlost a IPv4 adresy.",
+      "category": "diagnostic",
+      "kind": "utility",
+      "handler": "ShowConnectionInfo",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "dns-check",
+      "name": "DNS Check",
+      "description": "Zobrazí DNS servery aktivních síťových adaptérů.",
+      "category": "diagnostic",
+      "kind": "utility",
+      "handler": "ShowDnsInfo",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "network-health",
+      "name": "TCP/IP Health",
+      "description": "Ověří ping a DNS rozlišení.",
+      "category": "diagnostic",
+      "kind": "utility",
+      "handler": "RunNetworkHealth",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "system-drive",
+      "name": "System Drive",
+      "description": "Zobrazí volné a celkové místo na systémovém disku.",
+      "category": "diagnostic",
+      "kind": "utility",
+      "handler": "ShowDriveInfo",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "cpu-quick-test",
+      "name": "CPU Quick Test",
+      "description": "Provede jednoduchý CPU benchmark pro srovnání za stejných podmínek.",
+      "category": "benchmark",
+      "kind": "utility",
+      "handler": "RunCpuBenchmark",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "memory-snapshot",
+      "name": "Memory Snapshot",
+      "description": "Zobrazí zjištěnou velikost RAM.",
+      "category": "diagnostic",
+      "kind": "utility",
+      "handler": "MemorySnapshot",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "tweak-backups",
+      "name": "Tweak Backups",
+      "description": "Zobrazí uložené zálohy optimizeru.",
+      "category": "backup",
+      "kind": "utility",
+      "handler": "ShowBackupFolder",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "restore-all",
+      "name": "Restore All",
+      "description": "Zobrazí informace o obnovení; neprovádí hromadné změny naslepo.",
+      "category": "backup",
+      "kind": "utility",
+      "handler": "ShowRestoreInfo",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "change-history",
+      "name": "Change History",
+      "description": "Zobrazí historii změn optimizeru.",
+      "category": "diagnostic",
+      "kind": "utility",
+      "handler": "ShowHistory",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "recycle-bin",
+      "name": "Recycle Bin",
+      "description": "Zobrazí informaci o Koši; automaticky ho nevyprazdňuje.",
+      "category": "cleanup-info",
+      "kind": "utility",
+      "handler": "ShowRecycleBinInfo",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "network-reset-tools",
+      "name": "Network Reset Tools",
+      "description": "Zobrazí varování; reset síťového stacku se automaticky neprovádí.",
+      "category": "diagnostic",
+      "kind": "utility",
+      "handler": "ShowNetworkResetWarning",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    },
+    {
+      "id": "installed-applications",
+      "name": "Installed Applications / App Checker / Deep Uninstall",
+      "description": "Otevře správce aplikací.",
+      "category": "apps",
+      "kind": "utility",
+      "handler": "OpenAppsManager",
+      "source": "MainWindow.Functionality.cs",
+      "implementation": "existing-csharp",
+      "command": null,
+      "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    }
+  ]
+}
