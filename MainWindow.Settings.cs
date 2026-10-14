@@ -34,7 +34,7 @@ public partial class MainWindow
         {
             Text = "Nainstalovaná verze: " + installedVersion,
             FontSize = 12, FontWeight = FontWeights.SemiBold,
-            Foreground = (Brush)FindResource("TextPrimary"),
+            Foreground = Brushes.White,
             Margin = new Thickness(0, 0, 0, 10)
         });
         content.Children.Add(new TextBlock
