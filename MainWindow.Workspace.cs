@@ -379,20 +379,6 @@ public partial class MainWindow
         _workspaceSwitches.Clear();
         _workspaceSwitchStatuses.Clear();
 
-        if (!gamingOnly)
-        {
-            var managerCard = WorkspaceCard();
-            var managerPanel = new StackPanel();
-            managerPanel.Children.Add(WorkspaceHeading("VLASTNÍ OPTIMALIZACE"));
-            managerPanel.Children.Add(WorkspaceBody("Přidej si vlastní optimalizaci s ON/OFF příkazy a dvěma kontrolami skutečného stavu Windows. Přepínač nebude používat historii kliknutí jako zdroj pravdy."));
-            var addButton = WorkspaceButton("＋  PŘIDAT VLASTNÍ OPTIMALIZACI");
-            addButton.Margin = new Thickness(0, 12, 0, 0);
-            addButton.Click += AddCustomTweakDefinition_Click;
-            managerPanel.Children.Add(addButton);
-            managerCard.Child = managerPanel;
-            SecondaryContent.Children.Add(managerCard);
-        }
-
         if (gamingOnly)
         {
             AddWorkspaceTweakCard(
@@ -425,6 +411,7 @@ public partial class MainWindow
                 "fullscreen-optimizations",
                 "ON: nastaví DISABLEDXMAXIMIZEDWINDOWEDMODE pro nalezený Fortnite executable. OFF: obnoví původní hodnotu. Není-li executable nalezen, modul je označen jako nepodporovaný.", "POKROČILÉ", "FORTNITE");
 
+            AddBuiltInCatalogCards("Gaming");
             _ = RefreshWorkspaceTweakStatesAsync();
             return;
         }
@@ -747,19 +734,9 @@ public partial class MainWindow
             "disable-app-location-access",
             "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "POZOR", "WINDOWS");
 
-        foreach (var custom in GetCustomTweakDefinitions())
-        {
-            var customId = CustomTweakIdPrefix + custom.Id;
-            var badges = new List<string> { custom.Category };
-            badges.AddRange(custom.Badges.Where(x => !string.IsNullOrWhiteSpace(x)));
-            var tooltip = $"ON: {custom.OnDescription} OFF: {custom.OffDescription}";
-            AddWorkspaceTweakCard(custom.Name, custom.Description, customId, tooltip, badges.ToArray());
-        }
+        AddBuiltInCatalogCards();
 
-        if (!string.IsNullOrWhiteSpace(_customTweakConfigError))
-            AddInfoCard("CUSTOM TWEAKS JSON – CHYBA", $"Konfiguraci se nepodařilo načíst: {_customTweakConfigError}. Oprav JSON soubor: {CustomTweakConfigPath}", "Open Tweaks");
-        else
-            AddInfoCard("VLASTNÍ TWEAKY", $"Přidávej vlastní položky do souboru {CustomTweakConfigPath}. Po úpravě souboru aplikaci restartuj. Příkazy se spouštějí přes CMD pod aktuálním uživatelem; před zapnutím si je zkontroluj.", "Open Tweaks");
+        AddBuiltInCatalogCards();
 
         var hw = _hardwareInventory;
         var advanced = OptimizerPreferencesStore.Load().AdvancedRecommendations;
@@ -770,6 +747,42 @@ public partial class MainWindow
         AddAmdCompatibilityInfo(hw, advanced);
         _ = RefreshWorkspaceTweakStatesAsync();
     }
+
+    private void AddBuiltInCatalogCards(string? categoryFilter = null)
+    {
+        var definitions = BuiltInOptimizationCatalog.All;
+        foreach (var group in definitions.Where(x => categoryFilter is null || x.Category.Equals(categoryFilter, StringComparison.OrdinalIgnoreCase))
+                     .GroupBy(x => x.Category).OrderBy(g => g.Min(x => CatalogCategoryOrder(x.Category))))
+        {
+            var heading = WorkspaceHeading(group.Key switch
+            {
+                "Privacy" => "SOUKROMÍ A TELEMETRIE",
+                "Network" => "INTERNET A SÍŤ",
+                "Power" => "NAPÁJENÍ",
+                "CPU" => "PROCESOR",
+                "GPU" => "GRAFICKÁ KARTA",
+                "Storage" => "DISKY A ÚLOŽIŠTĚ",
+                "KBM" => "KLÁVESNICE A MYŠ",
+                "Security" => "ZABEZPEČENÍ",
+                "Cleanup" => "ČIŠTĚNÍ",
+                "Windows" => "WINDOWS A ROZHRANÍ",
+                _ => group.Key.ToUpperInvariant()
+            });
+            heading.Margin = new Thickness(0, 18, 0, 10);
+            SecondaryContent.Children.Add(heading);
+            foreach (var item in group)
+            {
+                var tooltip = $"ON: {item.OnDescription}\nOFF: {item.OffDescription}";
+                AddWorkspaceTweakCard(item.Name, item.Description, "catalog:" + item.Id, tooltip, new[] { item.Category }.Concat(item.Badges).ToArray());
+            }
+        }
+    }
+
+    private static int CatalogCategoryOrder(string category) => category switch
+    {
+        "Gaming" => 1, "Windows" => 2, "Privacy" => 3, "Network" => 4, "Power" => 5,
+        "CPU" => 6, "GPU" => 7, "Storage" => 8, "KBM" => 9, "Security" => 10, "Cleanup" => 11, _ => 99
+    };
 
     private bool IsWorkspaceTweakIncompatible(string id)
     {
