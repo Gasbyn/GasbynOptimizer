@@ -1445,7 +1445,7 @@ public partial class MainWindow
         foreach (var id in saved.Keys)
         {
             // CMD tweaks do not expose a generic, reliable way to inspect their real-world state.
-            if (GetCustomTweakDefinition(id) is not null) continue;
+            if (id.StartsWith(CustomTweakIdPrefix, StringComparison.OrdinalIgnoreCase)) continue;
             if (!IsWorkspaceTweakAtOptimizedState(id))
                 _workspaceDriftedTweaks.Add(id);
         }
