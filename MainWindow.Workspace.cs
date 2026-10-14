@@ -736,8 +736,6 @@ public partial class MainWindow
 
         AddBuiltInCatalogCards();
 
-        AddBuiltInCatalogCards();
-
         var hw = _hardwareInventory;
         var advanced = OptimizerPreferencesStore.Load().AdvancedRecommendations;
         var note = hw is null
@@ -786,6 +784,7 @@ public partial class MainWindow
 
     private bool IsWorkspaceTweakIncompatible(string id)
     {
+        if (BuiltInOptimizationCatalog.ContainsWorkspaceId(id)) return false;
         if (string.Equals(id, "gpu-preference", StringComparison.OrdinalIgnoreCase))
         {
             var gpu = _hardwareInventory?.Gpu;
@@ -1148,8 +1147,10 @@ public partial class MainWindow
             foreach (var id in ids)
             {
                 var systemStatus = actual.GetValueOrDefault(id, "stav není dostupný");
+                var isCatalog = BuiltInOptimizationCatalog.ContainsWorkspaceId(id);
                 var isCustom = GetCustomTweakDefinition(id) is not null;
-                var active = isCustom ? systemStatus == "ON" : IsWorkspaceTweakAtOptimizedState(id);
+                var active = isCatalog ? BuiltInOptimizationCatalog.IsMarkedEnabled(id) :
+                    isCustom ? systemStatus == "ON" : IsWorkspaceTweakAtOptimizedState(id);
                 if (_workspaceSwitches.TryGetValue(id, out var toggle))
                 {
                     toggle.IsChecked = isCustom && systemStatus == "UNKNOWN" ? null : active;
@@ -1157,9 +1158,11 @@ public partial class MainWindow
                 }
                 if (_workspaceSwitchStatuses.TryGetValue(id, out var status))
                 {
-                    status.Text = isCustom
-                        ? $"Skutečný stav Windows: {systemStatus}"
-                        : $"Windows: {systemStatus}  ·  Aktuální stav: {(active ? "ON" : "OFF")}  ·  Záloha: {(state.ContainsKey(id) ? "uložena" : "není")}";
+                    status.Text = isCatalog
+                        ? $"Poslední akce: {(active ? "ON" : "OFF")} · Katalogový stav (po změně může být nutný restart)"
+                        : isCustom
+                            ? $"Skutečný stav Windows: {systemStatus}"
+                            : $"Windows: {systemStatus}  ·  Aktuální stav: {(active ? "ON" : "OFF")}  ·  Záloha: {(state.ContainsKey(id) ? "uložena" : "není")}";
                     status.Foreground = active
                         ? (Brush)FindResource("OrangeLight")
                         : (Brush)FindResource("TextDim");
@@ -1192,20 +1195,24 @@ public partial class MainWindow
 
         _workspaceTweakBusy = true;
         foreach (var item in _workspaceSwitches.Values) item.IsEnabled = false;
-        status.Text = GetCustomTweakDefinition(id) is not null
-            ? (enable ? "Spouštím vlastní ON CMD příkaz…" : "Spouštím vlastní OFF CMD příkaz…")
-            : (enable ? "Ukládám původní stav a aplikuji optimalizaci…" : "Obnovuji původní hodnoty…");
+        status.Text = BuiltInOptimizationCatalog.ContainsWorkspaceId(id)
+            ? (enable ? "Aplikuji katalogovou optimalizaci…" : "Provádím OFF operace katalogové optimalizace…")
+            : GetCustomTweakDefinition(id) is not null
+                ? (enable ? "Spouštím vlastní ON CMD příkaz…" : "Spouštím vlastní OFF CMD příkaz…")
+                : (enable ? "Ukládám původní stav a aplikuji optimalizaci…" : "Obnovuji původní hodnoty…");
         try
         {
             await Task.Run(() => ApplyWorkspaceTweak(id, enable));
             await RefreshWorkspaceTweakStatesAsync();
-            status.Text = GetCustomTweakDefinition(id) is not null
-                ? (enable
-                    ? $"Vlastní ON CMD příkaz úspěšně dokončen; stav se ověřuje podle systému. · {ReadWorkspaceActualStatus(id)}"
-                    : $"Vlastní OFF CMD příkaz úspěšně dokončen; stav se ověřuje podle systému. · {ReadWorkspaceActualStatus(id)}")
-                : (enable
-                    ? $"Optimalizace zapnuta. Původní stav je uložen. Pro plné použití změn doporučuji restart PC. · {ReadWorkspaceActualStatus(id)}"
-                    : $"Původní hodnoty obnoveny. · {ReadWorkspaceActualStatus(id)}");
+            status.Text = BuiltInOptimizationCatalog.ContainsWorkspaceId(id)
+                ? $"Katalogová operace dokončena: {(enable ? "ON" : "OFF")}. U některých změn může být nutný restart."
+                : GetCustomTweakDefinition(id) is not null
+                    ? (enable
+                        ? $"Vlastní ON CMD příkaz úspěšně dokončen; stav se ověřuje podle systému. · {ReadWorkspaceActualStatus(id)}"
+                        : $"Vlastní OFF CMD příkaz úspěšně dokončen; stav se ověřuje podle systému. · {ReadWorkspaceActualStatus(id)}")
+                    : (enable
+                        ? $"Optimalizace zapnuta. Původní stav je uložen. Pro plné použití změn doporučuji restart PC. · {ReadWorkspaceActualStatus(id)}"
+                        : $"Původní hodnoty obnoveny. · {ReadWorkspaceActualStatus(id)}");
         }
         catch (Exception ex)
         {
