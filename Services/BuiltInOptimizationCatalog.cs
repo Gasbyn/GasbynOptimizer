@@ -2588,10 +2588,19 @@ public static class BuiltInOptimizationCatalog
 
     private static void ApplyStorageServices(JsonElement op)
     {
+        var found = false;
         foreach (var service in new[] { "storahci", "stornvme", "iaStorV", "iaStorAC" })
-        foreach (var name in op.GetProperty("names").EnumerateArray().Select(x => x.GetString() ?? ""))
-            SetValue("HKLM", $@"SYSTEM\CurrentControlSet\Services\{service}\Parameters\Device", name,
-                GetString(op, "regType"), op.GetProperty("data"));
+        {
+            var servicePath = $@"SYSTEM\CurrentControlSet\Services\{service}";
+            using var serviceKey = Registry.LocalMachine.OpenSubKey(servicePath, writable: true);
+            if (serviceKey is null) continue;
+            using var deviceKey = serviceKey.CreateSubKey(@"Parameters\Device", writable: true);
+            if (deviceKey is null) continue;
+            found = true;
+            foreach (var name in op.GetProperty("names").EnumerateArray().Select(x => x.GetString() ?? ""))
+                deviceKey.SetValue(name, RegistryData(op.GetProperty("data"), GetString(op, "regType")), RegistryKind(GetString(op, "regType")));
+        }
+        if (!found) throw new InvalidOperationException("Nebyl nalezen podporovaný storage driver; žádné neexistující služby nebyly vytvořeny.");
     }
 
     private static void ApplyIntelGpu(JsonElement op)
