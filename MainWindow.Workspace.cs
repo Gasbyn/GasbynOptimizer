@@ -951,14 +951,20 @@ public partial class MainWindow
 
         _workspaceTweakBusy = true;
         foreach (var item in _workspaceSwitches.Values) item.IsEnabled = false;
-        status.Text = enable ? "Ukládám původní stav a aplikuji optimalizaci…" : "Obnovuji původní hodnoty…";
+        status.Text = GetCustomTweakDefinition(id) is not null
+            ? (enable ? "Spouštím vlastní ON CMD příkaz…" : "Spouštím vlastní OFF CMD příkaz…")
+            : (enable ? "Ukládám původní stav a aplikuji optimalizaci…" : "Obnovuji původní hodnoty…");
         try
         {
             await Task.Run(() => ApplyWorkspaceTweak(id, enable));
             await RefreshWorkspaceTweakStatesAsync();
-            status.Text = enable
-                ? $"Optimalizace zapnuta. Původní stav je uložen. Pro plné použití změn doporučuji restart PC. · {ReadWorkspaceActualStatus(id)}"
-                : $"Původní hodnoty obnoveny. · {ReadWorkspaceActualStatus(id)}";
+            status.Text = GetCustomTweakDefinition(id) is not null
+                ? (enable
+                    ? $"Vlastní ON CMD příkaz úspěšně dokončen; stav přepínače je uložen. · {ReadWorkspaceActualStatus(id)}"
+                    : $"Vlastní OFF CMD příkaz úspěšně dokončen; stav přepínače je uložen. · {ReadWorkspaceActualStatus(id)}")
+                : (enable
+                    ? $"Optimalizace zapnuta. Původní stav je uložen. Pro plné použití změn doporučuji restart PC. · {ReadWorkspaceActualStatus(id)}"
+                    : $"Původní hodnoty obnoveny. · {ReadWorkspaceActualStatus(id)}");
         }
         catch (Exception ex)
         {
