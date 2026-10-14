@@ -23,9 +23,6 @@ public partial class MainWindow
     private static readonly string WorkspaceStatePath = Path.Combine(WorkspaceDataDirectory, "optimization-state.json");
     private static readonly string WorkspaceBenchmarkPath = Path.Combine(WorkspaceDataDirectory, "fps-tests.json");
     private static readonly string WorkspacePresentMonPath = Path.Combine(WorkspaceDataDirectory, "presentmon-path.txt");
-    private static readonly string CustomTweakConfigPath = Path.Combine(WorkspaceDataDirectory, "custom-tweaks.json");
-    private static List<CustomTweakDefinition>? _customTweakDefinitions;
-    private static string? _customTweakConfigError;
 
     private readonly Dictionary<string, ToggleButton> _workspaceSwitches = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<string> _workspaceDriftedTweaks = new();
@@ -41,73 +38,6 @@ public partial class MainWindow
 
     private sealed record AdditionalTweakValue(string Path, string Name, int Value);
     private sealed record AdditionalTweakDefinition(string Name, string Description, string Badge, AdditionalTweakValue[] Values);
-
-    // User-authored tweaks are loaded from %LocalAppData%\\GasbynOptimizer\\custom-tweaks.json.
-    // Commands in this file run as the current user; inspect them before enabling a tweak.
-    private sealed class CustomTweakDefinition
-    {
-        public string Id { get; set; } = "";
-        public string Name { get; set; } = "";
-        public string Description { get; set; } = "";
-        public string Category { get; set; } = "Tweaks";
-        public string OnCommand { get; set; } = "";
-        public string OffCommand { get; set; } = "";
-        public string OnDescription { get; set; } = "";
-        public string OffDescription { get; set; } = "";
-        public string IsOnCommand { get; set; } = "";
-        public string IsOffCommand { get; set; } = "";
-        public string[] Badges { get; set; } = Array.Empty<string>();
-    }
-
-    private const string CustomTweakIdPrefix = "custom-json:";
-
-    private static IReadOnlyList<CustomTweakDefinition> GetCustomTweakDefinitions()
-    {
-        if (_customTweakDefinitions is not null) return _customTweakDefinitions;
-        try
-        {
-            Directory.CreateDirectory(WorkspaceDataDirectory);
-            if (!File.Exists(CustomTweakConfigPath))
-            {
-                var bundledTemplate = Path.Combine(AppContext.BaseDirectory, "custom-tweaks.json");
-                if (File.Exists(bundledTemplate)) File.Copy(bundledTemplate, CustomTweakConfigPath);
-                else File.WriteAllText(CustomTweakConfigPath, "[]\n");
-            }
-
-            var loaded = JsonSerializer.Deserialize<List<CustomTweakDefinition>>(
-                File.ReadAllText(CustomTweakConfigPath),
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<CustomTweakDefinition>();
-            var valid = new List<CustomTweakDefinition>();
-            var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var item in loaded)
-            {
-                if (item is null || !System.Text.RegularExpressions.Regex.IsMatch(item.Id ?? "", @"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$") ||
-                    string.IsNullOrWhiteSpace(item.Name) || string.IsNullOrWhiteSpace(item.Description) ||
-                    string.IsNullOrWhiteSpace(item.Category) || string.IsNullOrWhiteSpace(item.OnCommand) ||
-                    string.IsNullOrWhiteSpace(item.OffCommand) || string.IsNullOrWhiteSpace(item.OnDescription) ||
-                    string.IsNullOrWhiteSpace(item.OffDescription) || !ids.Add(item.Id))
-                    continue;
-
-                item.Badges ??= Array.Empty<string>();
-                valid.Add(item);
-            }
-            _customTweakConfigError = null;
-            _customTweakDefinitions = valid;
-        }
-        catch (Exception ex)
-        {
-            _customTweakConfigError = ex.Message;
-            _customTweakDefinitions = new List<CustomTweakDefinition>();
-        }
-        return _customTweakDefinitions;
-    }
-
-    private static CustomTweakDefinition? GetCustomTweakDefinition(string id)
-    {
-        if (!id.StartsWith(CustomTweakIdPrefix, StringComparison.OrdinalIgnoreCase)) return null;
-        var customId = id[CustomTweakIdPrefix.Length..];
-        return GetCustomTweakDefinitions().FirstOrDefault(x => x.Id.Equals(customId, StringComparison.OrdinalIgnoreCase));
-    }
 
     private async void CustomTweakStartupScan_Loaded(object sender, RoutedEventArgs e)
     {
@@ -138,168 +68,6 @@ public partial class MainWindow
         {
             Debug.WriteLine("Custom optimization startup check failed: " + ex.Message);
         }
-    }
-
-    private static string ProbeCustomTweakState(CustomTweakDefinition custom)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(custom.IsOnCommand) || string.IsNullOrWhiteSpace(custom.IsOffCommand)) return "UNKNOWN";
-            var isOn = RunCustomTweakProbe(custom.IsOnCommand);
-            var isOff = RunCustomTweakProbe(custom.IsOffCommand);
-            if (isOn && !isOff) return "ON";
-            if (isOff && !isOn) return "OFF";
-            return "UNKNOWN";
-        }
-        catch { return "UNKNOWN"; }
-    }
-
-    private static bool RunCustomTweakProbe(string command)
-    {
-        using var process = new Process
-        {
-            StartInfo = new ProcessStartInfo("cmd.exe")
-            {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                Arguments = "/d /s /c " + command
-            }
-        };
-        if (!process.Start()) throw new InvalidOperationException("Kontrolní příkaz se nepodařilo spustit.");
-        if (!process.WaitForExit(15000))
-        {
-            try { process.Kill(entireProcessTree: true); } catch { }
-            throw new TimeoutException("Kontrolní příkaz běžel déle než 15 sekund.");
-        }
-        return process.ExitCode == 0;
-    }
-
-    private void AddCustomTweakDefinition_Click(object sender, RoutedEventArgs e)
-    {
-        var editor = new Window
-        {
-            Title = "Přidat vlastní optimalizaci",
-            Owner = this,
-            Width = 760,
-            Height = 820,
-            MinWidth = 620,
-            MinHeight = 650,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Background = WorkspaceBrush("#101216"),
-            Foreground = Brushes.White,
-            ResizeMode = ResizeMode.CanResize
-        };
-
-        var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Margin = new Thickness(20) };
-        var panel = new StackPanel();
-        scroll.Content = panel;
-        editor.Content = scroll;
-
-        panel.Children.Add(WorkspaceHeading("PŘIDAT VLASTNÍ OPTIMALIZACI"));
-        panel.Children.Add(WorkspaceBody("Vytvoř kartu ON/OFF bez úpravy zdrojového kódu. Stav se při každém otevření stránky a po zapnutí aplikace ověří pomocí dvou kontrolních příkazů, které čtou aktuální Windows. Kontrolní příkaz musí vrátit exit code 0, když je jeho stav pravdivý."));
-        panel.Children.Add(WorkspaceBody("Pozor: příkazy se spouští pod tvým Windows účtem. Nepřidávej příkazy, kterým nerozumíš."));
-
-        TextBox AddField(string label, string hint, string initial = "", int height = 34)
-        {
-            panel.Children.Add(new TextBlock { Text = label, Foreground = WorkspaceBrush("#FF9A52"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 4) });
-            var box = new TextBox
-            {
-                Text = initial,
-                ToolTip = hint,
-                Height = height,
-                Padding = new Thickness(9, 7, 9, 7),
-                AcceptsReturn = height > 34,
-                TextWrapping = TextWrapping.Wrap,
-                VerticalScrollBarVisibility = height > 34 ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled,
-                Background = WorkspaceBrush("#171A20"),
-                Foreground = Brushes.White,
-                BorderBrush = WorkspaceBrush("#343842"),
-                CaretBrush = Brushes.White
-            };
-            panel.Children.Add(box);
-            return box;
-        }
-
-        var idBox = AddField("ID (unikátní, jen a-z, 0-9, - a _)", "Např. network-latency");
-        var nameBox = AddField("Název", "Název zobrazený na kartě");
-        var descriptionBox = AddField("Krátký popis", "Popis zobrazený pod názvem");
-        var categoryBox = AddField("Kategorie", "Např. Internet, Gaming, Windows nebo Tweaks", "Tweaks");
-        var onCommandBox = AddField("Příkaz při ON", "CMD příkaz, který změnu aplikuje.", "", 62);
-        var offCommandBox = AddField("Příkaz při OFF", "CMD příkaz, který změnu vrátí nebo vypne.", "", 62);
-        var onCheckBox = AddField("Kontrola stavu ON", "CMD test: exit code 0 pouze pokud je optimalizace v systému opravdu ON.", "", 62);
-        var offCheckBox = AddField("Kontrola stavu OFF", "CMD test: exit code 0 pouze pokud je optimalizace v systému opravdu OFF.", "", 62);
-        var onDescriptionBox = AddField("Co se stane při ON", "Popis skutečné změny");
-        var offDescriptionBox = AddField("Co se stane při OFF", "Popis obnovení nebo vypnutí");
-        var badgesBox = AddField("Štítky (oddělené čárkou)", "Např. FPS, INTERNET, EXPERIMENTAL, RESTART");
-
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 18, 0, 0) };
-        var cancel = WorkspaceButton("Zrušit");
-        cancel.Margin = new Thickness(0, 0, 8, 0);
-        cancel.Background = WorkspaceBrush("#292D35");
-        cancel.Click += (_, _) => editor.DialogResult = false;
-        var save = WorkspaceButton("Uložit optimalizaci");
-        save.Click += (_, _) =>
-        {
-            var id = idBox.Text.Trim();
-            var current = GetCustomTweakDefinitions().ToList();
-            if (!System.Text.RegularExpressions.Regex.IsMatch(id, @"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$"))
-            {
-                System.Windows.MessageBox.Show(editor, "ID musí začínat písmenem nebo číslem a obsahovat pouze a-z, 0-9, - nebo _. ", "Neplatné ID", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            if (current.Any(x => x.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
-            {
-                System.Windows.MessageBox.Show(editor, "Toto ID už existuje. Zvol jiné, jedinečné ID.", "Duplicitní ID", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var definition = new CustomTweakDefinition
-            {
-                Id = id,
-                Name = nameBox.Text.Trim(),
-                Description = descriptionBox.Text.Trim(),
-                Category = categoryBox.Text.Trim(),
-                OnCommand = onCommandBox.Text.Trim(),
-                OffCommand = offCommandBox.Text.Trim(),
-                IsOnCommand = onCheckBox.Text.Trim(),
-                IsOffCommand = offCheckBox.Text.Trim(),
-                OnDescription = onDescriptionBox.Text.Trim(),
-                OffDescription = offDescriptionBox.Text.Trim(),
-                Badges = badgesBox.Text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            };
-            if (string.IsNullOrWhiteSpace(definition.Name) || string.IsNullOrWhiteSpace(definition.Description) ||
-                string.IsNullOrWhiteSpace(definition.Category) || string.IsNullOrWhiteSpace(definition.OnCommand) ||
-                string.IsNullOrWhiteSpace(definition.OffCommand) || string.IsNullOrWhiteSpace(definition.IsOnCommand) ||
-                string.IsNullOrWhiteSpace(definition.IsOffCommand) || string.IsNullOrWhiteSpace(definition.OnDescription) ||
-                string.IsNullOrWhiteSpace(definition.OffDescription))
-            {
-                System.Windows.MessageBox.Show(editor, "Vyplň všechna pole kromě štítků. Kontrolní příkazy ON a OFF jsou povinné.", "Chybějící údaje", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (System.Windows.MessageBox.Show(editor, "Uložit vlastní optimalizaci? Při použití přepínače se spustí zadané ON/OFF příkazy. Kontrolní příkazy se spustí při zjišťování stavu. Všechny poběží pod tvým aktuálním Windows účtem.", "Potvrdit vlastní příkazy", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-                return;
-
-            try
-            {
-                current.Add(definition);
-                Directory.CreateDirectory(WorkspaceDataDirectory);
-                File.WriteAllText(CustomTweakConfigPath, JsonSerializer.Serialize(current, new JsonSerializerOptions { WriteIndented = true }));
-                _customTweakDefinitions = null;
-                _customTweakConfigError = null;
-                editor.DialogResult = true;
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show(editor, "Optimalizaci se nepodařilo uložit: " + ex.Message, "Chyba ukládání", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        };
-        buttons.Children.Add(cancel);
-        buttons.Children.Add(save);
-        panel.Children.Add(buttons);
-
-        if (editor.ShowDialog() == true)
-            ShowPage("Tweaks");
     }
 
     private static readonly Dictionary<string, AdditionalTweakDefinition> AdditionalTweakDefinitions =
@@ -1148,24 +916,14 @@ public partial class MainWindow
             {
                 var systemStatus = actual.GetValueOrDefault(id, "stav není dostupný");
                 var isCatalog = BuiltInOptimizationCatalog.ContainsWorkspaceId(id);
-                var isCustom = GetCustomTweakDefinition(id) is not null;
-                var active = isCatalog ? BuiltInOptimizationCatalog.IsMarkedEnabled(id) :
-                    isCustom ? systemStatus == "ON" : IsWorkspaceTweakAtOptimizedState(id);
-                if (_workspaceSwitches.TryGetValue(id, out var toggle))
-                {
-                    toggle.IsChecked = isCustom && systemStatus == "UNKNOWN" ? null : active;
-                    if (isCustom) toggle.IsEnabled = systemStatus != "UNKNOWN";
-                }
+                var active = isCatalog ? BuiltInOptimizationCatalog.IsMarkedEnabled(id) : IsWorkspaceTweakAtOptimizedState(id);
+                if (_workspaceSwitches.TryGetValue(id, out var toggle)) toggle.IsChecked = active;
                 if (_workspaceSwitchStatuses.TryGetValue(id, out var status))
                 {
                     status.Text = isCatalog
                         ? $"Poslední akce: {(active ? "ON" : "OFF")} · Katalogový stav (po změně může být nutný restart)"
-                        : isCustom
-                            ? $"Skutečný stav Windows: {systemStatus}"
-                            : $"Windows: {systemStatus}  ·  Aktuální stav: {(active ? "ON" : "OFF")}  ·  Záloha: {(state.ContainsKey(id) ? "uložena" : "není")}";
-                    status.Foreground = active
-                        ? (Brush)FindResource("OrangeLight")
-                        : (Brush)FindResource("TextDim");
+                        : $"Windows: {systemStatus}  ·  Aktuální stav: {(active ? "ON" : "OFF")}  ·  Záloha: {(state.ContainsKey(id) ? "uložena" : "není")}";
+                    status.Foreground = active ? (Brush)FindResource("OrangeLight") : (Brush)FindResource("TextDim");
                 }
             }
         }
@@ -1174,17 +932,6 @@ public partial class MainWindow
 
     private async Task ChangeWorkspaceTweakAsync(string id, bool enable, ToggleButton toggle, TextBlock status)
     {
-        if (GetCustomTweakDefinition(id) is { } customDefinition)
-        {
-            var command = enable ? customDefinition.OnCommand : customDefinition.OffCommand;
-            if (System.Windows.MessageBox.Show(this, $"Spustit vlastní příkaz {(enable ? "ON" : "OFF")} pro „{customDefinition.Name}“?\n\n{command}\n\nPříkaz se spustí pod aktuálním Windows účtem.", "Potvrdit vlastní příkaz", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-            {
-                _loadingWorkspaceSwitches = true;
-                toggle.IsChecked = !enable;
-                _loadingWorkspaceSwitches = false;
-                return;
-            }
-        }
         if (_workspaceTweakBusy)
         {
             _loadingWorkspaceSwitches = true;
@@ -1197,22 +944,16 @@ public partial class MainWindow
         foreach (var item in _workspaceSwitches.Values) item.IsEnabled = false;
         status.Text = BuiltInOptimizationCatalog.ContainsWorkspaceId(id)
             ? (enable ? "Aplikuji katalogovou optimalizaci…" : "Provádím OFF operace katalogové optimalizace…")
-            : GetCustomTweakDefinition(id) is not null
-                ? (enable ? "Spouštím vlastní ON CMD příkaz…" : "Spouštím vlastní OFF CMD příkaz…")
-                : (enable ? "Ukládám původní stav a aplikuji optimalizaci…" : "Obnovuji původní hodnoty…");
+            : (enable ? "Ukládám původní stav a aplikuji optimalizaci…" : "Obnovuji původní hodnoty…");
         try
         {
             await Task.Run(() => ApplyWorkspaceTweak(id, enable));
             await RefreshWorkspaceTweakStatesAsync();
             status.Text = BuiltInOptimizationCatalog.ContainsWorkspaceId(id)
                 ? $"Katalogová operace dokončena: {(enable ? "ON" : "OFF")}. U některých změn může být nutný restart."
-                : GetCustomTweakDefinition(id) is not null
-                    ? (enable
-                        ? $"Vlastní ON CMD příkaz úspěšně dokončen; stav se ověřuje podle systému. · {ReadWorkspaceActualStatus(id)}"
-                        : $"Vlastní OFF CMD příkaz úspěšně dokončen; stav se ověřuje podle systému. · {ReadWorkspaceActualStatus(id)}")
-                    : (enable
-                        ? $"Optimalizace zapnuta. Původní stav je uložen. Pro plné použití změn doporučuji restart PC. · {ReadWorkspaceActualStatus(id)}"
-                        : $"Původní hodnoty obnoveny. · {ReadWorkspaceActualStatus(id)}");
+                : (enable
+                    ? $"Optimalizace zapnuta. Původní stav je uložen. Pro plné použití změn doporučuji restart PC. · {ReadWorkspaceActualStatus(id)}"
+                    : $"Původní hodnoty obnoveny. · {ReadWorkspaceActualStatus(id)}");
         }
         catch (Exception ex)
         {
@@ -1231,7 +972,7 @@ public partial class MainWindow
         }
     }
 
-    private static string WorkspaceTweakName(string id) => BuiltInOptimizationCatalog.Find(id)?.Name ?? GetCustomTweakDefinition(id)?.Name ?? (id switch
+    private static string WorkspaceTweakName(string id) => BuiltInOptimizationCatalog.Find(id)?.Name ?? (id switch
     {
         "hags" => "Hardware-accelerated GPU scheduling (HAGS)",
         "game-mode" => "Windows Game Mode",
@@ -1270,19 +1011,6 @@ public partial class MainWindow
                 BuiltInOptimizationCatalog.Apply(id, enable);
                 OptimizerAuditLog.WriteChange(id, definition.Name, action, true, operations,
                     enable ? "Katalogové ON operace byly provedeny." : "Katalogové OFF operace byly provedeny.");
-                return;
-            }
-
-            if (GetCustomTweakDefinition(id) is { } custom)
-            {
-                var command = enable ? custom.OnCommand : custom.OffCommand;
-                operations.Add($"CUSTOM CMD ({(enable ? "ON" : "OFF")}): {command}");
-                RunCustomTweakCommand(command);
-                operations.Add("CUSTOM CMD: proces skončil s návratovým kódem 0.");
-                var detected = ProbeCustomTweakState(custom);
-                operations.Add("CUSTOM STATE PROBE: " + detected + " (zjištěno z aktuálního systému, nikoli z historie).");
-                OptimizerAuditLog.WriteChange(id, custom.Name, action, true, operations,
-                    enable ? "Vlastní ON CMD příkaz byl úspěšně spuštěn; stav se ověřuje kontrolními příkazy." : "Vlastní OFF CMD příkaz byl úspěšně spuštěn; stav se ověřuje kontrolními příkazy.");
                 return;
             }
 
@@ -1654,9 +1382,6 @@ public partial class MainWindow
                 return key?.GetValue(name);
             }
 
-            if (GetCustomTweakDefinition(id) is { } custom)
-                return ProbeCustomTweakState(custom);
-
             return id switch
             {
                 "hags" => (Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers")?.GetValue("HwSchMode") is int hags && hags == 2)
@@ -1832,34 +1557,6 @@ public partial class MainWindow
         catch { }
 
         return candidates.FirstOrDefault(File.Exists) ?? candidates[0];
-    }
-
-    private static void RunCustomTweakCommand(string command)
-    {
-        using var process = new Process
-        {
-            StartInfo = new ProcessStartInfo("cmd.exe")
-            {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                Arguments = "/d /s /c \"" + command + "\""
-            }
-        };
-        if (!process.Start()) throw new InvalidOperationException("CMD příkaz se nepodařilo spustit.");
-        var stdoutTask = process.StandardOutput.ReadToEndAsync();
-        var stderrTask = process.StandardError.ReadToEndAsync();
-        if (!process.WaitForExit(120000))
-        {
-            try { process.Kill(entireProcessTree: true); } catch { }
-            throw new TimeoutException("CMD příkaz běžel déle než 120 sekund a byl ukončen.");
-        }
-        Task.WaitAll(stdoutTask, stderrTask);
-        var stdout = stdoutTask.Result.Trim();
-        var stderr = stderrTask.Result.Trim();
-        if (process.ExitCode != 0)
-            throw new InvalidOperationException($"CMD skončil s kódem {process.ExitCode}. {stderr} {stdout}".Trim());
     }
 
     private static string RunWorkspacePowerCfg(string arguments)
