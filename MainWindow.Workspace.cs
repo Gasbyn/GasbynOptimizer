@@ -39,7 +39,7 @@ public partial class MainWindow
     private sealed record AdditionalTweakValue(string Path, string Name, int Value);
     private sealed record AdditionalTweakDefinition(string Name, string Description, string Badge, AdditionalTweakValue[] Values);
 
-    private async void CustomTweakStartupScan_Loaded(object sender, RoutedEventArgs e)
+    private async void OptimizationCatalogStartupScan_Loaded(object sender, RoutedEventArgs e)
     {
         if (_customTweakStartupScanned) return;
         _customTweakStartupScanned = true;
