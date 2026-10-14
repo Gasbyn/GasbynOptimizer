@@ -23,6 +23,9 @@ public partial class MainWindow
     private static readonly string WorkspaceStatePath = Path.Combine(WorkspaceDataDirectory, "optimization-state.json");
     private static readonly string WorkspaceBenchmarkPath = Path.Combine(WorkspaceDataDirectory, "fps-tests.json");
     private static readonly string WorkspacePresentMonPath = Path.Combine(WorkspaceDataDirectory, "presentmon-path.txt");
+    private static readonly string CustomTweakConfigPath = Path.Combine(WorkspaceDataDirectory, "custom-tweaks.json");
+    private static List<CustomTweakDefinition>? _customTweakDefinitions;
+    private static string? _customTweakConfigError;
 
     private readonly Dictionary<string, ToggleButton> _workspaceSwitches = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<string> _workspaceDriftedTweaks = new();
@@ -37,6 +40,71 @@ public partial class MainWindow
 
     private sealed record AdditionalTweakValue(string Path, string Name, int Value);
     private sealed record AdditionalTweakDefinition(string Name, string Description, string Badge, AdditionalTweakValue[] Values);
+
+    // User-authored tweaks are loaded from %LocalAppData%\\GasbynOptimizer\\custom-tweaks.json.
+    // Commands in this file run as the current user; inspect them before enabling a tweak.
+    private sealed class CustomTweakDefinition
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Category { get; set; } = "Tweaks";
+        public string OnCommand { get; set; } = "";
+        public string OffCommand { get; set; } = "";
+        public string OnDescription { get; set; } = "";
+        public string OffDescription { get; set; } = "";
+        public string[] Badges { get; set; } = Array.Empty<string>();
+    }
+
+    private const string CustomTweakIdPrefix = "custom-json:";
+
+    private static IReadOnlyList<CustomTweakDefinition> GetCustomTweakDefinitions()
+    {
+        if (_customTweakDefinitions is not null) return _customTweakDefinitions;
+        try
+        {
+            Directory.CreateDirectory(WorkspaceDataDirectory);
+            if (!File.Exists(CustomTweakConfigPath))
+            {
+                var bundledTemplate = Path.Combine(AppContext.BaseDirectory, "custom-tweaks.json");
+                if (File.Exists(bundledTemplate)) File.Copy(bundledTemplate, CustomTweakConfigPath);
+                else File.WriteAllText(CustomTweakConfigPath, "[]\\n");
+            }
+
+            var loaded = JsonSerializer.Deserialize<List<CustomTweakDefinition>>(
+                File.ReadAllText(CustomTweakConfigPath),
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<CustomTweakDefinition>();
+            var valid = new List<CustomTweakDefinition>();
+            var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in loaded)
+            {
+                if (item is null || !System.Text.RegularExpressions.Regex.IsMatch(item.Id ?? "", @"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$") ||
+                    string.IsNullOrWhiteSpace(item.Name) || string.IsNullOrWhiteSpace(item.Description) ||
+                    string.IsNullOrWhiteSpace(item.Category) || string.IsNullOrWhiteSpace(item.OnCommand) ||
+                    string.IsNullOrWhiteSpace(item.OffCommand) || string.IsNullOrWhiteSpace(item.OnDescription) ||
+                    string.IsNullOrWhiteSpace(item.OffDescription) || !ids.Add(item.Id))
+                    continue;
+
+                item.Badges ??= Array.Empty<string>();
+                valid.Add(item);
+            }
+            _customTweakConfigError = null;
+            _customTweakDefinitions = valid;
+        }
+        catch (Exception ex)
+        {
+            _customTweakConfigError = ex.Message;
+            _customTweakDefinitions = new List<CustomTweakDefinition>();
+        }
+        return _customTweakDefinitions;
+    }
+
+    private static CustomTweakDefinition? GetCustomTweakDefinition(string id)
+    {
+        if (!id.StartsWith(CustomTweakIdPrefix, StringComparison.OrdinalIgnoreCase)) return null;
+        var customId = id[CustomTweakIdPrefix.Length..];
+        return GetCustomTweakDefinitions().FirstOrDefault(x => x.Id.Equals(customId, StringComparison.OrdinalIgnoreCase));
+    }
 
     private static readonly Dictionary<string, AdditionalTweakDefinition> AdditionalTweakDefinitions =
         new(StringComparer.OrdinalIgnoreCase)
@@ -469,6 +537,20 @@ public partial class MainWindow
             "disable-app-location-access",
             "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "POZOR", "WINDOWS");
 
+        foreach (var custom in GetCustomTweakDefinitions())
+        {
+            var customId = CustomTweakIdPrefix + custom.Id;
+            var badges = new List<string> { custom.Category };
+            badges.AddRange(custom.Badges.Where(x => !string.IsNullOrWhiteSpace(x)));
+            var tooltip = $"ON: {custom.OnDescription} OFF: {custom.OffDescription}";
+            AddWorkspaceTweakCard(custom.Name, custom.Description, customId, tooltip, badges.ToArray());
+        }
+
+        if (!string.IsNullOrWhiteSpace(_customTweakConfigError))
+            AddInfoCard("CUSTOM TWEAKS JSON – CHYBA", $"Konfiguraci se nepodařilo načíst: {_customTweakConfigError}. Oprav JSON soubor: {CustomTweakConfigPath}", "Open Tweaks");
+        else
+            AddInfoCard("VLASTNÍ TWEAKY", $"Přidávej vlastní položky do souboru {CustomTweakConfigPath}. Po úpravě souboru aplikaci restartuj. Příkazy se spouštějí přes CMD pod aktuálním uživatelem; před zapnutím si je zkontroluj.", "Open Tweaks");
+
         var hw = _hardwareInventory;
         var advanced = OptimizerPreferencesStore.Load().AdvancedRecommendations;
         var note = hw is null
@@ -895,7 +977,7 @@ public partial class MainWindow
         }
     }
 
-    private static string WorkspaceTweakName(string id) => id switch
+    private static string WorkspaceTweakName(string id) => GetCustomTweakDefinition(id)?.Name ?? (id switch
     {
         "hags" => "Hardware-accelerated GPU scheduling (HAGS)",
         "game-mode" => "Windows Game Mode",
@@ -913,7 +995,7 @@ public partial class MainWindow
         "transparency" => "Vypnout efekty průhlednosti",
         "fast-menus" => "Rychlejší nabídky a animace oken",
         _ => AdditionalTweakDefinitions.TryGetValue(id, out var additional) ? additional.Name : id
-    };
+    });
 
     private static void ApplyWorkspaceTweak(string id, bool enable)
     {
@@ -926,6 +1008,20 @@ public partial class MainWindow
 
         try
         {
+            if (GetCustomTweakDefinition(id) is { } custom)
+            {
+                var command = enable ? custom.OnCommand : custom.OffCommand;
+                operations.Add($"CUSTOM CMD ({(enable ? "ON" : "OFF")}): {command}");
+                RunCustomTweakCommand(command);
+                operations.Add("CUSTOM CMD: proces skončil s návratovým kódem 0.");
+                if (enable) state[id] = new WorkspaceTweakSnapshot();
+                else state.Remove(id);
+                SaveWorkspaceState(state);
+                OptimizerAuditLog.WriteChange(id, custom.Name, action, true, operations,
+                    enable ? "Vlastní CMD příkaz byl úspěšně spuštěn." : "Vlastní OFF CMD příkaz byl úspěšně spuštěn.");
+                return;
+            }
+
             if (enable)
             {
                 if (!state.TryGetValue(id, out snapshot))
@@ -1290,6 +1386,12 @@ public partial class MainWindow
                 return key?.GetValue(name);
             }
 
+            if (GetCustomTweakDefinition(id) is { } custom)
+            {
+                var customEnabled = LoadWorkspaceState().ContainsKey(id);
+                return $"{custom.Category}: {(customEnabled ? "ON — příkaz byl spuštěn" : "OFF")}";
+            }
+
             return id switch
             {
                 "hags" => (Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers")?.GetValue("HwSchMode") is int hags && hags == 2)
@@ -1462,6 +1564,34 @@ public partial class MainWindow
         catch { }
 
         return candidates.FirstOrDefault(File.Exists) ?? candidates[0];
+    }
+
+    private static void RunCustomTweakCommand(string command)
+    {
+        using var process = new Process
+        {
+            StartInfo = new ProcessStartInfo("cmd.exe")
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                Arguments = "/d /s /c \"" + command + "\""
+            }
+        };
+        if (!process.Start()) throw new InvalidOperationException("CMD příkaz se nepodařilo spustit.");
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+        if (!process.WaitForExit(120000))
+        {
+            try { process.Kill(entireProcessTree: true); } catch { }
+            throw new TimeoutException("CMD příkaz běžel déle než 120 sekund a byl ukončen.");
+        }
+        Task.WaitAll(stdoutTask, stderrTask);
+        var stdout = stdoutTask.Result.Trim();
+        var stderr = stderrTask.Result.Trim();
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException($"CMD skončil s kódem {process.ExitCode}. {stderr} {stdout}".Trim());
     }
 
     private static string RunWorkspacePowerCfg(string arguments)
