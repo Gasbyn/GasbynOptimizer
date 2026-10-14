@@ -140,9 +140,42 @@ public partial class MainWindow
                 AddInfoCard("Refresh", "Znovu načte systémové informace.", "Refresh");
                 break;
             case "Settings":
-                AddSettingsCard();
-                AddInfoCard("Safe-by-default", "Optimizer nepřepíná automaticky služby, Defender, bootovací časovače ani IPv6. Každý tweak musí mít jasný přínos, kontrolu stavu a návratovou cestu.", "About");
-                AddInfoCard("Optimization workspace", "Vratné optimalizace jsou v Tweaks, měření FPS v Benchmark a bod obnovení v Backup.", "Open Tweaks");
+                try
+                {
+                    AddSettingsCard();
+                    AddInfoCard("Safe-by-default", "Optimizer nepřepíná automaticky služby, Defender, bootovací časovače ani IPv6. Každý tweak musí mít jasný přínos, kontrolu stavu a návratovou cestu.", "About");
+                    AddInfoCard("Optimization workspace", "Vratné optimalizace jsou v Tweaks, měření FPS v Benchmark a bod obnovení v Backup.", "Open Tweaks");
+                }
+                catch (Exception ex)
+                {
+                    try
+                    {
+                        var logPath = System.IO.Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                            "GasbynOptimizer", "settings-crash.log");
+                        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(logPath)!);
+                        System.IO.File.AppendAllText(logPath,
+                            DateTimeOffset.Now.ToString("O") + Environment.NewLine + ex + Environment.NewLine + Environment.NewLine);
+                    }
+                    catch { }
+
+                    SecondaryContent.Children.Clear();
+                    AddPageHeader("Settings");
+                    SecondaryContent.Children.Add(new TextBlock
+                    {
+                        Text = "Settings se nepodařilo načíst. Aplikace zůstala spuštěná. Detail chyby je uložen v %LocalAppData%\\GasbynOptimizer\\settings-crash.log.",
+                        TextWrapping = TextWrapping.Wrap,
+                        Foreground = Brushes.OrangeRed,
+                        Margin = new Thickness(0, 8, 0, 12)
+                    });
+                    var details = new TextBlock
+                    {
+                        Text = ex.GetType().Name + ": " + ex.Message,
+                        TextWrapping = TextWrapping.Wrap,
+                        Foreground = (Brush)FindResource("TextMuted")
+                    };
+                    SecondaryContent.Children.Add(details);
+                }
                 break;
             default:
                 AddInfoCard("Open Tweaks", "Vratné systémové optimalizace a jejich stav.", "Open Tweaks");
