@@ -125,7 +125,7 @@ public partial class MainWindow
                     "transparency", "fast-menus"
                 };
                 var ids = builtInIds.Concat(AdditionalTweakDefinitions.Keys)
-                    .Concat(GetCustomTweakDefinitions().Select(x => CustomTweakIdPrefix + x.Id))
+                    .Concat(BuiltInOptimizationCatalog.All.Select(x => "catalog:" + x.Id))
                     .Distinct(StringComparer.OrdinalIgnoreCase);
                 foreach (var id in ids)
                 {
@@ -1231,7 +1231,7 @@ public partial class MainWindow
         }
     }
 
-    private static string WorkspaceTweakName(string id) => GetCustomTweakDefinition(id)?.Name ?? (id switch
+    private static string WorkspaceTweakName(string id) => BuiltInOptimizationCatalog.Find(id)?.Name ?? GetCustomTweakDefinition(id)?.Name ?? (id switch
     {
         "hags" => "Hardware-accelerated GPU scheduling (HAGS)",
         "game-mode" => "Windows Game Mode",
@@ -1262,6 +1262,17 @@ public partial class MainWindow
 
         try
         {
+            if (BuiltInOptimizationCatalog.ContainsWorkspaceId(id))
+            {
+                var definition = BuiltInOptimizationCatalog.Find(id)!;
+                operations.Add("BUILT-IN CATALOG: " + definition.Id);
+                operations.Add("ACTION: " + (enable ? definition.OnDescription : definition.OffDescription));
+                BuiltInOptimizationCatalog.Apply(id, enable);
+                OptimizerAuditLog.WriteChange(id, definition.Name, action, true, operations,
+                    enable ? "Katalogové ON operace byly provedeny." : "Katalogové OFF operace byly provedeny.");
+                return;
+            }
+
             if (GetCustomTweakDefinition(id) is { } custom)
             {
                 var command = enable ? custom.OnCommand : custom.OffCommand;
@@ -1625,6 +1636,10 @@ public partial class MainWindow
     {
         try
         {
+            if (BuiltInOptimizationCatalog.ContainsWorkspaceId(id))
+                return BuiltInOptimizationCatalog.IsMarkedEnabled(id)
+                    ? "Katalogová optimalizace naposledy zapnuta"
+                    : "Katalogová optimalizace naposledy vypnuta / dosud nepoužita";
             if (id == "power-plan")
             {
                 var output = RunWorkspacePowerCfg("/getactivescheme");
@@ -1711,6 +1726,7 @@ public partial class MainWindow
 
     private static bool IsWorkspaceTweakAtOptimizedState(string id)
     {
+        if (BuiltInOptimizationCatalog.ContainsWorkspaceId(id)) return BuiltInOptimizationCatalog.IsMarkedEnabled(id);
         object? Read(string path, string name)
         {
             using var key = Registry.CurrentUser.OpenSubKey(path);
