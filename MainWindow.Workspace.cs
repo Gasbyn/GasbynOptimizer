@@ -1140,7 +1140,7 @@ public partial class MainWindow
                 if (_workspaceSwitches.TryGetValue(id, out var toggle))
                 {
                     toggle.IsChecked = isCustom && systemStatus == "UNKNOWN" ? null : active;
-                    toggle.IsEnabled = !(isCustom && systemStatus == "UNKNOWN");
+                    if (isCustom) toggle.IsEnabled = systemStatus != "UNKNOWN";
                 }
                 if (_workspaceSwitchStatuses.TryGetValue(id, out var status))
                 {
