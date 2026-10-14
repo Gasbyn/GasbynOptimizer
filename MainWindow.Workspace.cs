@@ -35,6 +35,81 @@ public partial class MainWindow
     private TextBox? _workspaceBenchmarkProcess;
     private Button? _workspaceRunBenchmarkButton;
 
+    private sealed record AdditionalTweakValue(string Path, string Name, int Value);
+    private sealed record AdditionalTweakDefinition(string Name, string Description, string Badge, AdditionalTweakValue[] Values);
+
+    private static readonly Dictionary<string, AdditionalTweakDefinition> AdditionalTweakDefinitions =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["show-hidden-files"] = new("Zobrazit skryté soubory", "Zobrazí skryté soubory v Průzkumníku; výkon her tím nestoupne.", "VOLITELNÉ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "Hidden", 1) }),
+            ["show-file-extensions"] = new("Zobrazit přípony souborů", "Zobrazí přípony jako .exe a .cmd pro snazší rozpoznání typu souboru.", "VOLITELNÉ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", 0) }),
+            ["disable-search-highlights"] = new("Vypnout zvýraznění ve vyhledávání", "Omezí doporučený obsah ve vyhledávání Windows.", "WINDOWS", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\SearchSettings", "IsDynamicSearchBoxEnabled", 0) }),
+            ["hide-task-view"] = new("Skrýt tlačítko Zobrazení úloh", "Skryje tlačítko Task View na hlavním panelu.", "VOLITELNÉ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "ShowTaskViewButton", 0) }),
+            ["hide-taskbar-badges"] = new("Skrýt odznaky aplikací na hlavním panelu", "Vypne odznaky s počtem oznámení na ikonách hlavního panelu.", "VOLITELNÉ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "TaskbarBadges", 0) }),
+            ["disable-sync-provider-notifications"] = new("Vypnout tipy synchronizace v Průzkumníku", "Vypne tipy synchronizace; samotná synchronizace zůstane zapnutá.", "VOLITELNÉ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "ShowSyncProviderNotifications", 0) }),
+            ["hide-meet-now"] = new("Skrýt Meet Now na hlavním panelu", "Skryje ikonu Meet Now, pokud ji daná verze Windows používá.", "VOLITELNÉ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Explorer", "HideSCAMeetNow", 1) }),
+            ["hide-people-taskbar"] = new("Skrýt ikonu Lidé", "Skryje starší panel Lidé na hlavním panelu, pokud je dostupný.", "VOLITELNÉ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "PeopleBand", 0) }),
+            ["disable-start-app-tracking"] = new("Vypnout sledování spouštěných aplikací", "Omezí sledování aplikací používané pro personalizaci nabídky Start.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "Start_TrackProgs", 0) }),
+            ["disable-start-recent-documents"] = new("Vypnout sledování nedávných dokumentů", "Omezí historii nedávno otevřených dokumentů v některých částech Windows.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "Start_TrackDocs", 0) }),
+            ["disable-recently-added-apps"] = new("Skrýt upozornění na nově přidané aplikace", "Vypne zvýrazňování nově nainstalovaných aplikací v nabídce Start.", "VOLITELNÉ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "Start_NotifyNewApps", 0) }),
+            ["disable-toast-notifications"] = new("Vypnout oznámení Windows", "Vypne systémová oznámení uživatele; můžeš přehlédnout důležitá upozornění.", "POZOR", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\PushNotifications", "ToastEnabled", 0) }),
+            ["disable-notification-center"] = new("Vypnout Centrum oznámení", "Skryje Centrum oznámení; může omezit přístup k oznámením aplikací.", "POZOR", new[] { new AdditionalTweakValue(@"Software\Policies\Microsoft\Windows\Explorer", "DisableNotificationCenter", 1) }),
+            ["disable-cloud-app-notifications"] = new("Omezit cloudová oznámení aplikací", "Zakáže cloudová oznámení aplikací, pokud daná verze Windows zásadu podporuje.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Policies\Microsoft\Windows\CurrentVersion\PushNotifications", "NoCloudApplicationNotification", 1) }),
+            ["disable-spotlight-lockscreen"] = new("Vypnout funkce Windows Spotlight", "Vypne vybrané funkce Spotlight; dopad na výkon je zanedbatelný.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Policies\Microsoft\Windows\CloudContent", "DisableWindowsSpotlightFeatures", 1) }),
+            ["disable-spotlight-welcome"] = new("Vypnout Spotlight uvítací obrazovky", "Omezí doporučení Spotlight v uvítacích obrazovkách Windows.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Policies\Microsoft\Windows\CloudContent", "DisableWindowsSpotlightWindowsWelcomeExperience", 1) }),
+            ["disable-third-party-suggestions"] = new("Vypnout návrhy aplikací třetích stran", "Omezí doporučení aplikací třetích stran ve Windows.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Policies\Microsoft\Windows\CloudContent", "DisableThirdPartySuggestions", 1) }),
+            ["disable-windows-consumer-features"] = new("Omezit spotřebitelský doporučený obsah", "Omezí automaticky doporučovaný obsah Windows; dostupnost závisí na edici.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Policies\Microsoft\Windows\CloudContent", "DisableWindowsConsumerFeatures", 1) }),
+            ["disable-tailored-experiences"] = new("Vypnout personalizované tipy", "Omezí personalizaci tipů podle diagnostických dat.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Privacy", "TailoredExperiencesWithDiagnosticDataEnabled", 0) }),
+            ["disable-feedback-notifications"] = new("Vypnout výzvy ke zpětné vazbě", "Omezí výzvy Windows k hodnocení a odeslání zpětné vazby.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Policies\Microsoft\Windows\DataCollection", "DoNotShowFeedbackNotifications", 1) }),
+            ["disable-activity-feed"] = new("Omezit historii aktivit Windows", "Vypne historii aktivit a její publikování/synchronizaci; některé funkce Windows se změní.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Policies\Microsoft\Windows\System", "EnableActivityFeed", 0) }),
+            ["disable-cross-device-resume"] = new("Vypnout pokračování mezi zařízeními", "Vypne pokračování aktivit mezi zařízeními pro aktuálního uživatele.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\CrossDeviceResume\Configuration", "IsResumeAllowed", 0) }),
+            ["disable-bing-start-search"] = new("Omezit webové výsledky v nabídce Start", "Vypne hodnotu BingSearchEnabled; chování závisí na verzi Windows.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 0) }),
+            ["disable-autoplay"] = new("Vypnout automatické přehrávání médií", "Vypne automatické přehrávání médií pro uživatele; zařízení budeš otevírat ručně.", "VOLITELNÉ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers", "DisableAutoplay", 1) }),
+            ["disable-autorun"] = new("Omezit automatické spouštění médií", "Blokuje automatické spouštění obsahu v Průzkumníku pro aktuálního uživatele.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDriveTypeAutoRun", 255) }),
+            ["disable-suggested-apps"] = new("Vypnout návrhy aplikací v nabídce Start", "Omezí jeden z mechanismů doporučování aplikací Windows.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338389Enabled", 0) }),
+            ["disable-settings-tips"] = new("Vypnout tipy Windows", "Omezí vybraný kanál tipů a doporučení systému.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338393Enabled", 0) }),
+            ["disable-welcome-after-updates"] = new("Vypnout uvítací tipy po aktualizacích", "Omezí uvítací obrazovky s tipy po aktualizacích Windows.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-310093Enabled", 0) }),
+            ["disable-lockscreen-spotlight-overlay"] = new("Vypnout překryvné tipy na zamykací obrazovce", "Vypne překryvné tipy Spotlight na zamykací obrazovce.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "RotatingLockScreenOverlayEnabled", 0) }),
+            ["disable-lockscreen-rotation"] = new("Vypnout střídání obrázků zamykací obrazovky", "Vypne rotaci obrázků Windows Spotlight na zamykací obrazovce.", "VOLITELNÉ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "RotatingLockScreenEnabled", 0) }),
+            ["disable-clipboard-sync"] = new("Vypnout synchronizaci schránky mezi zařízeními", "Vypne synchronizaci schránky mezi zařízeními; místní schránka zůstane dostupná.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Clipboard", "AllowCrossDeviceClipboard", 0) }),
+            ["disable-gamebar-startup-panel"] = new("Vypnout úvodní panel Xbox Game Bar", "Vypne úvodní panel Game Bar, nikoliv samotnou aplikaci.", "GAMING", new[] { new AdditionalTweakValue(@"Software\Microsoft\GameBar", "ShowStartupPanel", 0) }),
+            ["disable-gamebar-nexus"] = new("Vypnout přesměrování Game Bar na Nexus", "Změní způsob otevírání rozhraní Xbox Game Bar; chování se může lišit.", "GAMING", new[] { new AdditionalTweakValue(@"Software\Microsoft\GameBar", "UseNexusForGameBarEnabled", 0) }),
+            ["disable-edge-prelaunch"] = new("Vypnout přednačítání Microsoft Edge", "Vypne přednačítání Edge, pokud zásadu daná verze podporuje.", "APLIKACE", new[] { new AdditionalTweakValue(@"Software\Policies\Microsoft\Edge\Main", "AllowPrelaunch", 0) }),
+            ["disable-edge-background"] = new("Vypnout běh Edge na pozadí", "Zakáže běh procesů Edge na pozadí přes uživatelskou zásadu.", "APLIKACE", new[] { new AdditionalTweakValue(@"Software\Policies\Microsoft\Edge", "BackgroundModeEnabled", 0) }),
+            ["enable-edge-sleeping-tabs"] = new("Povolit uspávání neaktivních panelů Edge", "Zapne zásadu uspávání panelů Edge; může snížit jeho využití zdrojů.", "APLIKACE", new[] { new AdditionalTweakValue(@"Software\Policies\Microsoft\Edge", "SleepingTabsEnabled", 1) }),
+            ["disable-chrome-background"] = new("Vypnout běh Chrome na pozadí", "Zakáže běh aplikací Chrome na pozadí přes uživatelskou zásadu.", "APLIKACE", new[] { new AdditionalTweakValue(@"Software\Policies\Google\Chrome", "BackgroundModeEnabled", 0) }),
+            ["disable-chrome-metrics"] = new("Vypnout odesílání metrik Chrome zásadou", "Vypne zásadu metrik Chrome; nastavení může být spravováno prohlížečem.", "APLIKACE", new[] { new AdditionalTweakValue(@"Software\Policies\Google\Chrome", "MetricsReportingEnabled", 0) }),
+            ["disable-search-location"] = new("Omezit polohu ve vyhledávání Windows", "Zakáže používání polohy vyhledáváním, pokud Windows zásadu podporuje.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Policies\Microsoft\Windows\Windows Search", "AllowSearchToUseLocation", 0) }),
+            ["disable-lockscreen-status"] = new("Vypnout tipy Spotlight na zamykací obrazovce", "Omezí další kanál doporučeného obsahu na zamykací obrazovce.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338387Enabled", 0) }),
+            ["disable-settings-suggested-content"] = new("Omezit další doporučený obsah Windows", "Vypne další uživatelský kanál doporučení, pokud jej Windows používá.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-353696Enabled", 0) }),
+            ["disable-start-tips"] = new("Vypnout další tipy v nabídce Start", "Omezí další kanál tipů Windows v nabídce Start.", "SOUKROMÍ", new[] { new AdditionalTweakValue(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338392Enabled", 0) }),
+            ["disable-app-location-access"] = new("Zakázat aplikacím přístup k poloze", "Odepře aplikacím přístup k poloze; může omezit mapy a další aplikace využívající polohu.", "POZOR", new[] { new AdditionalTweakValue(@"Software\Policies\Microsoft\Windows\AppPrivacy", "LetAppsAccessLocation", 2) }),
+        };
+
+    private static AdditionalTweakDefinition GetAdditionalTweakDefinition(string id) =>
+        AdditionalTweakDefinitions.TryGetValue(id, out var definition)
+            ? definition
+            : throw new InvalidOperationException("Neznámý optimalizační modul: " + id);
+
+    private static bool IsAdditionalTweakAtOptimizedState(string id)
+    {
+        if (!AdditionalTweakDefinitions.TryGetValue(id, out var definition)) return true;
+        foreach (var value in definition.Values)
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(value.Path);
+            var actual = key?.GetValue(value.Name);
+            if (actual is null || Convert.ToInt32(actual, CultureInfo.InvariantCulture) != value.Value)
+                return false;
+        }
+        return true;
+    }
+
+    private static string ReadAdditionalTweakStatus(string id)
+    {
+        if (!AdditionalTweakDefinitions.TryGetValue(id, out _)) return "stav není dostupný";
+        return IsAdditionalTweakAtOptimizedState(id) ? "nastavení aplikováno" : "výchozí nebo jiné nastavení";
+    }
+
     private void BuildTweaksWorkspace(bool gamingOnly = false)
     {
         _workspaceSwitches.Clear();
@@ -135,6 +210,264 @@ public partial class MainWindow
             "Vypne několik uživatelských návrhů, reklamní ID a doporučený obsah Windows. Nejde o měřitelnou FPS optimalizaci.",
             "recommendations",
             "ON: nastaví vypnutí vybraných doporučení a reklamního ID pro aktuálního uživatele. OFF: obnoví všechny původní hodnoty.", "SOUKROMÍ", "UI");
+
+        AddWorkspaceTweakCard(
+            "Zobrazit skryté soubory",
+            "Zobrazí skryté soubory v Průzkumníku; výkon her tím nestoupne.",
+            "show-hidden-files",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "VOLITELNÉ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Zobrazit přípony souborů",
+            "Zobrazí přípony jako .exe a .cmd pro snazší rozpoznání typu souboru.",
+            "show-file-extensions",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "VOLITELNÉ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout zvýraznění ve vyhledávání",
+            "Omezí doporučený obsah ve vyhledávání Windows.",
+            "disable-search-highlights",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "WINDOWS", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Skrýt tlačítko Zobrazení úloh",
+            "Skryje tlačítko Task View na hlavním panelu.",
+            "hide-task-view",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "VOLITELNÉ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Skrýt odznaky aplikací na hlavním panelu",
+            "Vypne odznaky s počtem oznámení na ikonách hlavního panelu.",
+            "hide-taskbar-badges",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "VOLITELNÉ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout tipy synchronizace v Průzkumníku",
+            "Vypne tipy synchronizace; samotná synchronizace zůstane zapnutá.",
+            "disable-sync-provider-notifications",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "VOLITELNÉ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Skrýt Meet Now na hlavním panelu",
+            "Skryje ikonu Meet Now, pokud ji daná verze Windows používá.",
+            "hide-meet-now",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "VOLITELNÉ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Skrýt ikonu Lidé",
+            "Skryje starší panel Lidé na hlavním panelu, pokud je dostupný.",
+            "hide-people-taskbar",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "VOLITELNÉ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout sledování spouštěných aplikací",
+            "Omezí sledování aplikací používané pro personalizaci nabídky Start.",
+            "disable-start-app-tracking",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout sledování nedávných dokumentů",
+            "Omezí historii nedávno otevřených dokumentů v některých částech Windows.",
+            "disable-start-recent-documents",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Skrýt upozornění na nově přidané aplikace",
+            "Vypne zvýrazňování nově nainstalovaných aplikací v nabídce Start.",
+            "disable-recently-added-apps",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "VOLITELNÉ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout oznámení Windows",
+            "Vypne systémová oznámení uživatele; můžeš přehlédnout důležitá upozornění.",
+            "disable-toast-notifications",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "POZOR", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout Centrum oznámení",
+            "Skryje Centrum oznámení; může omezit přístup k oznámením aplikací.",
+            "disable-notification-center",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "POZOR", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Omezit cloudová oznámení aplikací",
+            "Zakáže cloudová oznámení aplikací, pokud daná verze Windows zásadu podporuje.",
+            "disable-cloud-app-notifications",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout funkce Windows Spotlight",
+            "Vypne vybrané funkce Spotlight; dopad na výkon je zanedbatelný.",
+            "disable-spotlight-lockscreen",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout Spotlight uvítací obrazovky",
+            "Omezí doporučení Spotlight v uvítacích obrazovkách Windows.",
+            "disable-spotlight-welcome",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout návrhy aplikací třetích stran",
+            "Omezí doporučení aplikací třetích stran ve Windows.",
+            "disable-third-party-suggestions",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Omezit spotřebitelský doporučený obsah",
+            "Omezí automaticky doporučovaný obsah Windows; dostupnost závisí na edici.",
+            "disable-windows-consumer-features",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout personalizované tipy",
+            "Omezí personalizaci tipů podle diagnostických dat.",
+            "disable-tailored-experiences",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout výzvy ke zpětné vazbě",
+            "Omezí výzvy Windows k hodnocení a odeslání zpětné vazby.",
+            "disable-feedback-notifications",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Omezit historii aktivit Windows",
+            "Vypne historii aktivit a její publikování/synchronizaci; některé funkce Windows se změní.",
+            "disable-activity-feed",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout pokračování mezi zařízeními",
+            "Vypne pokračování aktivit mezi zařízeními pro aktuálního uživatele.",
+            "disable-cross-device-resume",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Omezit webové výsledky v nabídce Start",
+            "Vypne hodnotu BingSearchEnabled; chování závisí na verzi Windows.",
+            "disable-bing-start-search",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout automatické přehrávání médií",
+            "Vypne automatické přehrávání médií pro uživatele; zařízení budeš otevírat ručně.",
+            "disable-autoplay",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "VOLITELNÉ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Omezit automatické spouštění médií",
+            "Blokuje automatické spouštění obsahu v Průzkumníku pro aktuálního uživatele.",
+            "disable-autorun",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout návrhy aplikací v nabídce Start",
+            "Omezí jeden z mechanismů doporučování aplikací Windows.",
+            "disable-suggested-apps",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout tipy Windows",
+            "Omezí vybraný kanál tipů a doporučení systému.",
+            "disable-settings-tips",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout uvítací tipy po aktualizacích",
+            "Omezí uvítací obrazovky s tipy po aktualizacích Windows.",
+            "disable-welcome-after-updates",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout překryvné tipy na zamykací obrazovce",
+            "Vypne překryvné tipy Spotlight na zamykací obrazovce.",
+            "disable-lockscreen-spotlight-overlay",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout střídání obrázků zamykací obrazovky",
+            "Vypne rotaci obrázků Windows Spotlight na zamykací obrazovce.",
+            "disable-lockscreen-rotation",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "VOLITELNÉ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout synchronizaci schránky mezi zařízeními",
+            "Vypne synchronizaci schránky mezi zařízeními; místní schránka zůstane dostupná.",
+            "disable-clipboard-sync",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout úvodní panel Xbox Game Bar",
+            "Vypne úvodní panel Game Bar, nikoliv samotnou aplikaci.",
+            "disable-gamebar-startup-panel",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "GAMING", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout přesměrování Game Bar na Nexus",
+            "Změní způsob otevírání rozhraní Xbox Game Bar; chování se může lišit.",
+            "disable-gamebar-nexus",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "GAMING", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout přednačítání Microsoft Edge",
+            "Vypne přednačítání Edge, pokud zásadu daná verze podporuje.",
+            "disable-edge-prelaunch",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "APLIKACE", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout běh Edge na pozadí",
+            "Zakáže běh procesů Edge na pozadí přes uživatelskou zásadu.",
+            "disable-edge-background",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "APLIKACE", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Povolit uspávání neaktivních panelů Edge",
+            "Zapne zásadu uspávání panelů Edge; může snížit jeho využití zdrojů.",
+            "enable-edge-sleeping-tabs",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "APLIKACE", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout běh Chrome na pozadí",
+            "Zakáže běh aplikací Chrome na pozadí přes uživatelskou zásadu.",
+            "disable-chrome-background",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "APLIKACE", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout odesílání metrik Chrome zásadou",
+            "Vypne zásadu metrik Chrome; nastavení může být spravováno prohlížečem.",
+            "disable-chrome-metrics",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "APLIKACE", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Omezit polohu ve vyhledávání Windows",
+            "Zakáže používání polohy vyhledáváním, pokud Windows zásadu podporuje.",
+            "disable-search-location",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout tipy Spotlight na zamykací obrazovce",
+            "Omezí další kanál doporučeného obsahu na zamykací obrazovce.",
+            "disable-lockscreen-status",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Omezit další doporučený obsah Windows",
+            "Vypne další uživatelský kanál doporučení, pokud jej Windows používá.",
+            "disable-settings-suggested-content",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Vypnout další tipy v nabídce Start",
+            "Omezí další kanál tipů Windows v nabídce Start.",
+            "disable-start-tips",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "SOUKROMÍ", "WINDOWS");
+
+        AddWorkspaceTweakCard(
+            "Zakázat aplikacím přístup k poloze",
+            "Odepře aplikacím přístup k poloze; může omezit mapy a další aplikace využívající polohu.",
+            "disable-app-location-access",
+            "ON: uloží původní hodnoty registru včetně hodnot, které předtím neexistovaly. OFF: obnoví původní hodnoty nebo nově vytvořené hodnoty odstraní.", "POZOR", "WINDOWS");
 
         var hw = _hardwareInventory;
         var advanced = OptimizerPreferencesStore.Load().AdvancedRecommendations;
@@ -579,7 +912,7 @@ public partial class MainWindow
         "power-plan" => "High Performance power plan",
         "transparency" => "Vypnout efekty průhlednosti",
         "fast-menus" => "Rychlejší nabídky a animace oken",
-        _ => id
+        _ => AdditionalTweakDefinitions.TryGetValue(id, out var additional) ? additional.Name : id
     };
 
     private static void ApplyWorkspaceTweak(string id, bool enable)
@@ -670,7 +1003,13 @@ public partial class MainWindow
                         SetWorkspaceString(@"Control Panel\Desktop", "MenuShowDelay", "100", operations);
                         SetWorkspaceString(@"Control Panel\Desktop\WindowMetrics", "MinAnimate", "0", operations);
                         break;
-                    default: throw new InvalidOperationException("Neznámý optimalizační modul: " + id);
+                    default:
+                    {
+                        var additional = GetAdditionalTweakDefinition(id);
+                        foreach (var value in additional.Values)
+                            SetWorkspaceDword(value.Path, value.Name, value.Value, operations);
+                        break;
+                    }
                 }
 
                 OptimizerAuditLog.WriteChange(id, name, action, true, operations,
@@ -814,7 +1153,7 @@ public partial class MainWindow
                 (Path: @"Control Panel\Desktop", Name: "MenuShowDelay"),
                 (Path: @"Control Panel\Desktop\WindowMetrics", Name: "MinAnimate")
             },
-            _ => throw new InvalidOperationException("Neznámý optimalizační modul: " + id)
+            _ => GetAdditionalTweakDefinition(id).Values.Select(value => (Path: value.Path, Name: value.Name)).ToArray()
         };
 
         foreach (var item in values)
@@ -983,7 +1322,7 @@ public partial class MainWindow
                 "transparency" => Read(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency") is int transparency && transparency == 0
                     ? "průhlednost vypnutá" : "průhlednost výchozí/zapnutá",
                 "fast-menus" => $"MenuShowDelay={Read(@"Control Panel\Desktop", "MenuShowDelay") ?? "default"}, MinAnimate={Read(@"Control Panel\Desktop\WindowMetrics", "MinAnimate") ?? "default"}",
-                _ => "stav není dostupný"
+                _ => ReadAdditionalTweakStatus(id)
             };
         }
         catch (Exception ex) { return "stav nelze přečíst: " + ex.Message; }
@@ -1051,7 +1390,7 @@ public partial class MainWindow
             "fast-menus" => Read(@"Control Panel\Desktop", "MenuShowDelay")?.ToString() == "100" &&
                             Read(@"Control Panel\Desktop\WindowMetrics", "MinAnimate")?.ToString() == "0",
             "power-plan" => RunWorkspacePowerCfg("/getactivescheme").Contains("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", StringComparison.OrdinalIgnoreCase),
-            _ => true
+            _ => IsAdditionalTweakAtOptimizedState(id)
         };
     }
 
