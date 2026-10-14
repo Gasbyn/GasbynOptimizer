@@ -244,12 +244,12 @@ public partial class MainWindow
             var current = GetCustomTweakDefinitions().ToList();
             if (!System.Text.RegularExpressions.Regex.IsMatch(id, @"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$"))
             {
-                MessageBox.Show(editor, "ID musí začínat písmenem nebo číslem a obsahovat pouze a-z, 0-9, - nebo _. ", "Neplatné ID", MessageBoxButton.OK, MessageBoxImage.Warning);
+                System.Windows.MessageBox.Show(editor, "ID musí začínat písmenem nebo číslem a obsahovat pouze a-z, 0-9, - nebo _. ", "Neplatné ID", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             if (current.Any(x => x.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
             {
-                MessageBox.Show(editor, "Toto ID už existuje. Zvol jiné, jedinečné ID.", "Duplicitní ID", MessageBoxButton.OK, MessageBoxImage.Warning);
+                System.Windows.MessageBox.Show(editor, "Toto ID už existuje. Zvol jiné, jedinečné ID.", "Duplicitní ID", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -273,11 +273,11 @@ public partial class MainWindow
                 string.IsNullOrWhiteSpace(definition.IsOffCommand) || string.IsNullOrWhiteSpace(definition.OnDescription) ||
                 string.IsNullOrWhiteSpace(definition.OffDescription))
             {
-                MessageBox.Show(editor, "Vyplň všechna pole kromě štítků. Kontrolní příkazy ON a OFF jsou povinné.", "Chybějící údaje", MessageBoxButton.OK, MessageBoxImage.Warning);
+                System.Windows.MessageBox.Show(editor, "Vyplň všechna pole kromě štítků. Kontrolní příkazy ON a OFF jsou povinné.", "Chybějící údaje", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            if (MessageBox.Show(editor, "Uložit vlastní optimalizaci? Při použití přepínače se spustí zadané ON/OFF příkazy. Kontrolní příkazy se spustí při zjišťování stavu. Všechny poběží pod tvým aktuálním Windows účtem.", "Potvrdit vlastní příkazy", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            if (System.Windows.MessageBox.Show(editor, "Uložit vlastní optimalizaci? Při použití přepínače se spustí zadané ON/OFF příkazy. Kontrolní příkazy se spustí při zjišťování stavu. Všechny poběží pod tvým aktuálním Windows účtem.", "Potvrdit vlastní příkazy", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
 
             try
@@ -291,7 +291,7 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(editor, "Optimalizaci se nepodařilo uložit: " + ex.Message, "Chyba ukládání", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(editor, "Optimalizaci se nepodařilo uložit: " + ex.Message, "Chyba ukládání", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         };
         buttons.Children.Add(cancel);
@@ -1161,7 +1161,7 @@ public partial class MainWindow
         if (GetCustomTweakDefinition(id) is { } customDefinition)
         {
             var command = enable ? customDefinition.OnCommand : customDefinition.OffCommand;
-            if (MessageBox.Show(this, $"Spustit vlastní příkaz {(enable ? "ON" : "OFF")} pro „{customDefinition.Name}“?\n\n{command}\n\nPříkaz se spustí pod aktuálním Windows účtem.", "Potvrdit vlastní příkaz", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            if (System.Windows.MessageBox.Show(this, $"Spustit vlastní příkaz {(enable ? "ON" : "OFF")} pro „{customDefinition.Name}“?\n\n{command}\n\nPříkaz se spustí pod aktuálním Windows účtem.", "Potvrdit vlastní příkaz", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
                 _loadingWorkspaceSwitches = true;
                 toggle.IsChecked = !enable;
