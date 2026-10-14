@@ -2532,6 +2532,8 @@ public static class BuiltInOptimizationCatalog
     private static void RunShell(string command)
     {
         if (string.IsNullOrWhiteSpace(command)) throw new InvalidOperationException("Prázdný systémový příkaz.");
+        // Catalog commands are authored for batch syntax; cmd.exe /c needs single percent signs.
+        command = command.Replace("%%", "%", StringComparison.Ordinal);
         using var process = new Process { StartInfo = new ProcessStartInfo("cmd.exe") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, Arguments = "/d /s /c \"" + command + "\"" } };
         if (!process.Start()) throw new InvalidOperationException("Nelze spustit příkaz: " + command);
         var stdoutTask = process.StandardOutput.ReadToEndAsync();
