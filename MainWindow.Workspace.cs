@@ -117,10 +117,20 @@ public partial class MainWindow
         {
             await Task.Run(() =>
             {
-                foreach (var custom in GetCustomTweakDefinitions())
+                var builtInIds = new[]
                 {
-                    var actualState = ProbeCustomTweakState(custom);
-                    Debug.WriteLine($"Custom optimization startup check: {custom.Id} => {actualState}");
+                    "hags", "game-mode", "game-dvr", "mouse-acceleration", "gpu-preference",
+                    "fullscreen-optimizations", "startup-delay", "taskbar-animations", "widgets",
+                    "search-suggestions", "recommendations", "visual-effects", "power-plan",
+                    "transparency", "fast-menus"
+                };
+                var ids = builtInIds.Concat(AdditionalTweakDefinitions.Keys)
+                    .Concat(GetCustomTweakDefinitions().Select(x => CustomTweakIdPrefix + x.Id))
+                    .Distinct(StringComparer.OrdinalIgnoreCase);
+                foreach (var id in ids)
+                {
+                    var actualState = ReadWorkspaceActualStatus(id);
+                    Debug.WriteLine($"Optimization startup check: {id} => {actualState}");
                 }
             });
         }
@@ -1126,7 +1136,7 @@ public partial class MainWindow
             {
                 var systemStatus = actual.GetValueOrDefault(id, "stav není dostupný");
                 var isCustom = GetCustomTweakDefinition(id) is not null;
-                var active = isCustom ? systemStatus == "ON" : state.ContainsKey(id);
+                var active = isCustom ? systemStatus == "ON" : IsWorkspaceTweakAtOptimizedState(id);
                 if (_workspaceSwitches.TryGetValue(id, out var toggle))
                 {
                     toggle.IsChecked = isCustom && systemStatus == "UNKNOWN" ? null : active;
@@ -1136,7 +1146,7 @@ public partial class MainWindow
                 {
                     status.Text = isCustom
                         ? $"Skutečný stav Windows: {systemStatus}"
-                        : $"Windows: {systemStatus}  ·  Správa Gasbyn Optimizerem: {(active ? "ON — původní stav uložen" : "OFF")}";
+                        : $"Windows: {systemStatus}  ·  Aktuální stav: {(active ? "ON" : "OFF")}  ·  Záloha: {(state.ContainsKey(id) ? "uložena" : "není")}";
                     status.Foreground = active
                         ? (Brush)FindResource("OrangeLight")
                         : (Brush)FindResource("TextDim");
