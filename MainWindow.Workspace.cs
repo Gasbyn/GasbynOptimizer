@@ -84,9 +84,7 @@ public partial class MainWindow
                     string.IsNullOrWhiteSpace(item.Name) || string.IsNullOrWhiteSpace(item.Description) ||
                     string.IsNullOrWhiteSpace(item.Category) || string.IsNullOrWhiteSpace(item.OnCommand) ||
                     string.IsNullOrWhiteSpace(item.OffCommand) || string.IsNullOrWhiteSpace(item.OnDescription) ||
-                    string.IsNullOrWhiteSpace(item.OffDescription) ||
-                    string.IsNullOrWhiteSpace(item.IsOnCommand) || string.IsNullOrWhiteSpace(item.IsOffCommand) ||
-                    !ids.Add(item.Id))
+                    string.IsNullOrWhiteSpace(item.OffDescription) || !ids.Add(item.Id))
                     continue;
 
                 item.Badges ??= Array.Empty<string>();
@@ -114,6 +112,7 @@ public partial class MainWindow
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(custom.IsOnCommand) || string.IsNullOrWhiteSpace(custom.IsOffCommand)) return "UNKNOWN";
             var isOn = RunCustomTweakProbe(custom.IsOnCommand);
             var isOff = RunCustomTweakProbe(custom.IsOffCommand);
             if (isOn && !isOff) return "ON";
