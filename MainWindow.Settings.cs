@@ -28,6 +28,15 @@ public partial class MainWindow
             Text = "PREFERENCE & DIAGNOSTICS", FontSize = 13, FontWeight = FontWeights.Bold,
             Foreground = (Brush)FindResource("Orange"), Margin = new Thickness(0, 0, 0, 6)
         });
+
+        var installedVersion = typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "neznámá";
+        content.Children.Add(new TextBlock
+        {
+            Text = "Nainstalovaná verze: " + installedVersion,
+            FontSize = 12, FontWeight = FontWeights.SemiBold,
+            Foreground = (Brush)FindResource("TextPrimary"),
+            Margin = new Thickness(0, 0, 0, 10)
+        });
         content.Children.Add(new TextBlock
         {
             Text = "Nastavení se ukládá pro další spuštění aplikace. Detailní logy zaznamenají každou optimalizaci, pokus o obnovu, výsledek a jednotlivé registry/powercfg operace.",

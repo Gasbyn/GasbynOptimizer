@@ -11,6 +11,11 @@ on:
 permissions:
   contents: write
 
+# Prevent stale builds from overwriting a newer release asset when several commits land quickly.
+concurrency:
+  group: gasbynoptimizer-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest
