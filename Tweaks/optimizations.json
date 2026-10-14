@@ -3,7 +3,7 @@
   "sourceVersion": "2.0.B17",
   "title": "Gasbyn Optimizer – katalog optimalizací, registrů a údržby",
   "purpose": "Inventář stávajících definic a funkcí aplikace, vytvořený podle zdrojového kódu B17.",
-  "important": "Toto je katalog pro úpravy a migraci. Samotná editace tohoto JSON zatím nemění chování EXE, dokud aplikace nebude převedena na JSON-driven engine. Příkazy jsou null tam, kde aktuální aplikace používá C# engine se zálohami; nevymýšlí se nebezpečné náhradní CMD příkazy.",
+  "important": "Rozšířený inventář konfigurace aplikace podle zdrojového kódu B17. Zahrnuje navigaci, stránky, kategorie, Settings, údržbu, diagnostiku, UI, benchmark a runtime. DŮLEŽITÉ: tato JSON zatím není kompletním runtime zdrojem pravdy; editace polí nezmění EXE, dokud nebude aplikace převedena na JSON-driven engine a konfigurace vložena jako embedded resource. Handler IDs jsou odkazy na existující C# implementace, ne libovolné příkazy. Neprovádět neověřené systémové příkazy.",
   "optimizations": [
     {
       "id": "game-mode",
@@ -2154,6 +2154,728 @@
       "implementation": "existing-csharp",
       "command": null,
       "notes": "C# UI/diagnostická akce, ne CMD tweak."
+    }
+  ],
+  "application": {
+    "id": "gasbyn-optimizer",
+    "name": "Gasbyn Optimizer",
+    "version": "2.0.B17",
+    "description": "Centrální katalog konfigurace aplikace: navigace, kategorie, stránky, nastavení, optimalizace, údržba a diagnostika.",
+    "configurationStatus": "inventory-not-yet-runtime-source-of-truth",
+    "navigation": {
+      "defaultPage": "Dashboard",
+      "items": [
+        {
+          "id": "dashboard",
+          "label": "Dashboard",
+          "page": "Dashboard",
+          "icon": "home",
+          "order": 1,
+          "subtitle": "Přehled systému a rychlé akce"
+        },
+        {
+          "id": "tweaks",
+          "label": "Tweaks",
+          "page": "Tweaks",
+          "icon": "zap",
+          "order": 2,
+          "subtitle": "Reverzibilní nastavení s kontrolou stavu"
+        },
+        {
+          "id": "cleanup",
+          "label": "Cleanup",
+          "page": "Cleanup",
+          "icon": "brush-cleaning",
+          "order": 3,
+          "subtitle": "Vyčištění dočasných souborů"
+        },
+        {
+          "id": "deep-clean",
+          "label": "Deep Clean",
+          "page": "Deep Clean",
+          "icon": "scan-search",
+          "order": 4,
+          "subtitle": "Kontrola místa a úklidové nástroje"
+        },
+        {
+          "id": "startup",
+          "label": "Startup",
+          "page": "Startup",
+          "icon": "rocket",
+          "order": 5,
+          "subtitle": "Kontrola aplikací spouštěných se systémem"
+        },
+        {
+          "id": "apps-manager",
+          "label": "Apps Manager",
+          "page": "Apps Manager",
+          "icon": "app-window",
+          "order": 6,
+          "subtitle": "Přehled nainstalovaných aplikací"
+        },
+        {
+          "id": "gaming",
+          "label": "Gaming",
+          "page": "Gaming",
+          "icon": "gamepad-2",
+          "order": 7,
+          "subtitle": "Herní nastavení a diagnostika"
+        },
+        {
+          "id": "network",
+          "label": "Network",
+          "page": "Network",
+          "icon": "globe",
+          "order": 8,
+          "subtitle": "Diagnostika připojení"
+        },
+        {
+          "id": "health-check",
+          "label": "Health Check",
+          "page": "Health Check",
+          "icon": "heart-pulse",
+          "order": 9,
+          "subtitle": "Základní kontrola stavu Windows"
+        },
+        {
+          "id": "benchmark",
+          "label": "Benchmark",
+          "page": "Benchmark",
+          "icon": "chart-no-axes-combined",
+          "order": 10,
+          "subtitle": "CPU test a FPS nástroje"
+        },
+        {
+          "id": "backup",
+          "label": "Backup & Restore",
+          "page": "Backup",
+          "icon": "database-backup",
+          "order": 11,
+          "subtitle": "Zálohy a historie změn"
+        },
+        {
+          "id": "pc-info",
+          "label": "PC Info",
+          "page": "PC Info",
+          "icon": "monitor",
+          "order": 12,
+          "subtitle": "Detekce hardwaru a systémové informace"
+        },
+        {
+          "id": "settings",
+          "label": "Settings",
+          "page": "Settings",
+          "icon": "settings",
+          "order": 13,
+          "subtitle": "Nastavení aplikace"
+        }
+      ]
+    },
+    "categories": [
+      {
+        "id": "Gaming",
+        "label": "Gaming",
+        "description": "Herní optimalizace a nastavení GPU/Fortnite",
+        "order": 1
+      },
+      {
+        "id": "Windows",
+        "label": "Windows",
+        "description": "Nastavení Windows, uživatelského rozhraní a systému",
+        "order": 2
+      },
+      {
+        "id": "Settings",
+        "label": "Settings",
+        "description": "Nastavení samotné aplikace",
+        "order": 3
+      },
+      {
+        "id": "Cleanup",
+        "label": "Cleanup",
+        "description": "Čištění cache a dočasných souborů",
+        "order": 4
+      },
+      {
+        "id": "Deep Clean",
+        "label": "Deep Clean",
+        "description": "Hloubková kontrola disku a úklidové nástroje",
+        "order": 5
+      },
+      {
+        "id": "Startup",
+        "label": "Startup",
+        "description": "Položky spouštěné po přihlášení a plánované úlohy",
+        "order": 6
+      },
+      {
+        "id": "Apps Manager",
+        "label": "Apps Manager",
+        "description": "Správa nainstalovaných aplikací",
+        "order": 7
+      },
+      {
+        "id": "Network",
+        "label": "Network",
+        "description": "Síťové informace, DNS a diagnostika TCP/IP",
+        "order": 8
+      },
+      {
+        "id": "Health Check",
+        "label": "Health Check",
+        "description": "Kontroly systému a upozornění",
+        "order": 9
+      },
+      {
+        "id": "Benchmark",
+        "label": "Benchmark",
+        "description": "Testy výkonu a porovnání před/po",
+        "order": 10
+      },
+      {
+        "id": "Backup",
+        "label": "Backup & Restore",
+        "description": "Zálohy, obnova a historie změn",
+        "order": 11
+      },
+      {
+        "id": "PC Info",
+        "label": "PC Info",
+        "description": "Hardware, Windows a informace o disku",
+        "order": 12
+      },
+      {
+        "id": "Dashboard",
+        "label": "Dashboard",
+        "description": "Přehled a rychlé akce",
+        "order": 13
+      }
+    ],
+    "settings": {
+      "sectionTitle": "PREFERENCE & DIAGNOSTICS",
+      "persisted": true,
+      "storage": "OptimizerPreferencesStore",
+      "items": [
+        {
+          "id": "logging-enabled",
+          "label": "Detailní logování optimalizací",
+          "type": "boolean",
+          "default": true,
+          "storageKey": "LoggingEnabled",
+          "description": "Loguje optimalizace, pokusy o obnovu, výsledky a registry/powercfg operace.",
+          "relatedAction": "open-logs"
+        },
+        {
+          "id": "advanced-recommendations",
+          "label": "Pokročilý režim doporučení",
+          "type": "boolean",
+          "default": false,
+          "storageKey": "AdvancedRecommendations",
+          "description": "Umožní obejít kompatibilitní upozornění u některých tweaků; bezpečnostně rizikové a neimplementované zásahy zůstávají blokované."
+        }
+      ],
+      "actions": [
+        {
+          "id": "open-logs",
+          "label": "Otevřít složku logů",
+          "handler": "open-audit-log-directory"
+        },
+        {
+          "id": "open-latest-log",
+          "label": "Otevřít log v Poznámkovém bloku",
+          "handler": "open-latest-audit-log"
+        },
+        {
+          "id": "about-safe-defaults",
+          "label": "Safe-by-default",
+          "handler": "show-information-card",
+          "description": "Neprovádět automaticky nebezpečné zásahy do služeb, Defenderu, bootovacích časovačů ani IPv6."
+        },
+        {
+          "id": "open-tweaks",
+          "label": "Optimization workspace",
+          "handler": "navigate",
+          "target": "Tweaks"
+        }
+      ],
+      "display": {
+        "showInstalledVersion": true,
+        "showAuditLogPath": true,
+        "showOpenLogFolder": true,
+        "showOpenLatestLog": true
+      }
+    },
+    "pages": [
+      {
+        "id": "Dashboard",
+        "subtitle": "Přehled systému a rychlé akce",
+        "kind": "dashboard",
+        "actions": [
+          "Quick Optimize",
+          "Open cleanup center",
+          "Open gaming optimizer",
+          "Run health check"
+        ]
+      },
+      {
+        "id": "Tweaks",
+        "subtitle": "Reverzibilní nastavení s kontrolou stavu",
+        "kind": "optimization-workspace",
+        "features": [
+          "optimization-cards",
+          "toggle-state-detection",
+          "compatibility-locks",
+          "advanced-mode",
+          "backup-and-restore"
+        ]
+      },
+      {
+        "id": "Cleanup",
+        "subtitle": "Vyčisti dočasné soubory bez zásahů do systémových služeb",
+        "kind": "action-list",
+        "actions": [
+          "User TEMP",
+          "Windows + User TEMP",
+          "Shader Cache",
+          "Browser Cache",
+          "Recycle Bin"
+        ]
+      },
+      {
+        "id": "Deep Clean",
+        "subtitle": "Kontrola místa a bezpečné úklidové nástroje",
+        "kind": "action-list",
+        "actions": [
+          "Deep Scan Summary",
+          "Large Files",
+          "Crash Dumps & Logs"
+        ]
+      },
+      {
+        "id": "Startup",
+        "subtitle": "Kontrola aplikací spouštěných se systémem",
+        "kind": "action-list",
+        "actions": [
+          "View startup",
+          "Scheduled Startup Tasks",
+          "Startup Registry Entries"
+        ]
+      },
+      {
+        "id": "Apps Manager",
+        "subtitle": "Přehled nainstalovaných aplikací",
+        "kind": "embedded-window",
+        "handler": "Apps.AppsManagerWindow"
+      },
+      {
+        "id": "Gaming",
+        "subtitle": "Herní nastavení a diagnostika",
+        "kind": "optimization-workspace",
+        "filterCategory": "Gaming",
+        "actions": [
+          "GAMING OPTIMIZER",
+          "Windows Gaming Services",
+          "Fortnite Optimization Profile",
+          "NVIDIA Gaming Profile"
+        ]
+      },
+      {
+        "id": "Network",
+        "subtitle": "Diagnostika připojení bez náhodných síťových tweaků",
+        "kind": "action-list",
+        "actions": [
+          "Connection Info",
+          "DNS Check",
+          "TCP/IP Health",
+          "Network Reset Tools"
+        ]
+      },
+      {
+        "id": "Health Check",
+        "subtitle": "Základní kontrola stavu Windows",
+        "kind": "action-list",
+        "actions": [
+          "Run health check"
+        ]
+      },
+      {
+        "id": "Benchmark",
+        "subtitle": "Základní CPU test a FPS nástroje",
+        "kind": "benchmark",
+        "actions": [
+          "CPU Quick Test",
+          "Before / After"
+        ],
+        "features": [
+          "benchmark-workspace",
+          "fps-test-history",
+          "presentmon-path"
+        ]
+      },
+      {
+        "id": "Backup",
+        "subtitle": "Zálohy a historie změn",
+        "kind": "backup-workspace",
+        "features": [
+          "tweak-backups",
+          "restore",
+          "change-history"
+        ]
+      },
+      {
+        "id": "PC Info",
+        "subtitle": "Detekce hardwaru a systémových informací",
+        "kind": "system-information",
+        "actions": [
+          "Hardware Detection",
+          "Disk Space",
+          "Refresh"
+        ]
+      },
+      {
+        "id": "Settings",
+        "subtitle": "Nastavení aplikace",
+        "kind": "settings",
+        "actions": [
+          "open-logs",
+          "open-latest-log",
+          "about-safe-defaults",
+          "open-tweaks"
+        ]
+      }
+    ],
+    "maintenanceCatalog": [
+      {
+        "id": "user-temp",
+        "label": "User TEMP",
+        "page": "Cleanup",
+        "handler": "cleanup-user-temp",
+        "requiresConfirmation": true
+      },
+      {
+        "id": "windows-user-temp",
+        "label": "Windows + User TEMP",
+        "page": "Cleanup",
+        "handler": "cleanup-temp-paths",
+        "requiresConfirmation": true
+      },
+      {
+        "id": "shader-cache",
+        "label": "Shader Cache",
+        "page": "Cleanup",
+        "handler": "cleanup-shader-cache",
+        "requiresConfirmation": true,
+        "note": "Cache se může po odstranění znovu vytvořit."
+      },
+      {
+        "id": "browser-cache",
+        "label": "Browser Cache",
+        "page": "Cleanup",
+        "handler": "cleanup-browser-cache",
+        "requiresConfirmation": true
+      },
+      {
+        "id": "recycle-bin",
+        "label": "Recycle Bin",
+        "page": "Cleanup",
+        "handler": "show-recycle-bin-info-and-confirm-empty",
+        "requiresConfirmation": true,
+        "irreversible": true
+      },
+      {
+        "id": "deep-scan",
+        "label": "Deep Scan Summary",
+        "page": "Deep Clean",
+        "handler": "deep-scan-summary",
+        "deletesAutomatically": false
+      },
+      {
+        "id": "large-files",
+        "label": "Large Files",
+        "page": "Deep Clean",
+        "handler": "find-large-files",
+        "deletesAutomatically": false
+      },
+      {
+        "id": "crash-dumps-logs",
+        "label": "Crash Dumps & Logs",
+        "page": "Deep Clean",
+        "handler": "cleanup-crash-dumps-and-logs",
+        "requiresConfirmation": true
+      },
+      {
+        "id": "windows-update-cache",
+        "label": "Windows Update Cache",
+        "handler": "cleanup-windows-update-cache",
+        "requiresConfirmation": true
+      },
+      {
+        "id": "delivery-optimization-cache",
+        "label": "Delivery Optimization Cache",
+        "handler": "cleanup-delivery-optimization-cache",
+        "requiresConfirmation": true
+      },
+      {
+        "id": "windows-update-delivery-cache",
+        "label": "Windows Update / Delivery Cache",
+        "handler": "cleanup-update-and-delivery-cache",
+        "requiresConfirmation": true
+      },
+      {
+        "id": "gpu-shader-cache",
+        "label": "GPU / Shader Cache",
+        "handler": "cleanup-shader-cache",
+        "requiresConfirmation": true
+      }
+    ],
+    "diagnosticsCatalog": [
+      {
+        "id": "startup-registry",
+        "label": "Startup Registry Entries",
+        "page": "Startup",
+        "handler": "show-startup-registry"
+      },
+      {
+        "id": "startup-folder",
+        "label": "Startup Folder",
+        "page": "Startup",
+        "handler": "show-startup-folder"
+      },
+      {
+        "id": "scheduled-startup-tasks",
+        "label": "Scheduled Startup Tasks",
+        "page": "Startup",
+        "handler": "show-scheduled-tasks"
+      },
+      {
+        "id": "installed-applications",
+        "label": "Installed Applications",
+        "page": "Apps Manager",
+        "handler": "open-apps-manager"
+      },
+      {
+        "id": "app-checker",
+        "label": "App Checker",
+        "handler": "open-apps-manager"
+      },
+      {
+        "id": "deep-uninstall",
+        "label": "Deep Uninstall",
+        "handler": "open-apps-manager"
+      },
+      {
+        "id": "connection-info",
+        "label": "Connection Info",
+        "page": "Network",
+        "handler": "show-connection-info"
+      },
+      {
+        "id": "dns-check",
+        "label": "DNS Check",
+        "page": "Network",
+        "handler": "show-dns-info"
+      },
+      {
+        "id": "tcp-ip-health",
+        "label": "TCP/IP Health",
+        "page": "Network",
+        "handler": "run-network-health"
+      },
+      {
+        "id": "network-reset-tools",
+        "label": "Network Reset Tools",
+        "page": "Network",
+        "handler": "show-network-reset-warning",
+        "performsResetAutomatically": false
+      },
+      {
+        "id": "system-drive",
+        "label": "System Drive",
+        "page": "PC Info",
+        "handler": "show-drive-info"
+      },
+      {
+        "id": "windows-version",
+        "label": "Windows Version",
+        "page": "PC Info",
+        "handler": "show-windows-version"
+      },
+      {
+        "id": "dotnet-runtime",
+        "label": ".NET Runtime",
+        "page": "PC Info",
+        "handler": "show-dotnet-runtime"
+      },
+      {
+        "id": "hardware-detection",
+        "label": "Hardware Detection",
+        "page": "PC Info",
+        "handler": "refresh-system-info"
+      },
+      {
+        "id": "cpu-quick-test",
+        "label": "CPU Quick Test",
+        "page": "Benchmark",
+        "handler": "run-cpu-benchmark"
+      },
+      {
+        "id": "memory-snapshot",
+        "label": "Memory Snapshot",
+        "page": "PC Info",
+        "handler": "show-memory-snapshot"
+      },
+      {
+        "id": "disk-space",
+        "label": "Disk Space",
+        "page": "PC Info",
+        "handler": "show-drive-info"
+      },
+      {
+        "id": "before-after",
+        "label": "Before / After",
+        "page": "Benchmark",
+        "handler": "show-before-after"
+      },
+      {
+        "id": "tweak-backups",
+        "label": "Tweak Backups",
+        "page": "Backup",
+        "handler": "show-backup-folder"
+      },
+      {
+        "id": "restore-all",
+        "label": "Restore All",
+        "page": "Backup",
+        "handler": "show-restore-info"
+      },
+      {
+        "id": "change-history",
+        "label": "Change History",
+        "page": "Backup",
+        "handler": "show-history"
+      },
+      {
+        "id": "refresh-system-info",
+        "label": "Refresh",
+        "page": "PC Info",
+        "handler": "refresh-system-info"
+      }
+    ],
+    "dashboard": {
+      "quickActions": [
+        {
+          "id": "quick-optimize",
+          "label": "QUICK OPTIMIZE",
+          "handler": "quick-optimize-safe"
+        },
+        {
+          "id": "open-cleanup",
+          "label": "Open cleanup center",
+          "handler": "navigate",
+          "target": "Cleanup"
+        },
+        {
+          "id": "open-gaming",
+          "label": "Open gaming optimizer",
+          "handler": "navigate",
+          "target": "Gaming"
+        },
+        {
+          "id": "run-health-check",
+          "label": "Run health check",
+          "handler": "run-health-check"
+        }
+      ]
+    },
+    "ui": {
+      "theme": "dark",
+      "accentColor": "#FF6A00",
+      "fontFamily": "Segoe UI",
+      "displayFont": "Segoe UI Semibold",
+      "monospaceFont": "Consolas",
+      "window": {
+        "width": 1280,
+        "height": 800,
+        "minWidth": 1050,
+        "minHeight": 680,
+        "windowStyle": "None",
+        "resizeMode": "CanResize",
+        "startupLocation": "CenterScreen"
+      },
+      "colors": {
+        "background": "#08090B",
+        "panel": "#121419",
+        "border": "#24272E",
+        "text": "#F4F4F5",
+        "textMuted": "#858A94",
+        "textDim": "#5E636D",
+        "accent": "#FF6A00",
+        "accentLight": "#FF9A52",
+        "accentSoft": "#21150E",
+        "success": "#48D597"
+      },
+      "navigation": {
+        "selectedAccent": true,
+        "hoverAnimation": true,
+        "hoverScale": 1.035,
+        "hoverDurationMs": 125
+      },
+      "cards": {
+        "cornerRadius": 14,
+        "padding": 20,
+        "bottomMargin": 12
+      },
+      "dialogs": {
+        "defaultConfirmationRequiredForDestructiveActions": true
+      }
+    },
+    "runtime": {
+      "singleExecutable": true,
+      "targetFramework": "net10.0-windows",
+      "targetArchitecture": "x64",
+      "selfContained": true,
+      "embeddedConfigurationTarget": "GasbynOptimizer.exe",
+      "stateStorage": "%LocalAppData%\\GasbynOptimizer",
+      "files": {
+        "optimizationState": "optimization-state.json",
+        "benchmarkHistory": "fps-tests.json",
+        "presentMonPath": "presentmon-path.txt",
+        "customTweaks": "custom-tweaks.json",
+        "auditLog": "OptimizerAuditLog.LogPath"
+      },
+      "safety": {
+        "saveOriginalValuesBeforeChange": true,
+        "restoreOriginalValuesWhenDisabling": true,
+        "automaticallyDisableDefender": false,
+        "automaticallyDisableServices": false,
+        "automaticallyChangeIpv6": false,
+        "automaticallyChangeBootTimers": false,
+        "destructiveCleanupRequiresConfirmation": true,
+        "blockUnimplementedActions": true
+      }
+    },
+    "benchmark": {
+      "features": [
+        "CPU Quick Test",
+        "FPS benchmark",
+        "PresentMon path configuration",
+        "process name configuration",
+        "benchmark history",
+        "before-after comparison"
+      ],
+      "historyFile": "fps-tests.json",
+      "presentMonPathFile": "presentmon-path.txt"
+    },
+    "updater": {
+      "service": "Services/AppUpdater.cs",
+      "releaseChannel": "GitHub Releases",
+      "note": "Toto popisuje současné napojení, neověřuje dostupnost konkrétního vydání."
+    }
+  },
+  "changeLog": [
+    {
+      "version": "2.0.B17",
+      "change": "Rozšíření katalogu o navigaci, všechny hlavní stránky, kategorie, nastavení, akce, diagnostiku, UI a runtime volby odvozené ze zdrojového kódu."
     }
   ]
 }
