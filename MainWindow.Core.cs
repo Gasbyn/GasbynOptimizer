@@ -10,6 +10,7 @@ using System.Windows.Media.Animation;
 using GasbynOptimizer.Core;
 using GasbynOptimizer.Models;
 using GasbynOptimizer.Tweaks.Gaming;
+using GasbynOptimizer.Services;
 
 namespace GasbynOptimizer;
 
@@ -30,7 +31,7 @@ public partial class MainWindow
             ApplyDisplayVersionToUi();
             ShowPage("Dashboard");
             await RunStartupCheckAsync();
-            CheckWorkspaceDriftOnStartup();
+            try { CheckWorkspaceDriftOnStartup(); } catch { /* drift is best-effort */ }
         };
     }
 
@@ -180,12 +181,12 @@ public partial class MainWindow
                 BuildBackupWorkspace();
                 break;
             case "Restore Point":
-                EnsureTweakDeckHost();
                 AddWorkspaceTweakCard(
                     "High Performance power plan",
                     "Aktivuje vestavěný High Performance plán. OFF vrátí plán uložený při zapnutí.",
                     "power-plan",
                     "ON: powercfg High Performance. OFF: původní scheme.", "VÝKON", "NAPÁJENÍ");
+                AddInfoCard("Bod obnovení Windows", "Bod obnovení vytvoříš v Windows: Ovládací panely → Systém → Ochrana systému → Vytvořit.", "About");
                 break;
             case "PC Info":
                 LoadSystemInfo();
@@ -194,14 +195,87 @@ public partial class MainWindow
                 break;
             case "Settings":
                 AddSettingsCard();
-                AddAdvancedModeCard();
-                AddInfoCard("Safe-by-default", "ON = aplikuje změnu (registry/cmd). OFF = vrátí výchozí/původní hodnoty ze zálohy.", "About");
+                AddAdvancedModeSettingsCard();
+                AddInfoCard("Safe-by-default", "ON = aplikuje změnu (registry/cmd). OFF = vrátí výchozí/původní hodnoty ze zálohy Gasbyn.", "About");
                 break;
             default:
                 AddInfoCard("Open Tweaks", "Vratné systémové optimalizace a jejich stav.", "Open Tweaks");
                 break;
         }
         AnimateContent();
+    }
+
+    private void AddAdvancedModeSettingsCard()
+    {
+        var prefs = OptimizerPreferencesStore.Load();
+        var card = new Border
+        {
+            Background = (Brush)FindResource("Panel"),
+            BorderBrush = (Brush)FindResource("Border"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(14),
+            Padding = new Thickness(18),
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+        var root = new Grid();
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var text = new StackPanel { Margin = new Thickness(0, 0, 18, 0) };
+        text.Children.Add(new TextBlock
+        {
+            Text = "Pokročilý režim",
+            FontSize = 18,
+            FontWeight = FontWeights.Bold,
+            Foreground = (Brush)FindResource("OrangeLight")
+        });
+        text.Children.Add(new TextBlock
+        {
+            Text = "Odemkne optimalizace označené jako nekompatibilní (např. NVIDIA na AMD). Používej jen když víš, co děláš.",
+            FontSize = 12,
+            Foreground = (Brush)FindResource("TextMuted"),
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 6, 0, 0)
+        });
+        Grid.SetColumn(text, 0);
+        root.Children.Add(text);
+
+        var toggle = new ToggleButton
+        {
+            Style = (Style)FindResource("SwitchToggleButton"),
+            IsChecked = prefs.AdvancedRecommendations,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        toggle.Checked += (_, _) =>
+        {
+            var confirm = MessageBox.Show(
+                "Pokročilý režim odemkne optimalizace, které nemusí pasovat k tvému GPU/CPU nebo notebooku." +
+                Environment.NewLine + Environment.NewLine +
+                "Můžeš zapnout nastavení, která na tvé sestavě nemají smysl nebo jsou riziková." +
+                Environment.NewLine + Environment.NewLine +
+                "Opravdu zapnout?",
+                "Potvrzení pokročilého režimu",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes)
+            {
+                toggle.IsChecked = false;
+                return;
+            }
+            var p = OptimizerPreferencesStore.Load();
+            p.AdvancedRecommendations = true;
+            OptimizerPreferencesStore.Save(p);
+        };
+        toggle.Unchecked += (_, _) =>
+        {
+            var p = OptimizerPreferencesStore.Load();
+            p.AdvancedRecommendations = false;
+            OptimizerPreferencesStore.Save(p);
+        };
+        Grid.SetColumn(toggle, 1);
+        root.Children.Add(toggle);
+        card.Child = root;
+        SecondaryContent.Children.Add(card);
     }
 
     private void AnimateContent()
