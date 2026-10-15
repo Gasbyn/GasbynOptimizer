@@ -16,12 +16,15 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
 
       - name: Restore MainWindow.Workspace.cs if corrupted
+        id: restore_ws
         shell: pwsh
         run: |
           $path = "MainWindow.Workspace.cs"
@@ -34,8 +37,25 @@ jobs:
             $restored = Get-Content $path -Raw
             if ($restored.Length -lt 10000) { throw "Restore failed — file still too small ($($restored.Length) chars)" }
             Write-Host "Restored Workspace.cs ($($restored.Length) chars)"
+            "restored=true" >> $env:GITHUB_OUTPUT
           } else {
             Write-Host "Workspace.cs looks OK ($($text.Length) chars)"
+            "restored=false" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Commit restored Workspace.cs back to branch
+        if: steps.restore_ws.outputs.restored == 'true' && github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MainWindow.Workspace.cs
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "chore: restore MainWindow.Workspace.cs from B20 baseline"
+            git push origin HEAD:${{ github.ref_name }}
+          } else {
+            Write-Host "No Workspace changes to commit"
           }
 
       - name: Validate embedded updater PowerShell syntax
