@@ -31,11 +31,11 @@ jobs:
           $text = Get-Content $path -Raw -ErrorAction SilentlyContinue
           $needsRestore = (-not $text) -or ($text.Length -lt 10000) -or ($text -match 'file:///') -or ($text -match 'PLACEHOLDER|TOO_LARGE|Full body is large')
           if ($needsRestore) {
-            Write-Host "Workspace.cs is missing or corrupted ($(($text ?? '').Length) chars) — restoring from release/v2.0.B20"
+            Write-Host "Workspace.cs is missing or corrupted — restoring from release/v2.0.B20"
             $url = "https://raw.githubusercontent.com/Gasbyn/GasbynOptimizer/release/v2.0.B20/MainWindow.Workspace.cs"
             Invoke-WebRequest -Uri $url -OutFile $path -UseBasicParsing
             $restored = Get-Content $path -Raw
-            if ($restored.Length -lt 10000) { throw "Restore failed — file still too small ($($restored.Length) chars)" }
+            if ($restored.Length -lt 10000) { throw "Restore failed" }
             Write-Host "Restored Workspace.cs ($($restored.Length) chars)"
             "restored=true" >> $env:GITHUB_OUTPUT
           } else {
@@ -49,45 +49,22 @@ jobs:
           $path = "MainWindow.Workspace.cs"
           $ws = Get-Content $path -Raw
 
-          # 1) Search + filter toolbar host at start of Tweaks
-          $oldBuild = @'
-    private void BuildTweaksWorkspace(bool gamingOnly = false)
-    {
-        _workspaceSwitches.Clear();
-        _workspaceSwitchStatuses.Clear();
+          if ($ws -notmatch 'EnsureTweakDeckHost\(gamingOnly\)') {
+            $ws = $ws.Replace(
+              "_workspaceSwitchStatuses.Clear();`r`n`r`n        if (gamingOnly)",
+              "_workspaceSwitchStatuses.Clear();`r`n        EnsureTweakDeckHost(gamingOnly);`r`n`r`n        if (gamingOnly)")
+            if ($ws -notmatch 'EnsureTweakDeckHost\(gamingOnly\)') {
+              $ws = $ws.Replace(
+                "_workspaceSwitchStatuses.Clear();`n`n        if (gamingOnly)",
+                "_workspaceSwitchStatuses.Clear();`n        EnsureTweakDeckHost(gamingOnly);`n`n        if (gamingOnly)")
+            }
+            Write-Host "Patched EnsureTweakDeckHost"
+          } else { Write-Host "EnsureTweakDeckHost already present" }
 
-        if (gamingOnly)
-        {
-'@
-          $newBuild = @'
-    private void BuildTweaksWorkspace(bool gamingOnly = false)
-    {
-        _workspaceSwitches.Clear();
-        _workspaceSwitchStatuses.Clear();
-        EnsureTweakDeckHost(gamingOnly);
-
-        if (gamingOnly)
-        {
-'@
-          if ($ws.Contains('EnsureTweakDeckHost(gamingOnly)')) {
-            Write-Host 'EnsureTweakDeckHost already present'
-          } elseif ($ws.Contains($oldBuild)) {
-            $ws = $ws.Replace($oldBuild, $newBuild)
-            Write-Host 'Patched EnsureTweakDeckHost call'
-          } else {
-            Write-Host 'WARN: BuildTweaksWorkspace pattern not found'
-          }
-
-          # 2) Route cards into deck host (search/filter grid)
-          $oldAdd = @'
-        card.Child = root;
-        SecondaryContent.Children.Add(card);
-    }
-
-    private Border CreateTweakBadge
-'@
-          $newAdd = @'
-        card.Child = root;
+          if ($ws -notmatch '_tweakDeckHost is not null') {
+            $needle = "card.Child = root;`r`n        SecondaryContent.Children.Add(card);"
+            $insert = @"
+card.Child = root;
         if (_tweakDeckHost is not null)
         {
             _tweakDeckHost.Children.Add(card);
@@ -95,47 +72,34 @@ jobs:
         }
         else
             SecondaryContent.Children.Add(card);
-    }
+"@
+            if ($ws.Contains($needle)) {
+              $ws = $ws.Replace($needle, $insert.TrimEnd() + "`r`n")
+            } else {
+              $needle2 = "card.Child = root;`n        SecondaryContent.Children.Add(card);"
+              $ws = $ws.Replace($needle2, $insert.TrimEnd() + "`n")
+            }
+            Write-Host "Patched deck host routing"
+          } else { Write-Host "Deck host routing already present" }
 
-    private Border CreateTweakBadge
-'@
-          if ($ws.Contains('_tweakDeckHost is not null')) {
-            Write-Host 'Deck host routing already present'
-          } elseif ($ws.Contains($oldAdd)) {
-            $ws = $ws.Replace($oldAdd, $newAdd)
-            Write-Host 'Patched deck host card routing'
-          } else {
-            Write-Host 'WARN: card Add pattern not found'
-          }
+          $hpTitle = 'High Performance power plan'
+          if ($ws.Contains($hpTitle) -and $ws.Contains('AddWorkspaceTweakCard(')) {
+            $pattern = '(?s)\s*AddWorkspaceTweakCard\(\s*"High Performance power plan".*?"SPOTŘEBA"\);\s*'
+            $ws2 = [regex]::Replace($ws, $pattern, "`r`n", 1)
+            if ($ws2 -eq $ws) {
+              $pattern2 = '(?s)\s*AddWorkspaceTweakCard\(\s*"High Performance power plan".*?"SPOTŘEBA"\);\s*'
+              $ws2 = [regex]::Replace($ws, $pattern2, "`n", 1)
+            }
+            if ($ws2 -ne $ws) {
+              $ws = $ws2
+              Write-Host "Removed HP power plan card"
+            } else { Write-Host "HP card regex did not match" }
+          } else { Write-Host "HP card already absent" }
 
-          # 3) Remove High Performance power plan card from Tweaks list
-          $hp = @'
-        AddWorkspaceTweakCard(
-            "High Performance power plan",
-            "Aktivuje vestavěný plán Vysoký výkon. Může zvýšit spotřebu energie a teploty.",
-            "power-plan",
-            "ON: aktivuje plán napájení Vysoký výkon. OFF: aktivuje původní ID plánu uložené před změnou. Vyšší spotřeba a teploty jsou možné.", "POKROČILÉ", "VÝKON", "SPOTŘEBA");
-
-'@
-          if ($ws.Contains($hp)) {
-            $ws = $ws.Replace($hp, '')
-            Write-Host 'Removed HP power plan card'
-          } else {
-            Write-Host 'HP power plan card not found (ok if already removed)'
-          }
-
-          # 4) Confirm when enabling incompatible tweak
-          $oldChecked = @'
-        toggle.Checked += async (_, _) =>
-        {
-            if (!_loadingWorkspaceSwitches)
-                await ChangeWorkspaceTweakAsync(id, true, toggle, status);
-        };
-'@
-          $newChecked = @'
-        toggle.Checked += async (_, _) =>
-        {
-            if (_loadingWorkspaceSwitches) return;
+          if ($ws -notmatch 'Nepodporovaná optimalizace') {
+            $old = "if (!_loadingWorkspaceSwitches)`r`n                await ChangeWorkspaceTweakAsync(id, true, toggle, status);"
+            $new = @"
+if (_loadingWorkspaceSwitches) return;
             if (incompatible)
             {
                 var ok = MessageBox.Show(
@@ -154,79 +118,28 @@ jobs:
                 }
             }
             await ChangeWorkspaceTweakAsync(id, true, toggle, status);
-        };
-'@
-          if ($ws.Contains('Nepodporovaná optimalizace')) {
-            Write-Host 'Incompat confirm already present'
-          } elseif ($ws.Contains($oldChecked)) {
-            $ws = $ws.Replace($oldChecked, $newChecked)
-            Write-Host 'Patched incompat confirmation'
-          } else {
-            Write-Host 'WARN: toggle.Checked pattern not found'
-          }
+"@
+            if ($ws.Contains($old)) {
+              $ws = $ws.Replace($old, $new.TrimEnd())
+            } else {
+              $old2 = "if (!_loadingWorkspaceSwitches)`n                await ChangeWorkspaceTweakAsync(id, true, toggle, status);"
+              $ws = $ws.Replace($old2, $new.TrimEnd())
+            }
+            Write-Host "Patched incompat confirmation"
+          } else { Write-Host "Incompat confirm already present" }
 
-          # 5) AMD toggle unlock with advanced mode + confirm
-          $oldAmd = @'
-            Style = (Style)FindResource("SwitchToggleButton"),
-            IsChecked = false,
-            IsEnabled = false,
-            ToolTip = warning,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        System.Windows.Automation.AutomationProperties.SetName(unavailable, "AMD Radeon-only GPU tuning — unavailable");
-        Grid.SetColumn(unavailable, 1);
-'@
-          $newAmd = @'
-            Style = (Style)FindResource("SwitchToggleButton"),
-            IsChecked = false,
-            IsEnabled = advanced,
-            ToolTip = advanced
-                ? "Pokročilý režim: při zapnutí potvrď omezení."
-                : "🔒 Zapni Pokročilý režim v Settings.",
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        System.Windows.Automation.AutomationProperties.SetName(unavailable, "AMD Radeon-only GPU tuning");
-        unavailable.Checked += (_, _) =>
-        {
-            if (!advanced) { unavailable.IsChecked = false; return; }
-            var ok = MessageBox.Show(
-                "AMD Radeon-only tuning je jen indikátor — agresivní ovladačové změny se neprovádějí." +
-                Environment.NewLine + Environment.NewLine +
-                "Opravdu pokračovat?",
-                "Nepodporovaná / omezená optimalizace",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-            if (ok != MessageBoxResult.Yes)
-                unavailable.IsChecked = false;
-        };
-        Grid.SetColumn(unavailable, 1);
-'@
-          if ($ws.Contains('IsEnabled = advanced') -and $ws.Contains('AMD Radeon-only GPU tuning')) {
-            Write-Host 'AMD unlock already present'
-          } elseif ($ws.Contains($oldAmd)) {
-            $ws = $ws.Replace($oldAmd, $newAmd)
-            Write-Host 'Patched AMD unlock'
-          } else {
-            Write-Host 'WARN: AMD toggle pattern not found'
-          }
+          if ($ws -match 'AMD Radeon-only GPU tuning' -and $ws -match 'IsEnabled = false') {
+            $ws = $ws.Replace(
+              "IsEnabled = false,`r`n            ToolTip = warning,`r`n            VerticalAlignment = VerticalAlignment.Center`r`n        };`r`n        System.Windows.Automation.AutomationProperties.SetName(unavailable, `"AMD Radeon-only GPU tuning — unavailable`");",
+              "IsEnabled = advanced,`r`n            ToolTip = advanced ? `"Pokročilý režim: potvrď omezení.`" : `"Zamčeno — zapni Pokročilý režim.`",`r`n            VerticalAlignment = VerticalAlignment.Center`r`n        };`r`n        System.Windows.Automation.AutomationProperties.SetName(unavailable, `"AMD Radeon-only GPU tuning`");")
+            $ws = $ws.Replace(
+              "IsEnabled = false,`n            ToolTip = warning,`n            VerticalAlignment = VerticalAlignment.Center`n        };`n        System.Windows.Automation.AutomationProperties.SetName(unavailable, `"AMD Radeon-only GPU tuning — unavailable`");",
+              "IsEnabled = advanced,`n            ToolTip = advanced ? `"Pokročilý režim: potvrď omezení.`" : `"Zamčeno — zapni Pokročilý režim.`",`n            VerticalAlignment = VerticalAlignment.Center`n        };`n        System.Windows.Automation.AutomationProperties.SetName(unavailable, `"AMD Radeon-only GPU tuning`");")
+            Write-Host "Patched AMD unlock"
+          } else { Write-Host "AMD pattern skipped or already patched" }
 
-          Set-Content -Path $path -Value $ws -NoNewline -Encoding utf8
-          Write-Host "Workspace.cs after patches: $((Get-Item $path).Length) bytes"
-
-      - name: Commit restored Workspace.cs back to branch
-        if: steps.restore_ws.outputs.restored == 'true' && github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
-        shell: pwsh
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add MainWindow.Workspace.cs
-          git diff --cached --quiet
-          if ($LASTEXITCODE -ne 0) {
-            git commit -m "chore: restore MainWindow.Workspace.cs from B20 baseline"
-            git push origin HEAD:${{ github.ref_name }}
-          } else {
-            Write-Host "No Workspace changes to commit"
-          }
+          [System.IO.File]::WriteAllText((Resolve-Path $path), $ws)
+          Write-Host "Workspace.cs size: $((Get-Item $path).Length)"
 
       - name: Validate embedded updater PowerShell syntax
         shell: pwsh
@@ -277,11 +190,10 @@ jobs:
           body: |
             ## Gasbyn Optimizer ${{ env.RELEASE_TAG }}
 
-            - Tweaks: search + filters toolbar, deck card host
+            - Tweaks: search + filters toolbar
             - One Advanced mode in Settings (with confirm)
-            - Unsupported tweaks ask for confirmation; AMD unlock in Advanced mode
+            - Unsupported tweaks confirmation; AMD unlock in Advanced mode
             - High Performance power plan card removed from Tweaks
-            - In-app updates from GitHub Releases (SHA-256 verified)
           target_commitish: ${{ github.sha }}
           files: GasbynOptimizer-win-x64.zip
           overwrite_files: true
