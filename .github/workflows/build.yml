@@ -49,6 +49,15 @@ jobs:
             Write-Host "Patch script not found - skipping"
           }
 
+      - name: Apply updater fixes (force-kill + UTF-8 BOM)
+        shell: pwsh
+        run: |
+          if (Test-Path "build/Apply-UpdaterFixes.ps1") {
+            & "build/Apply-UpdaterFixes.ps1" -Path "Services/AppUpdater.cs"
+          } else {
+            Write-Host "Updater patch script not found - skipping"
+          }
+
       - name: Validate embedded updater PowerShell syntax
         shell: pwsh
         run: |
@@ -98,10 +107,8 @@ jobs:
           body: |
             ## Gasbyn Optimizer ${{ env.RELEASE_TAG }}
 
-            - Tweaks: search + filters toolbar
-            - One Advanced mode in Settings (with confirm)
-            - Unsupported tweaks confirmation; AMD unlock in Advanced mode
-            - High Performance power plan card removed from Tweaks
+            - Updater: closes app before replace, force-kills if hung, Czech diacritics fixed (UTF-8 BOM)
+            - Tweaks: live search + working filters + back button on every page
           target_commitish: ${{ github.sha }}
           files: GasbynOptimizer-win-x64.zip
           overwrite_files: true
