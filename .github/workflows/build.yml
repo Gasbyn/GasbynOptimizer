@@ -21,6 +21,23 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Restore MainWindow.Workspace.cs if corrupted
+        shell: pwsh
+        run: |
+          $path = "MainWindow.Workspace.cs"
+          $text = Get-Content $path -Raw -ErrorAction SilentlyContinue
+          $needsRestore = (-not $text) -or ($text.Length -lt 10000) -or ($text -match 'file:///') -or ($text -match 'PLACEHOLDER|TOO_LARGE|Full body is large')
+          if ($needsRestore) {
+            Write-Host "Workspace.cs is missing or corrupted ($(($text ?? '').Length) chars) — restoring from release/v2.0.B20"
+            $url = "https://raw.githubusercontent.com/Gasbyn/GasbynOptimizer/release/v2.0.B20/MainWindow.Workspace.cs"
+            Invoke-WebRequest -Uri $url -OutFile $path -UseBasicParsing
+            $restored = Get-Content $path -Raw
+            if ($restored.Length -lt 10000) { throw "Restore failed — file still too small ($($restored.Length) chars)" }
+            Write-Host "Restored Workspace.cs ($($restored.Length) chars)"
+          } else {
+            Write-Host "Workspace.cs looks OK ($($text.Length) chars)"
+          }
+
       - name: Validate embedded updater PowerShell syntax
         shell: pwsh
         run: |
@@ -60,15 +77,6 @@ jobs:
         run: |
           $tag = "${{ github.ref_name }}" -replace '^release/', ''
           "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
-
-      - name: Update B5 source tag for updater hotfix
-        if: github.ref == 'refs/heads/release/v2.0.B5'
-        shell: pwsh
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f v2.0.B5 $env:GITHUB_SHA
-          git push origin +refs/tags/v2.0.B5
 
       - name: Publish release from release branch
         if: startsWith(github.ref, 'refs/heads/release/')
