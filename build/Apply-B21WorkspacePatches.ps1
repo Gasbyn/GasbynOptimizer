@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 $ws = Get-Content -LiteralPath $WorkspacePath -Raw
 
-# 1) Call EnsureTweakDeckHost so search + filters toolbar appears
+# 1) Search + filters toolbar
 if ($ws -notmatch 'EnsureTweakDeckHost\(gamingOnly\)') {
     $replaced = $false
     foreach ($pair in @(
@@ -24,28 +24,35 @@ if ($ws -notmatch 'EnsureTweakDeckHost\(gamingOnly\)') {
     Write-Host "EnsureTweakDeckHost already present"
 }
 
-# 2) Route tweak cards into deck host (required for search/filter)
+# 2) Route ONLY AddWorkspaceTweakCard into deck host (unique context: _workspaceSwitches[id])
 if ($ws -notmatch '_tweakDeckHost is not null') {
-    $insert = "        card.Child = root;`r`n        if (_tweakDeckHost is not null)`r`n        {`r`n            _tweakDeckHost.Children.Add(card);`r`n            _tweakDeckIndex.Add((id, card, title, description, badges, IsWorkspaceTweakIncompatible(id)));`r`n        }`r`n        else`r`n            SecondaryContent.Children.Add(card);"
-    $needles = @(
-        "        card.Child = root;`r`n        SecondaryContent.Children.Add(card);",
-        "        card.Child = root;`n        SecondaryContent.Children.Add(card);"
-    )
-    $done = $false
-    foreach ($n in $needles) {
-        if ($ws.Contains($n)) {
-            $ws = $ws.Replace($n, $insert)
-            Write-Host "Patched deck host routing"
-            $done = $true
-            break
+    $old1 = "_workspaceSwitches[id] = toggle;`r`n        card.Child = root;`r`n        SecondaryContent.Children.Add(card);"
+    $new1 = @"
+_workspaceSwitches[id] = toggle;
+        card.Child = root;
+        if (_tweakDeckHost is not null)
+        {
+            _tweakDeckHost.Children.Add(card);
+            _tweakDeckIndex.Add((id, card, title, description, badges, IsWorkspaceTweakIncompatible(id)));
         }
+        else
+            SecondaryContent.Children.Add(card);
+"@
+    $old2 = "_workspaceSwitches[id] = toggle;`n        card.Child = root;`n        SecondaryContent.Children.Add(card);"
+    if ($ws.Contains($old1)) {
+        $ws = $ws.Replace($old1, $new1.TrimEnd())
+        Write-Host "Patched deck host routing (CRLF)"
+    } elseif ($ws.Contains($old2)) {
+        $ws = $ws.Replace($old2, $new1.TrimEnd())
+        Write-Host "Patched deck host routing (LF)"
+    } else {
+        Write-Host "WARN: unique deck host pattern not found"
     }
-    if (-not $done) { Write-Host "WARN: deck host routing pattern not found" }
 } else {
     Write-Host "Deck host routing already present"
 }
 
-# 3) Remove High Performance power plan card from Tweaks list
+# 3) Remove High Performance power plan card
 if ($ws.Contains("High Performance power plan")) {
     $pattern = '(?s)\r?\n\s*AddWorkspaceTweakCard\(\s*"High Performance power plan".*?\);'
     $ws2 = [regex]::Replace($ws, $pattern, "", 1)
@@ -59,24 +66,23 @@ if ($ws.Contains("High Performance power plan")) {
     Write-Host "HP card already absent"
 }
 
-# 4) AMD: enable toggle when advanced mode is on
-if ($ws -match 'AMD Radeon-only GPU tuning' -and $ws -match 'IsEnabled = false') {
-    # Only first occurrence near AMD block - replace carefully once
+# 4) AMD unlock when advanced mode is on
+if ($ws -match 'AMD Radeon-only GPU tuning') {
     $idx = $ws.IndexOf('AMD Radeon-only GPU tuning')
     if ($idx -ge 0) {
         $regionStart = [Math]::Max(0, $idx - 800)
         $regionEnd = [Math]::Min($ws.Length, $idx + 1200)
         $region = $ws.Substring($regionStart, $regionEnd - $regionStart)
-        $region2 = $region.Replace('IsEnabled = false,', 'IsEnabled = advanced,')
-        if ($region2 -ne $region) {
+        if ($region -match 'IsEnabled = false') {
+            $region2 = $region.Replace('IsEnabled = false,', 'IsEnabled = advanced,')
             $ws = $ws.Substring(0, $regionStart) + $region2 + $ws.Substring($regionEnd)
             Write-Host "Patched AMD IsEnabled = advanced"
         } else {
-            Write-Host "WARN: AMD IsEnabled pattern not in region"
+            Write-Host "AMD already enabled or pattern missing"
         }
     }
 } else {
-    Write-Host "AMD pattern skipped or already patched"
+    Write-Host "AMD block not found"
 }
 
 [System.IO.File]::WriteAllText((Resolve-Path $WorkspacePath), $ws)
