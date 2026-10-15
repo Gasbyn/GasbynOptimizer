@@ -45,14 +45,27 @@ public partial class MainWindow
                 OptimizerPreferencesStore.Save(preferences);
             });
 
-        AddPreferenceRow(content, "Pokročilý režim doporučení",
-            "Odemkne i tweaky označené jako nekompatibilní. Zapínej je jen tehdy, když rozumíš omezením; neimplementované nebo bezpečnostně rizikové zásahy zůstávají blokované.",
+        AddPreferenceRow(content, "Pokročilý režim",
+            "Odemkne optimalizace označené jako nekompatibilní (např. AMD na NVIDIA). Při zapnutí se zeptá na potvrzení. Po změně znovu otevři Tweaks.",
             preferences.AdvancedRecommendations,
             enabled =>
             {
+                if (enabled)
+                {
+                    var confirm = MessageBox.Show(
+                        "Pokročilý režim odemkne optimalizace, které nemusí pasovat k tvému GPU/CPU." +
+                        Environment.NewLine + Environment.NewLine +
+                        "Můžeš zapnout i nepodporované tweaky — vždy s dalším potvrzením." +
+                        Environment.NewLine + Environment.NewLine +
+                        "Opravdu zapnout?",
+                        "Potvrzení pokročilého režimu",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
+                    if (confirm != MessageBoxResult.Yes)
+                        throw new OperationCanceledException();
+                }
                 preferences.AdvancedRecommendations = enabled;
                 OptimizerPreferencesStore.Save(preferences);
-                // The next Tweaks/Gaming navigation rebuilds cards with the new compatibility state.
             });
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 14, 0, 0) };
@@ -131,6 +144,12 @@ public partial class MainWindow
             {
                 save(value);
                 toggle.ToolTip = value ? "Zapnuto — kliknutím vypneš." : "Vypnuto — kliknutím zapneš.";
+            }
+            catch (OperationCanceledException)
+            {
+                updatingToggle = true;
+                toggle.IsChecked = !value;
+                updatingToggle = false;
             }
             catch (Exception ex)
             {
