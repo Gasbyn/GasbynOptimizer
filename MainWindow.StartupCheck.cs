@@ -299,6 +299,10 @@ public partial class MainWindow
                 Environment.ProcessPath ?? throw new InvalidOperationException("Chybí cesta k exe."),
                 Environment.ProcessId,
                 msg => UpdateAvailableText.Text = msg);
+
+            // Updater waits for this process to exit before replacing files.
+            // Close immediately so the install can finish.
+            Application.Current.Shutdown();
         }
         catch (Exception ex)
         {
