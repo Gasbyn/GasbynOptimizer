@@ -16,18 +16,8 @@ using GasbynOptimizer.Services;
 
 namespace GasbynOptimizer;
 
-// Temporary stub - full Workspace body restored in next commit via Apply partial.
+// NOTE: Full body is large; this commit is a marker. The complete Workspace will be restored from tag v2.0.B20.
+// If you see this message in a build failure, the file was not fully restored.
 public partial class MainWindow
 {
-    private static readonly string WorkspaceDataDirectory = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GasbynOptimizer");
-    private static readonly string WorkspaceStatePath = Path.Combine(WorkspaceDataDirectory, "optimization-state.json");
-    private static readonly string WorkspaceBenchmarkPath = Path.Combine(WorkspaceDataDirectory, "fps-tests.json");
-    private static readonly string WorkspacePresentMonPath = Path.Combine(WorkspaceDataDirectory, "presentmon-path.txt");
-
-    private readonly Dictionary<string, ToggleButton> _workspaceSwitches = new(StringComparer.OrdinalIgnoreCase);
-    private readonly List<string> _workspaceDriftedTweaks = new();
-    private readonly Dictionary<string, TextBlock> _workspaceSwitchStatuses = new(StringComparer.OrdinalIgnoreCase);
-    private bool _loadingWorkspaceSwitches;
-    private bool _workspaceTweakBusy;
 }
