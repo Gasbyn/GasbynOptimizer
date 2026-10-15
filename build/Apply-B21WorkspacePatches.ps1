@@ -5,33 +5,28 @@ param(
 $ErrorActionPreference = "Stop"
 $ws = Get-Content -LiteralPath $WorkspacePath -Raw
 
+# 1) Call EnsureTweakDeckHost so search + filters toolbar appears
 if ($ws -notmatch 'EnsureTweakDeckHost\(gamingOnly\)') {
-    $patterns = @(
+    $replaced = $false
+    foreach ($pair in @(
         @("_workspaceSwitchStatuses.Clear();`r`n`r`n        if (gamingOnly)", "_workspaceSwitchStatuses.Clear();`r`n        EnsureTweakDeckHost(gamingOnly);`r`n`r`n        if (gamingOnly)"),
         @("_workspaceSwitchStatuses.Clear();`n`n        if (gamingOnly)", "_workspaceSwitchStatuses.Clear();`n        EnsureTweakDeckHost(gamingOnly);`n`n        if (gamingOnly)")
-    )
-    foreach ($p in $patterns) {
-        if ($ws.Contains($p[0])) {
-            $ws = $ws.Replace($p[0], $p[1])
+    )) {
+        if ($ws.Contains($pair[0])) {
+            $ws = $ws.Replace($pair[0], $pair[1])
+            $replaced = $true
             Write-Host "Patched EnsureTweakDeckHost"
             break
         }
     }
+    if (-not $replaced) { Write-Host "WARN: EnsureTweakDeckHost pattern not found" }
 } else {
     Write-Host "EnsureTweakDeckHost already present"
 }
 
+# 2) Route tweak cards into deck host (required for search/filter)
 if ($ws -notmatch '_tweakDeckHost is not null') {
-    $insert = @"
-        card.Child = root;
-        if (_tweakDeckHost is not null)
-        {
-            _tweakDeckHost.Children.Add(card);
-            _tweakDeckIndex.Add((id, card, title, description, badges, incompatible));
-        }
-        else
-            SecondaryContent.Children.Add(card);
-"@
+    $insert = "        card.Child = root;`r`n        if (_tweakDeckHost is not null)`r`n        {`r`n            _tweakDeckHost.Children.Add(card);`r`n            _tweakDeckIndex.Add((id, card, title, description, badges, IsWorkspaceTweakIncompatible(id)));`r`n        }`r`n        else`r`n            SecondaryContent.Children.Add(card);"
     $needles = @(
         "        card.Child = root;`r`n        SecondaryContent.Children.Add(card);",
         "        card.Child = root;`n        SecondaryContent.Children.Add(card);"
@@ -39,7 +34,7 @@ if ($ws -notmatch '_tweakDeckHost is not null') {
     $done = $false
     foreach ($n in $needles) {
         if ($ws.Contains($n)) {
-            $ws = $ws.Replace($n, $insert.TrimEnd())
+            $ws = $ws.Replace($n, $insert)
             Write-Host "Patched deck host routing"
             $done = $true
             break
@@ -50,8 +45,9 @@ if ($ws -notmatch '_tweakDeckHost is not null') {
     Write-Host "Deck host routing already present"
 }
 
+# 3) Remove High Performance power plan card from Tweaks list
 if ($ws.Contains("High Performance power plan")) {
-    $pattern = '(?s)\r?\n\s*AddWorkspaceTweakCard\(\s*"High Performance power plan".*?"SPOT.*?"\);'
+    $pattern = '(?s)\r?\n\s*AddWorkspaceTweakCard\(\s*"High Performance power plan".*?\);'
     $ws2 = [regex]::Replace($ws, $pattern, "", 1)
     if ($ws2 -ne $ws) {
         $ws = $ws2
@@ -63,58 +59,22 @@ if ($ws.Contains("High Performance power plan")) {
     Write-Host "HP card already absent"
 }
 
-if ($ws -notmatch 'Nepodporovan') {
-    $newBlock = @"
-            if (_loadingWorkspaceSwitches) return;
-            if (incompatible)
-            {
-                var ok = MessageBox.Show(
-                    "Tato optimalizace neni podporovana na tve sestave." +
-                    Environment.NewLine + Environment.NewLine +
-                    "Opravdu ji chces zapnout?",
-                    "Nepodporovana optimalizace",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-                if (ok != MessageBoxResult.Yes)
-                {
-                    _loadingWorkspaceSwitches = true;
-                    toggle.IsChecked = false;
-                    _loadingWorkspaceSwitches = false;
-                    return;
-                }
-            }
-            await ChangeWorkspaceTweakAsync(id, true, toggle, status);
-"@
-    $olds = @(
-        "            if (!_loadingWorkspaceSwitches)`r`n                await ChangeWorkspaceTweakAsync(id, true, toggle, status);",
-        "            if (!_loadingWorkspaceSwitches)`n                await ChangeWorkspaceTweakAsync(id, true, toggle, status);"
-    )
-    $done = $false
-    foreach ($o in $olds) {
-        if ($ws.Contains($o)) {
-            $ws = $ws.Replace($o, $newBlock.TrimEnd())
-            Write-Host "Patched incompat confirmation"
-            $done = $true
-            break
+# 4) AMD: enable toggle when advanced mode is on
+if ($ws -match 'AMD Radeon-only GPU tuning' -and $ws -match 'IsEnabled = false') {
+    # Only first occurrence near AMD block - replace carefully once
+    $idx = $ws.IndexOf('AMD Radeon-only GPU tuning')
+    if ($idx -ge 0) {
+        $regionStart = [Math]::Max(0, $idx - 800)
+        $regionEnd = [Math]::Min($ws.Length, $idx + 1200)
+        $region = $ws.Substring($regionStart, $regionEnd - $regionStart)
+        $region2 = $region.Replace('IsEnabled = false,', 'IsEnabled = advanced,')
+        if ($region2 -ne $region) {
+            $ws = $ws.Substring(0, $regionStart) + $region2 + $ws.Substring($regionEnd)
+            Write-Host "Patched AMD IsEnabled = advanced"
+        } else {
+            Write-Host "WARN: AMD IsEnabled pattern not in region"
         }
     }
-    if (-not $done) { Write-Host "WARN: incompat confirm pattern not found" }
-} else {
-    Write-Host "Incompat confirm already present"
-}
-
-if ($ws -match 'AMD Radeon-only GPU tuning' -and $ws -match 'IsEnabled = false') {
-    $ws = $ws.Replace("IsEnabled = false,", "IsEnabled = advanced,")
-    $ws = $ws.Replace(
-        'ToolTip = warning,',
-        'ToolTip = advanced ? "Pokrocily rezim: potvrd omezeni." : "Zamceno - zapni Pokrocily rezim.",')
-    $ws = $ws.Replace(
-        'AMD Radeon-only GPU tuning — unavailable',
-        'AMD Radeon-only GPU tuning')
-    $ws = $ws.Replace(
-        'AMD Radeon-only GPU tuning - unavailable',
-        'AMD Radeon-only GPU tuning')
-    Write-Host "Patched AMD unlock (basic)"
 } else {
     Write-Host "AMD pattern skipped or already patched"
 }
