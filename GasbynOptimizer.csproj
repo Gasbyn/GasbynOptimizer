@@ -3,10 +3,10 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
-    <Version>2.0.22</Version>
-    <AssemblyVersion>2.0.22.0</AssemblyVersion>
-    <FileVersion>2.0.22.0</FileVersion>
-    <InformationalVersion>2.0.B22</InformationalVersion>
+    <Version>2.0.23</Version>
+    <AssemblyVersion>2.0.23.0</AssemblyVersion>
+    <FileVersion>2.0.23.0</FileVersion>
+    <InformationalVersion>2.0.B23</InformationalVersion>
     <ApplicationIcon>GasbynOptimizer.ico</ApplicationIcon>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
