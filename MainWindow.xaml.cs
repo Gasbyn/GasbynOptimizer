@@ -33,6 +33,9 @@ public partial class MainWindow
 
     private void AddPageHeader(string page)
     {
+        // Zpět nahoře vlevo na každé workspace stránce
+        AddWorkspaceBackBar();
+
         var header = new TextBlock
         {
             Text = page switch
@@ -98,9 +101,6 @@ public partial class MainWindow
         stack.Children.Add(new TextBlock { Text = description, FontSize = 13, Foreground = (Brush)FindResource("TextMuted"), Margin = new Thickness(0, 6, 20, 0), TextWrapping = TextWrapping.Wrap });
         Grid.SetColumn(stack, 0); grid.Children.Add(stack);
 
-        // Info-card actions are routed centrally through ActionRouting.cs.
-        // Use the action text as Tag so the router receives the actual command.
-        // Do not attach PlaceholderAction_Click here, otherwise it would fire after the routed action.
         var button = new Button
         {
             Content = actionText,
