@@ -24,121 +24,30 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore MainWindow.Workspace.cs if corrupted
-        id: restore_ws
         shell: pwsh
         run: |
           $path = "MainWindow.Workspace.cs"
           $text = Get-Content $path -Raw -ErrorAction SilentlyContinue
           $needsRestore = (-not $text) -or ($text.Length -lt 10000) -or ($text -match 'file:///') -or ($text -match 'PLACEHOLDER|TOO_LARGE|Full body is large')
           if ($needsRestore) {
-            Write-Host "Workspace.cs is missing or corrupted — restoring from release/v2.0.B20"
+            Write-Host "Restoring Workspace.cs from release/v2.0.B20"
             $url = "https://raw.githubusercontent.com/Gasbyn/GasbynOptimizer/release/v2.0.B20/MainWindow.Workspace.cs"
             Invoke-WebRequest -Uri $url -OutFile $path -UseBasicParsing
             $restored = Get-Content $path -Raw
             if ($restored.Length -lt 10000) { throw "Restore failed" }
-            Write-Host "Restored Workspace.cs ($($restored.Length) chars)"
-            "restored=true" >> $env:GITHUB_OUTPUT
+            Write-Host "Restored ($($restored.Length) chars)"
           } else {
-            Write-Host "Workspace.cs looks OK ($($text.Length) chars)"
-            "restored=false" >> $env:GITHUB_OUTPUT
+            Write-Host "Workspace.cs OK ($($text.Length) chars)"
           }
 
       - name: Apply B21 Tweaks UI patches
         shell: pwsh
         run: |
-          $path = "MainWindow.Workspace.cs"
-          $ws = Get-Content $path -Raw
-
-          if ($ws -notmatch 'EnsureTweakDeckHost\(gamingOnly\)') {
-            $ws = $ws.Replace(
-              "_workspaceSwitchStatuses.Clear();`r`n`r`n        if (gamingOnly)",
-              "_workspaceSwitchStatuses.Clear();`r`n        EnsureTweakDeckHost(gamingOnly);`r`n`r`n        if (gamingOnly)")
-            if ($ws -notmatch 'EnsureTweakDeckHost\(gamingOnly\)') {
-              $ws = $ws.Replace(
-                "_workspaceSwitchStatuses.Clear();`n`n        if (gamingOnly)",
-                "_workspaceSwitchStatuses.Clear();`n        EnsureTweakDeckHost(gamingOnly);`n`n        if (gamingOnly)")
-            }
-            Write-Host "Patched EnsureTweakDeckHost"
-          } else { Write-Host "EnsureTweakDeckHost already present" }
-
-          if ($ws -notmatch '_tweakDeckHost is not null') {
-            $needle = "card.Child = root;`r`n        SecondaryContent.Children.Add(card);"
-            $insert = @"
-card.Child = root;
-        if (_tweakDeckHost is not null)
-        {
-            _tweakDeckHost.Children.Add(card);
-            _tweakDeckIndex.Add((id, card, title, description, badges, incompatible));
-        }
-        else
-            SecondaryContent.Children.Add(card);
-"@
-            if ($ws.Contains($needle)) {
-              $ws = $ws.Replace($needle, $insert.TrimEnd() + "`r`n")
-            } else {
-              $needle2 = "card.Child = root;`n        SecondaryContent.Children.Add(card);"
-              $ws = $ws.Replace($needle2, $insert.TrimEnd() + "`n")
-            }
-            Write-Host "Patched deck host routing"
-          } else { Write-Host "Deck host routing already present" }
-
-          $hpTitle = 'High Performance power plan'
-          if ($ws.Contains($hpTitle) -and $ws.Contains('AddWorkspaceTweakCard(')) {
-            $pattern = '(?s)\s*AddWorkspaceTweakCard\(\s*"High Performance power plan".*?"SPOTŘEBA"\);\s*'
-            $ws2 = [regex]::Replace($ws, $pattern, "`r`n", 1)
-            if ($ws2 -eq $ws) {
-              $ws2 = [regex]::Replace($ws, $pattern, "`n", 1)
-            }
-            if ($ws2 -ne $ws) {
-              $ws = $ws2
-              Write-Host "Removed HP power plan card"
-            } else { Write-Host "HP card regex did not match" }
-          } else { Write-Host "HP card already absent" }
-
-          if ($ws -notmatch 'Nepodporovaná optimalizace') {
-            $old = "if (!_loadingWorkspaceSwitches)`r`n                await ChangeWorkspaceTweakAsync(id, true, toggle, status);"
-            $new = @"
-if (_loadingWorkspaceSwitches) return;
-            if (incompatible)
-            {
-                var ok = MessageBox.Show(
-                    "Tato optimalizace není podporována na tvé sestavě." +
-                    Environment.NewLine + Environment.NewLine +
-                    "Opravdu ji chceš zapnout?",
-                    "Nepodporovaná optimalizace",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-                if (ok != MessageBoxResult.Yes)
-                {
-                    _loadingWorkspaceSwitches = true;
-                    toggle.IsChecked = false;
-                    _loadingWorkspaceSwitches = false;
-                    return;
-                }
-            }
-            await ChangeWorkspaceTweakAsync(id, true, toggle, status);
-"@
-            if ($ws.Contains($old)) {
-              $ws = $ws.Replace($old, $new.TrimEnd())
-            } else {
-              $old2 = "if (!_loadingWorkspaceSwitches)`n                await ChangeWorkspaceTweakAsync(id, true, toggle, status);"
-              $ws = $ws.Replace($old2, $new.TrimEnd())
-            }
-            Write-Host "Patched incompat confirmation"
-          } else { Write-Host "Incompat confirm already present" }
-
-          if ($ws -match 'AMD Radeon-only GPU tuning' -and $ws -match 'IsEnabled = false') {
-            $ws = $ws.Replace(
-              "IsEnabled = false,`r`n            ToolTip = warning,`r`n            VerticalAlignment = VerticalAlignment.Center`r`n        };`r`n        System.Windows.Automation.AutomationProperties.SetName(unavailable, `"AMD Radeon-only GPU tuning — unavailable`");",
-              "IsEnabled = advanced,`r`n            ToolTip = advanced ? `"Pokročilý režim: potvrď omezení.`" : `"Zamčeno — zapni Pokročilý režim.`",`r`n            VerticalAlignment = VerticalAlignment.Center`r`n        };`r`n        System.Windows.Automation.AutomationProperties.SetName(unavailable, `"AMD Radeon-only GPU tuning`");")
-            $ws = $ws.Replace(
-              "IsEnabled = false,`n            ToolTip = warning,`n            VerticalAlignment = VerticalAlignment.Center`n        };`n        System.Windows.Automation.AutomationProperties.SetName(unavailable, `"AMD Radeon-only GPU tuning — unavailable`");",
-              "IsEnabled = advanced,`n            ToolTip = advanced ? `"Pokročilý režim: potvrď omezení.`" : `"Zamčeno — zapni Pokročilý režim.`",`n            VerticalAlignment = VerticalAlignment.Center`n        };`n        System.Windows.Automation.AutomationProperties.SetName(unavailable, `"AMD Radeon-only GPU tuning`");")
-            Write-Host "Patched AMD unlock"
-          } else { Write-Host "AMD pattern skipped or already patched" }
-
-          [System.IO.File]::WriteAllText((Resolve-Path $path), $ws)
-          Write-Host "Workspace.cs size: $((Get-Item $path).Length)"
+          if (Test-Path "build/Apply-B21WorkspacePatches.ps1") {
+            & "build/Apply-B21WorkspacePatches.ps1" -WorkspacePath "MainWindow.Workspace.cs"
+          } else {
+            Write-Host "Patch script not found - skipping"
+          }
 
       - name: Validate embedded updater PowerShell syntax
         shell: pwsh
