@@ -43,6 +43,176 @@ jobs:
             "restored=false" >> $env:GITHUB_OUTPUT
           }
 
+      - name: Apply B21 Tweaks UI patches
+        shell: pwsh
+        run: |
+          $path = "MainWindow.Workspace.cs"
+          $ws = Get-Content $path -Raw
+
+          # 1) Search + filter toolbar host at start of Tweaks
+          $oldBuild = @'
+    private void BuildTweaksWorkspace(bool gamingOnly = false)
+    {
+        _workspaceSwitches.Clear();
+        _workspaceSwitchStatuses.Clear();
+
+        if (gamingOnly)
+        {
+'@
+          $newBuild = @'
+    private void BuildTweaksWorkspace(bool gamingOnly = false)
+    {
+        _workspaceSwitches.Clear();
+        _workspaceSwitchStatuses.Clear();
+        EnsureTweakDeckHost(gamingOnly);
+
+        if (gamingOnly)
+        {
+'@
+          if ($ws.Contains('EnsureTweakDeckHost(gamingOnly)')) {
+            Write-Host 'EnsureTweakDeckHost already present'
+          } elseif ($ws.Contains($oldBuild)) {
+            $ws = $ws.Replace($oldBuild, $newBuild)
+            Write-Host 'Patched EnsureTweakDeckHost call'
+          } else {
+            Write-Host 'WARN: BuildTweaksWorkspace pattern not found'
+          }
+
+          # 2) Route cards into deck host (search/filter grid)
+          $oldAdd = @'
+        card.Child = root;
+        SecondaryContent.Children.Add(card);
+    }
+
+    private Border CreateTweakBadge
+'@
+          $newAdd = @'
+        card.Child = root;
+        if (_tweakDeckHost is not null)
+        {
+            _tweakDeckHost.Children.Add(card);
+            _tweakDeckIndex.Add((id, card, title, description, badges, incompatible));
+        }
+        else
+            SecondaryContent.Children.Add(card);
+    }
+
+    private Border CreateTweakBadge
+'@
+          if ($ws.Contains('_tweakDeckHost is not null')) {
+            Write-Host 'Deck host routing already present'
+          } elseif ($ws.Contains($oldAdd)) {
+            $ws = $ws.Replace($oldAdd, $newAdd)
+            Write-Host 'Patched deck host card routing'
+          } else {
+            Write-Host 'WARN: card Add pattern not found'
+          }
+
+          # 3) Remove High Performance power plan card from Tweaks list
+          $hp = @'
+        AddWorkspaceTweakCard(
+            "High Performance power plan",
+            "Aktivuje vestavěný plán Vysoký výkon. Může zvýšit spotřebu energie a teploty.",
+            "power-plan",
+            "ON: aktivuje plán napájení Vysoký výkon. OFF: aktivuje původní ID plánu uložené před změnou. Vyšší spotřeba a teploty jsou možné.", "POKROČILÉ", "VÝKON", "SPOTŘEBA");
+
+'@
+          if ($ws.Contains($hp)) {
+            $ws = $ws.Replace($hp, '')
+            Write-Host 'Removed HP power plan card'
+          } else {
+            Write-Host 'HP power plan card not found (ok if already removed)'
+          }
+
+          # 4) Confirm when enabling incompatible tweak
+          $oldChecked = @'
+        toggle.Checked += async (_, _) =>
+        {
+            if (!_loadingWorkspaceSwitches)
+                await ChangeWorkspaceTweakAsync(id, true, toggle, status);
+        };
+'@
+          $newChecked = @'
+        toggle.Checked += async (_, _) =>
+        {
+            if (_loadingWorkspaceSwitches) return;
+            if (incompatible)
+            {
+                var ok = MessageBox.Show(
+                    "Tato optimalizace není podporována na tvé sestavě." +
+                    Environment.NewLine + Environment.NewLine +
+                    "Opravdu ji chceš zapnout?",
+                    "Nepodporovaná optimalizace",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+                if (ok != MessageBoxResult.Yes)
+                {
+                    _loadingWorkspaceSwitches = true;
+                    toggle.IsChecked = false;
+                    _loadingWorkspaceSwitches = false;
+                    return;
+                }
+            }
+            await ChangeWorkspaceTweakAsync(id, true, toggle, status);
+        };
+'@
+          if ($ws.Contains('Nepodporovaná optimalizace')) {
+            Write-Host 'Incompat confirm already present'
+          } elseif ($ws.Contains($oldChecked)) {
+            $ws = $ws.Replace($oldChecked, $newChecked)
+            Write-Host 'Patched incompat confirmation'
+          } else {
+            Write-Host 'WARN: toggle.Checked pattern not found'
+          }
+
+          # 5) AMD toggle unlock with advanced mode + confirm
+          $oldAmd = @'
+            Style = (Style)FindResource("SwitchToggleButton"),
+            IsChecked = false,
+            IsEnabled = false,
+            ToolTip = warning,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        System.Windows.Automation.AutomationProperties.SetName(unavailable, "AMD Radeon-only GPU tuning — unavailable");
+        Grid.SetColumn(unavailable, 1);
+'@
+          $newAmd = @'
+            Style = (Style)FindResource("SwitchToggleButton"),
+            IsChecked = false,
+            IsEnabled = advanced,
+            ToolTip = advanced
+                ? "Pokročilý režim: při zapnutí potvrď omezení."
+                : "🔒 Zapni Pokročilý režim v Settings.",
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        System.Windows.Automation.AutomationProperties.SetName(unavailable, "AMD Radeon-only GPU tuning");
+        unavailable.Checked += (_, _) =>
+        {
+            if (!advanced) { unavailable.IsChecked = false; return; }
+            var ok = MessageBox.Show(
+                "AMD Radeon-only tuning je jen indikátor — agresivní ovladačové změny se neprovádějí." +
+                Environment.NewLine + Environment.NewLine +
+                "Opravdu pokračovat?",
+                "Nepodporovaná / omezená optimalizace",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (ok != MessageBoxResult.Yes)
+                unavailable.IsChecked = false;
+        };
+        Grid.SetColumn(unavailable, 1);
+'@
+          if ($ws.Contains('IsEnabled = advanced') -and $ws.Contains('AMD Radeon-only GPU tuning')) {
+            Write-Host 'AMD unlock already present'
+          } elseif ($ws.Contains($oldAmd)) {
+            $ws = $ws.Replace($oldAmd, $newAmd)
+            Write-Host 'Patched AMD unlock'
+          } else {
+            Write-Host 'WARN: AMD toggle pattern not found'
+          }
+
+          Set-Content -Path $path -Value $ws -NoNewline -Encoding utf8
+          Write-Host "Workspace.cs after patches: $((Get-Item $path).Length) bytes"
+
       - name: Commit restored Workspace.cs back to branch
         if: steps.restore_ws.outputs.restored == 'true' && github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
         shell: pwsh
@@ -107,9 +277,11 @@ jobs:
           body: |
             ## Gasbyn Optimizer ${{ env.RELEASE_TAG }}
 
-            - Automatic in-app updates from official GitHub Releases.
-            - Downloaded packages are verified against GitHub's SHA-256 digest.
-            - Updates are applied by a separate process after the app closes, with a backup and rollback attempt if replacing files fails.
+            - Tweaks: search + filters toolbar, deck card host
+            - One Advanced mode in Settings (with confirm)
+            - Unsupported tweaks ask for confirmation; AMD unlock in Advanced mode
+            - High Performance power plan card removed from Tweaks
+            - In-app updates from GitHub Releases (SHA-256 verified)
           target_commitish: ${{ github.sha }}
           files: GasbynOptimizer-win-x64.zip
           overwrite_files: true
