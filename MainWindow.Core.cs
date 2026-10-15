@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Management;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -18,12 +19,39 @@ public partial class MainWindow
     public MainWindow()
     {
         InitializeComponent();
+        ApplyDisplayVersionToUi();
         _tweakEngine.Register(GameMode.Create());
         Loaded += async (_, _) =>
         {
             ShowPage("Dashboard");
             await RunStartupCheckAsync();
         };
+    }
+
+    /// <summary>Replace hard-coded version badges with the live v2.0.Bxx label.</summary>
+    private void ApplyDisplayVersionToUi()
+    {
+        var display = GetDisplayVersion();
+        Title = "Gasbyn Optimizer " + display;
+        UpdateVersionTextBlocks(this, display);
+    }
+
+    private static void UpdateVersionTextBlocks(DependencyObject root, string display)
+    {
+        var count = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is TextBlock tb && !string.IsNullOrEmpty(tb.Text))
+            {
+                if (Regex.IsMatch(tb.Text, @"v?\d+\.\d+\.B\d+", RegexOptions.IgnoreCase))
+                    tb.Text = Regex.Replace(tb.Text, @"v?\d+\.\d+\.B\d+", display, RegexOptions.IgnoreCase);
+                else if (tb.Text.Contains("Gasbyn Optimizer", StringComparison.OrdinalIgnoreCase) &&
+                         tb.Text.Contains("v2.", StringComparison.Ordinal))
+                    tb.Text = Regex.Replace(tb.Text, @"v?\d+\.\d+\.B\d+", display, RegexOptions.IgnoreCase);
+            }
+            UpdateVersionTextBlocks(child, display);
+        }
     }
 
     private void Nav_Click(object sender, RoutedEventArgs e)
