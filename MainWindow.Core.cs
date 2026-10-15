@@ -19,10 +19,11 @@ public partial class MainWindow
     public MainWindow()
     {
         InitializeComponent();
-        ApplyDisplayVersionToUi();
+        Title = "Gasbyn Optimizer " + GetDisplayVersion();
         _tweakEngine.Register(GameMode.Create());
         Loaded += async (_, _) =>
         {
+            ApplyDisplayVersionToUi();
             ShowPage("Dashboard");
             await RunStartupCheckAsync();
         };
