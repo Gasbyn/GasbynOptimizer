@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Management;
 using System.Text.RegularExpressions;
@@ -15,6 +16,9 @@ namespace GasbynOptimizer;
 public partial class MainWindow
 {
     private readonly TweakEngine _tweakEngine = new();
+    private readonly Stack<string> _navHistory = new();
+    private string? _currentPage;
+    private bool _navigatingBack;
 
     public MainWindow()
     {
@@ -26,10 +30,23 @@ public partial class MainWindow
             ApplyDisplayVersionToUi();
             ShowPage("Dashboard");
             await RunStartupCheckAsync();
+            CheckWorkspaceDriftOnStartup();
         };
     }
 
-    /// <summary>Replace hard-coded version badges with the live v2.0.Bxx label.</summary>
+    private void NavigateBack()
+    {
+        if (_navHistory.Count == 0)
+        {
+            ShowPage("Dashboard");
+            return;
+        }
+        _navigatingBack = true;
+        var prev = _navHistory.Pop();
+        ShowPage(prev);
+        _navigatingBack = false;
+    }
+
     private void ApplyDisplayVersionToUi()
     {
         var display = GetDisplayVersion();
@@ -86,6 +103,11 @@ public partial class MainWindow
 
     private void ShowPage(string page)
     {
+        if (!_navigatingBack && !string.IsNullOrEmpty(_currentPage) &&
+            !string.Equals(_currentPage, page, StringComparison.OrdinalIgnoreCase))
+            _navHistory.Push(_currentPage);
+        _currentPage = page;
+
         UpdateNavigationSelection(page);
         PageTitle.Text = page;
         PageSubtitle.Text = page switch
@@ -101,6 +123,7 @@ public partial class MainWindow
             "Health Check" => "Základní kontrola stavu Windows",
             "Benchmark" => "Základní CPU test a FPS nástroje",
             "Backup" => "Zálohy a historie změn",
+            "Restore Point" => "Systémové body obnovení a napájení",
             "PC Info" => "Detekce hardwaru a systémových informací",
             "Settings" => "Nastavení aplikace",
             _ => "Gasbyn Optimizer"
@@ -141,37 +164,38 @@ public partial class MainWindow
             case "Gaming":
                 BuildTweaksWorkspace(gamingOnly: true);
                 AddInfoCard("GAMING AUDIT", "Zkontroluje Game Mode, HAGS, plán napájení a Fortnite. Audit nic nemění.", "GAMING OPTIMIZER");
-                AddInfoCard("Windows Gaming Services", "Zobrazí stav souvisejících herních služeb; nic nevypíná.", "Windows Gaming Services");
-                AddInfoCard("Fortnite Optimization Profile", "Zkontroluje, zda existuje konfigurace Fortnite.", "Fortnite Optimization Profile");
-                AddInfoCard("NVIDIA Gaming Profile", "Zkontroluje dostupné lokální NVIDIA profilové soubory.", "NVIDIA Gaming Profile");
                 break;
             case "Network":
                 AddInfoCard("Connection Info", "Zobrazí aktivní síťové adaptéry, rychlost linky a IPv4 adresy.", "Connection Info");
                 AddInfoCard("DNS Check", "Zobrazí aktuální DNS servery.", "DNS Check");
                 AddInfoCard("TCP/IP Health", "Otestuje základní dostupnost a DNS rozlišení.", "TCP/IP Health");
-                AddInfoCard("Network Reset Tools", "Reset sítě může odpojit internet; zobrazí se pouze vysvětlení rizik.", "Network Reset Tools");
                 break;
             case "Health Check":
                 AddInfoCard("Run health check", "Spustí základní kontrolu Windows a zobrazí případná upozornění.", "Run health check");
                 break;
             case "Benchmark":
-                AddInfoCard("CPU Quick Test", "Krátký výpočetní test CPU pro srovnání ve stejných podmínkách.", "CPU Quick Test");
-                AddInfoCard("Before / After", "Zobrazí tipy pro porovnání před a po změně.", "Before / After");
                 BuildBenchmarkWorkspace();
                 break;
             case "Backup":
                 BuildBackupWorkspace();
                 break;
+            case "Restore Point":
+                EnsureTweakDeckHost();
+                AddWorkspaceTweakCard(
+                    "High Performance power plan",
+                    "Aktivuje vestavěný High Performance plán. OFF vrátí plán uložený při zapnutí.",
+                    "power-plan",
+                    "ON: powercfg High Performance. OFF: původní scheme.", "VÝKON", "NAPÁJENÍ");
+                break;
             case "PC Info":
                 LoadSystemInfo();
                 AddInfoCard("Hardware Detection", "Obnoví informace o procesoru, grafice a paměti.", "Hardware Detection");
                 AddInfoCard("Disk Space", "Zobrazí obsazení systémového disku.", "Disk Space");
-                AddInfoCard("Refresh", "Znovu načte systémové informace.", "Refresh");
                 break;
             case "Settings":
                 AddSettingsCard();
-                AddInfoCard("Safe-by-default", "Optimizer nepřepíná automaticky služby, Defender, bootovací časovače ani IPv6. Každý tweak musí mít jasný přínos, kontrolu stavu a návratovou cestu.", "About");
-                AddInfoCard("Optimization workspace", "Vratné optimalizace jsou v Tweaks, měření FPS v Benchmark a bod obnovení v Backup.", "Open Tweaks");
+                AddAdvancedModeCard();
+                AddInfoCard("Safe-by-default", "ON = aplikuje změnu (registry/cmd). OFF = vrátí výchozí/původní hodnoty ze zálohy.", "About");
                 break;
             default:
                 AddInfoCard("Open Tweaks", "Vratné systémové optimalizace a jejich stav.", "Open Tweaks");
@@ -230,5 +254,4 @@ public partial class MainWindow
         }
         catch { RamValue.Text = "RAM unavailable"; }
     }
-
 }
