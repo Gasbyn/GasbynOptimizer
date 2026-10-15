@@ -61,6 +61,13 @@ public partial class MainWindow
         var button = FindParent<Button>(source);
         if (button is null) return;
 
+        // Deck UI owns these clicks (filters / back / search chrome) — do not show placeholder dialogs
+        if (button.Tag is string deckTag && deckTag.StartsWith("deck:", StringComparison.OrdinalIgnoreCase))
+            return;
+        if (button.Content is string backText &&
+            (backText.StartsWith("←", StringComparison.Ordinal) || backText.Contains("Zpět", StringComparison.OrdinalIgnoreCase)))
+            return;
+
         if (button.Content is string content && content.Contains("QUICK OPTIMIZE", System.StringComparison.OrdinalIgnoreCase))
         {
             window.QuickOptimizeSafe();
