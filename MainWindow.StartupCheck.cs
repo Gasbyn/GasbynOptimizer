@@ -1,12 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
 using System.Net.Http;
-using System.Reflection;
-using System.Text.Json;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Security.Principal;
 using System.Threading.Tasks;
@@ -85,7 +82,6 @@ public partial class MainWindow
 
             await Task.Delay(200);
 
-            // Continue with existing gaming-related checks from original file via simplified path
             notes.AppendLine();
             notes.AppendLine("WINDOWS / HRANÍ");
             try
@@ -213,7 +209,6 @@ public partial class MainWindow
         if (normalizedTag.StartsWith("v", StringComparison.OrdinalIgnoreCase))
             normalizedTag = normalizedTag[1..];
 
-        // Gasbyn's release sequence uses tags such as v2.0.B2, v2.0.B3.
         var betaMatch = Regex.Match(normalizedTag, @"^(?<major>\d+)\.(?<minor>\d+)\.B(?<build>\d+)$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         if (betaMatch.Success)
@@ -282,7 +277,7 @@ public partial class MainWindow
         return (tag!, url!, downloadUrl, sha256);
     }
 
-    private async void UpdateLatestReleaseButton_Click(object sender, RoutedEventArgs e)
+    private async void UpdateLatestRelease_Click(object sender, RoutedEventArgs e)
     {
         if (_latestRelease is null)
             return;
@@ -301,7 +296,7 @@ public partial class MainWindow
             await AppUpdater.PrepareAndLaunchAsync(
                 _latestRelease.Value.DownloadUrl!,
                 _latestRelease.Value.Sha256!,
-                Environment.ProcessPath ?? throw new InvalidOperationException("Chybí cesta k exe.") ,
+                Environment.ProcessPath ?? throw new InvalidOperationException("Chybí cesta k exe."),
                 Environment.ProcessId,
                 msg => UpdateAvailableText.Text = msg);
         }
