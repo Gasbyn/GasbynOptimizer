@@ -69,6 +69,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: Gasbyn Optimizer ${{ steps.ver.outputs.version }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
           files: dist/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
