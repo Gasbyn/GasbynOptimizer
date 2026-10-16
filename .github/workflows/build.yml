@@ -1,12 +1,12 @@
-name: Build Windows app
+name: Build installer
 
 on:
   push:
-    branches: [ main, "feature/**", "release/**" ]
+    branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
-  release:
-    types: [ published ]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,112 +16,59 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
 
-      - name: Restore MainWindow.Workspace.cs if corrupted
+      - name: Určit verzi
+        id: ver
         shell: pwsh
         run: |
-          $path = "MainWindow.Workspace.cs"
-          $text = Get-Content $path -Raw -ErrorAction SilentlyContinue
-          $needsRestore = (-not $text) -or ($text.Length -lt 10000) -or ($text -match 'file:///') -or ($text -match 'PLACEHOLDER|TOO_LARGE|Full body is large')
-          if ($needsRestore) {
-            Write-Host "Restoring Workspace.cs from release/v2.0.B20"
-            $url = "https://raw.githubusercontent.com/Gasbyn/GasbynOptimizer/release/v2.0.B20/MainWindow.Workspace.cs"
-            Invoke-WebRequest -Uri $url -OutFile $path -UseBasicParsing
-            $restored = Get-Content $path -Raw
-            if ($restored.Length -lt 10000) { throw "Restore failed" }
-            Write-Host "Restored ($($restored.Length) chars)"
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $version = $env:GITHUB_REF_NAME.TrimStart('v')
           } else {
-            Write-Host "Workspace.cs OK ($($text.Length) chars)"
+            $version = [regex]::Match((Get-Content GasbynOptimizer.csproj -Raw), '<Version>([^<]+)</Version>').Groups[1].Value
           }
+          if (-not $version) { throw 'Verzi se nepodařilo určit.' }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Verze: $version"
 
-      - name: Apply B21 Tweaks UI patches
+      - name: Publikovat aplikaci
+        run: >
+          dotnet publish GasbynOptimizer.csproj
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:Version=${{ steps.ver.outputs.version }}
+          --output publish
+
+      - name: Nainstalovat Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Sestavit instalátor
         shell: pwsh
         run: |
-          if (Test-Path "build/Apply-B21WorkspacePatches.ps1") {
-            & "build/Apply-B21WorkspacePatches.ps1" -WorkspacePath "MainWindow.Workspace.cs"
-          } else {
-            Write-Host "Patch script not found - skipping"
-          }
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe nenalezen: $iscc" }
+          & $iscc "/DAppVersion=${{ steps.ver.outputs.version }}" installer\GasbynOptimizer.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup skončil s kódem $LASTEXITCODE" }
 
-      - name: Apply updater fixes (force-kill + UTF-8 BOM)
-        shell: pwsh
-        run: |
-          if (Test-Path "build/Apply-UpdaterFixes.ps1") {
-            & "build/Apply-UpdaterFixes.ps1" -Path "Services/AppUpdater.cs"
-          } else {
-            Write-Host "Updater patch script not found - skipping"
-          }
-
-      - name: Validate embedded updater PowerShell syntax
-        shell: pwsh
-        run: |
-          $source = Get-Content "Services/AppUpdater.cs" -Raw
-          $match = [regex]::Match($source, 'private const string UpdateScript = """\r?\n(?<script>[\s\S]*?)\r?\n""";')
-          if (-not $match.Success) {
-            throw "Could not extract the embedded updater script for syntax checking."
-          }
-          $scriptText = [regex]::Replace($match.Groups["script"].Value, '(?m)^ {4}', '')
-          $tokens = $null
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseInput($scriptText, [ref]$tokens, [ref]$errors) | Out-Null
-          if ($errors.Count -gt 0) {
-            $errors | ForEach-Object { Write-Host ("Line {0}: {1}" -f $_.Extent.StartLineNumber, $_.Message) }
-            throw "Embedded updater script contains PowerShell syntax errors."
-          }
-
-      - name: Publish self-contained Windows app
-        run: dotnet publish GasbynOptimizer.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true --output publish
-
-      - name: Upload ready-to-run app
+      - name: Nahrát instalátor
         uses: actions/upload-artifact@v4
         with:
-          name: GasbynOptimizer-win-x64
-          path: publish/
+          name: GasbynOptimizer-Setup
+          path: dist/*.exe
           if-no-files-found: error
-          retention-days: 30
 
-      - name: Package release ZIP
-        if: github.event_name == 'release' || startsWith(github.ref, 'refs/heads/release/')
-        shell: pwsh
-        run: Compress-Archive -Path publish\* -DestinationPath GasbynOptimizer-win-x64.zip -Force
-
-      - name: Derive release tag
-        if: startsWith(github.ref, 'refs/heads/release/')
-        shell: pwsh
-        run: |
-          $tag = "${{ github.ref_name }}" -replace '^release/', ''
-          "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
-
-      - name: Publish release from release branch
-        if: startsWith(github.ref, 'refs/heads/release/')
+      - name: Vydat release (jen pro tag v*)
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          name: Gasbyn Optimizer ${{ env.RELEASE_TAG }}
-          body: |
-            ## Gasbyn Optimizer ${{ env.RELEASE_TAG }}
-
-            - Updater: closes app before replace, force-kills if hung, Czech diacritics fixed (UTF-8 BOM)
-            - Tweaks: live search + working filters + back button on every page
-          target_commitish: ${{ github.sha }}
-          files: GasbynOptimizer-win-x64.zip
-          overwrite_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Attach ZIP to published GitHub Release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.release.tag_name }}
-          name: ${{ github.event.release.name }}
-          files: GasbynOptimizer-win-x64.zip
-          fail_on_unmatched_files: true
+          name: Gasbyn Optimizer ${{ steps.ver.outputs.version }}
+          files: dist/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
