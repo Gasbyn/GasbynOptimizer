@@ -4,7 +4,7 @@ Optimalizace Windows 10/11 s přepínači **ZAPNUTO / VYPNUTO**. Každá změna 
 
 ## Co umí
 
-- **36 optimalizací** v pěti kategoriích: soukromí a telemetrie, hraní a výkon, systém a napájení, služby a úlohy, rozhraní.
+- **80 optimalizací** v devíti kategoriích (levé menu): soukromí a telemetrie, Windows Update, internet a síť, hraní a výkon, systém a napájení, vzhled a animace, písma, rozhraní, služby a úlohy.
 - **Přepínač u každé optimalizace.** Zapnutí provede změnu a upozorní na restart, vypnutí vrátí původní stav.
 - **Záloha původních hodnot.** Před první změnou si aplikace uloží, jak věc vypadala (registr, typ spouštění služby, plán napájení, stav úlohy). Vypnutí obnoví právě to.
 - **Čekací okno při startu.** Při každém spuštění se zjistí aktuální stav všech optimalizací.
@@ -19,7 +19,14 @@ Záměrně chybí věci, které snižují zabezpečení (vypnutí Defenderu, mit
 ## Co zatím chybí
 
 - **FPS tester** (posledních 15 testů) přijde v dalším vydání.
-- Aplikace se zatím neumí sama aktualizovat.
+
+## Automatické aktualizace a vydání
+
+- Při každém spuštění aplikace zkontroluje GitHub Releases. Pokud je novější vydání s instalátorem, zobrazí okno
+  „Aktualizuje se Gasbyn Optimizer“, stáhne a ověří instalátor, tiše ho nainstaluje a aplikaci znovu spustí.
+  Bez internetu aplikace normálně nastartuje.
+- Každý push do `main` (a větve `rewrite/v3-clean`) automaticky vydá nový release `v2.0.b1.N` (první je `v2.0.b1.0`)
+  s instalátorem. Číselná verze 2.0.1.N se použije v aplikaci i v instalátoru.
 
 ## Instalace
 

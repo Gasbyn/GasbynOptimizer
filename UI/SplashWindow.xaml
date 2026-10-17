@@ -9,7 +9,7 @@
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="340">
             <Image Source="/Logo.png" Height="84" Margin="0,0,0,14" RenderOptions.BitmapScalingMode="HighQuality"/>
             <TextBlock Text="GASBYN OPTIMIZER" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
-            <TextBlock Text="Čekejte, zjišťuji stav optimalizací…" Foreground="{StaticResource MutedBrush}"
+            <TextBlock x:Name="Status" Text="Kontroluji aktualizace…" Foreground="{StaticResource MutedBrush}"
                        FontSize="13" HorizontalAlignment="Center" Margin="0,8,0,18"/>
             <ProgressBar x:Name="Bar" Height="6" Minimum="0" Maximum="1" Value="0"
                          Foreground="{StaticResource OrangeBrush}" Background="{StaticResource Panel2Brush}"

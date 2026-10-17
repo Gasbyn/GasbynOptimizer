@@ -104,6 +104,9 @@ public sealed class AppSettings
 {
     public bool AutoRestorePoint { get; set; } = true;
 
+    /// <summary>Poslední pokus o aktualizaci (verze|čas UTC). Brání nekonečné smyčce, kdyby instalace selhala.</summary>
+    public string LastUpdateAttempt { get; set; } = "";
+
     public static AppSettings Load()
     {
         try

@@ -22,6 +22,7 @@ public partial class OptimizerWindow : Window
 
     private bool _restorePointDone;
     private string _filter = "all";
+    private string _category = "";
 
     public OptimizerWindow(TweakService service, IReadOnlyList<Tweak> tweaks, Dictionary<string, TweakState> states)
     {
@@ -29,7 +30,13 @@ public partial class OptimizerWindow : Window
 
         _service = service;
 
-        foreach (var tweak in tweaks)
+        var ordered = tweaks.OrderBy(t =>
+        {
+            var index = Array.IndexOf(Catalog.CategoryOrder, t.Category);
+            return index < 0 ? int.MaxValue : index;
+        });
+
+        foreach (var tweak in ordered)
         {
             var state = states.TryGetValue(tweak.Id, out var known) ? known : TweakState.Off;
             _items.Add(new TweakItem(tweak, state));
@@ -41,7 +48,10 @@ public partial class OptimizerWindow : Window
         TweakList.ItemsSource = _view;
 
         var version = Assembly.GetExecutingAssembly().GetName().Version;
-        VersionText.Text = version == null ? "" : "Verze " + version.Major + "." + version.Minor + "." + version.Build;
+        VersionText.Text = version == null
+            ? ""
+            : "Verze " + version.Major + "." + version.Minor + ".b" + version.Build + "." + Math.Max(version.Revision, 0);
+        BuildNav();
         AutoRestoreCheck.IsChecked = _settings.AutoRestorePoint;
 
         UpdateCounts();
@@ -69,11 +79,47 @@ public partial class OptimizerWindow : Window
 
     // --- navigace a filtry --------------------------------------------------------------------
 
+    private RadioButton AddNav(string text, string tag, bool selected)
+    {
+        var button = new RadioButton
+        {
+            Content = text,
+            Tag = tag,
+            GroupName = "nav",
+            IsChecked = selected,
+            Style = (Style)FindResource("NavButton")
+        };
+        button.Click += Nav_Click;
+        NavPanel.Children.Add(button);
+        return button;
+    }
+
+    private void BuildNav()
+    {
+        AddNav("Všechny optimalizace", "", true);
+
+        foreach (var category in _items.Select(i => i.Category).Distinct())
+            AddNav(category, category, false);
+
+        NavPanel.Children.Add(new Border { Height = 1, Background = (System.Windows.Media.Brush)FindResource("BorderBrush"), Margin = new Thickness(8, 10, 8, 10) });
+
+        var fps = AddNav("FPS tester (brzy)", "#fps", false);
+        fps.IsEnabled = false;
+        AddNav("Nastavení a údržba", "#settings", false);
+    }
+
     private void Nav_Click(object sender, RoutedEventArgs e)
     {
-        var settings = ReferenceEquals(sender, NavSettings);
+        if (sender is not RadioButton { Tag: string tag }) return;
+
+        var settings = tag == "#settings";
         PageTweaks.Visibility = settings ? Visibility.Collapsed : Visibility.Visible;
         PageSettings.Visibility = settings ? Visibility.Visible : Visibility.Collapsed;
+        if (settings) return;
+
+        _category = tag;
+        PageTitle.Text = tag.Length == 0 ? "Všechny optimalizace" : tag;
+        _view.Refresh();
     }
 
     private void Filter_Click(object sender, RoutedEventArgs e)
@@ -95,6 +141,8 @@ public partial class OptimizerWindow : Window
     private bool FilterItem(object obj)
     {
         if (obj is not TweakItem item) return false;
+
+        if (_category.Length > 0 && !string.Equals(item.Category, _category, StringComparison.Ordinal)) return false;
 
         switch (_filter)
         {

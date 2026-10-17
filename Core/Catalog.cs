@@ -9,31 +9,40 @@ namespace GasbynOptimizer.Core;
 /// </summary>
 public static class Catalog
 {
-    private const string CatPrivacy = "Soukromí a telemetrie";
-    private const string CatGaming = "Hraní a výkon";
-    private const string CatSystem = "Systém a napájení";
-    private const string CatServices = "Služby a úlohy";
-    private const string CatUi = "Rozhraní a pohodlí";
+    internal const string CatPrivacy = "Soukromí a telemetrie";
+    internal const string CatGaming = "Hraní a výkon";
+    internal const string CatSystem = "Systém a napájení";
+    internal const string CatServices = "Služby a úlohy";
+    internal const string CatUi = "Rozhraní a pohodlí";
+    internal const string CatInternet = "Internet a síť";
+    internal const string CatUpdate = "Windows Update";
+    internal const string CatVisual = "Vzhled a animace";
 
-    private const string Win11 = "Pouze Windows 11.";
+    internal const string Win11 = "Pouze Windows 11.";
+
+    /// <summary>Pořadí kategorií v levém menu.</summary>
+    internal static readonly string[] CategoryOrder =
+    {
+        CatPrivacy, CatUpdate, CatInternet, CatGaming, CatSystem, CatVisual, CatalogFonts.CatFonts, CatUi, CatServices
+    };
 
     // --- pomocné továrny ---------------------------------------------------------------------
 
-    private static RegistryOp Hklm(string subKey, string name, uint on, uint? off) =>
+    internal static RegistryOp Hklm(string subKey, string name, uint on, uint? off) =>
         new(true, subKey, name, RegistryValueKind.DWord, on, off);
 
-    private static RegistryOp Hkcu(string subKey, string name, uint on, uint? off) =>
+    internal static RegistryOp Hkcu(string subKey, string name, uint on, uint? off) =>
         new(false, subKey, name, RegistryValueKind.DWord, on, off);
 
-    private static RegistryOp HklmStr(string subKey, string name, string on, string? off) =>
+    internal static RegistryOp HklmStr(string subKey, string name, string on, string? off) =>
         new(true, subKey, name, RegistryValueKind.String, on, off);
 
-    private static RegistryOp HkcuStr(string subKey, string name, string on, string? off) =>
+    internal static RegistryOp HkcuStr(string subKey, string name, string on, string? off) =>
         new(false, subKey, name, RegistryValueKind.String, on, off);
 
-    private static TaskOp SchedTask(string path) => new(path);
+    internal static TaskOp SchedTask(string path) => new(path);
 
-    private static ServiceOp Service(string name, string defaultWord) => new(name, 4, defaultWord);
+    internal static ServiceOp Service(string name, string defaultWord) => new(name, 4, defaultWord);
 
     private static OpState HibernationState()
     {
@@ -43,7 +52,9 @@ public static class Catalog
 
     // --- katalog -----------------------------------------------------------------------------
 
-    public static IReadOnlyList<Tweak> All()
+    public static IReadOnlyList<Tweak> All() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).ToList();
+
+    private static IReadOnlyList<Tweak> Base()
     {
         const string cdm = @"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager";
         const string mmcss = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile";
@@ -183,7 +194,7 @@ public static class Catalog
             },
             new()
             {
-                Id = "delivery-optimization", Category = CatPrivacy, Recommended = true,
+                Id = "delivery-optimization", Category = CatUpdate, Recommended = true,
                 Name = "Vypnout sdílení aktualizací s jinými PC",
                 Description = "Windows Update stahuje jen od Microsoftu a nenahrává aktualizace ostatním přes tvůj internet.",
                 Ops = new TweakOp[]
@@ -376,7 +387,7 @@ public static class Catalog
             },
             new()
             {
-                Id = "menu-delay", Category = CatSystem, Recommended = true,
+                Id = "menu-delay", Category = CatVisual, Recommended = true,
                 Name = "Zrychlit zobrazování nabídek",
                 Description = "Nabídky se otevírají bez prodlevy (výchozích 400 ms).",
                 Ops = new TweakOp[]
@@ -386,7 +397,7 @@ public static class Catalog
             },
             new()
             {
-                Id = "disable-effects", Category = CatSystem,
+                Id = "disable-effects", Category = CatVisual,
                 Name = "Vypnout průhlednost a animace",
                 Description = "Méně efektů v systému, plynulejší chod na slabších počítačích.",
                 Ops = new TweakOp[]

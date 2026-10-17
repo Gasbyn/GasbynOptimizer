@@ -43,4 +43,7 @@ Name: "{autoprograms}\Gasbyn Optimizer"; Filename: "{app}\GasbynOptimizer.exe"
 Name: "{autodesktop}\Gasbyn Optimizer"; Filename: "{app}\GasbynOptimizer.exe"; Tasks: desktopicon
 
 [Run]
+; Běžná instalace: nabídka spuštění na konci průvodce.
 Filename: "{app}\GasbynOptimizer.exe"; Description: "{cm:LaunchProgram,Gasbyn Optimizer}"; Flags: nowait postinstall skipifsilent shellexec
+; Tichá aktualizace z aplikace: po dokončení se aplikace sama znovu spustí.
+Filename: "{app}\GasbynOptimizer.exe"; Flags: nowait shellexec; Check: WizardSilent
