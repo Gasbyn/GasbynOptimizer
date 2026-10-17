@@ -104,6 +104,9 @@ public sealed class AppSettings
 {
     public bool AutoRestorePoint { get; set; } = true;
 
+    /// <summary>Pokročilý režim: dovolí zapnout i optimalizace, které nejsou určené pro tento počítač.</summary>
+    public bool AdvancedMode { get; set; }
+
     /// <summary>Poslední pokus o aktualizaci (verze|čas UTC). Brání nekonečné smyčce, kdyby instalace selhala.</summary>
     public string LastUpdateAttempt { get; set; } = "";
 

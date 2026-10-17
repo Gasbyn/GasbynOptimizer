@@ -23,6 +23,18 @@ public sealed class Tweak
 
     /// <summary>Upozornění zobrazené u optimalizace (vedlejší účinky, požadavky na hardware).</summary>
     public string Note { get; init; } = "";
+
+    /// <summary>Pravidlo podpory: vrací důvod, proč optimalizace na tomto PC není podporovaná, nebo null.</summary>
+    public Func<SystemProfile, string?>? Requires { get; init; }
+
+    /// <summary>Doporučení podle hardwaru. Když není zadáno, platí hodnota Recommended.</summary>
+    public Func<SystemProfile, bool>? RecommendWhen { get; init; }
+
+    /// <summary>Méně prověřená nebo riskantnější optimalizace.</summary>
+    public bool Experimental { get; init; }
+
+    /// <summary>Nově přidaná optimalizace (filtr Nové).</summary>
+    public bool IsNew { get; init; }
 }
 
 public sealed record ToggleResult(bool Success, string Message, bool RestartNeeded);
@@ -34,11 +46,33 @@ public sealed class TweakService
 
     public static int WindowsBuild => Environment.OSVersion.Version.Build;
 
+    /// <summary>Důvod, proč optimalizace na tomto počítači není podporovaná (null = podporovaná).</summary>
+    public string? UnsupportedReason(Tweak tweak, SystemProfile profile)
+    {
+        if (tweak.MinBuild > 0 && profile.Build < tweak.MinBuild)
+        {
+            return tweak.MinBuild <= 22000
+                ? "Vyžaduje Windows 11."
+                : "Vyžaduje novější Windows 11 (build " + tweak.MinBuild + ").";
+        }
+
+        try { return tweak.Requires?.Invoke(profile); }
+        catch (Exception ex)
+        {
+            Log.Write("Pravidlo podpory selhalo (" + tweak.Id + "): " + ex.Message);
+            return null;
+        }
+    }
+
+    public bool IsRecommended(Tweak tweak, SystemProfile profile)
+    {
+        if (UnsupportedReason(tweak, profile) != null) return false;
+        try { return tweak.RecommendWhen?.Invoke(profile) ?? tweak.Recommended; }
+        catch { return tweak.Recommended; }
+    }
+
     public TweakState Scan(Tweak tweak)
     {
-        if (tweak.MinBuild > 0 && WindowsBuild < tweak.MinBuild)
-            return TweakState.NotApplicable;
-
         var on = 0;
         var off = 0;
         foreach (var op in tweak.Ops)

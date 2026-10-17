@@ -4,13 +4,16 @@ Optimalizace Windows 10/11 s přepínači **ZAPNUTO / VYPNUTO**. Každá změna 
 
 ## Co umí
 
-- **80 optimalizací** v devíti kategoriích (levé menu): soukromí a telemetrie, Windows Update, internet a síť, hraní a výkon, systém a napájení, vzhled a animace, písma, rozhraní, služby a úlohy.
+- **85 optimalizací** v deseti kategoriích (levé menu): soukromí a telemetrie, Windows Update, internet a síť, hraní a výkon, systém a napájení, vzhled a animace, písma, rozhraní, služby a úlohy, hardware a zařízení.
+- **Kontrola počítače při startu:** Windows 10/11, procesor, grafika, základní deska, notebook/PC a typ disku. Podle toho se optimalizace označí jako podporované a doporučí se ty vhodné.
+- **Pokročilý režim** (Nastavení): nepodporované optimalizace jsou jinak ztmavené se zámkem. Se zapnutým režimem jdou zapnout po potvrzení.
+- **Filtry:** Vše, Zapnuto, Vypnuto, Doporučené, Nové, Experimentální, Nepodporované.
 - **Přepínač u každé optimalizace.** Zapnutí provede změnu a upozorní na restart, vypnutí vrátí původní stav.
 - **Záloha původních hodnot.** Před první změnou si aplikace uloží, jak věc vypadala (registr, typ spouštění služby, plán napájení, stav úlohy). Vypnutí obnoví právě to.
 - **Čekací okno při startu.** Při každém spuštění se zjistí aktuální stav všech optimalizací.
 - **Bod obnovení systému** před první změnou (jde vypnout v Nastavení) i ručně na tlačítko.
 - **Zapnout doporučené** a **Vrátit vše** jedním tlačítkem, vyhledávání a filtry.
-- **Údržba:** vyčištění dočasných souborů, vyprázdnění DNS cache.
+- **Údržba** (samostatná stránka): vyčištění dočasných souborů, vyprázdnění DNS cache.
 - Tmavý herní vzhled s logem.
 
 Zdroje nápadů: ChrisTitusTool, Winhance, EXM, GTweaks. Zařazené jsou jen bezpečné a vratné úpravy.

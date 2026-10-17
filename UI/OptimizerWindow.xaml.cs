@@ -19,16 +19,18 @@ public partial class OptimizerWindow : Window
     private readonly ObservableCollection<TweakItem> _items = new();
     private readonly ICollectionView _view;
     private readonly AppSettings _settings = AppSettings.Load();
+    private readonly SystemProfile _profile;
 
     private bool _restorePointDone;
     private string _filter = "all";
     private string _category = "";
 
-    public OptimizerWindow(TweakService service, IReadOnlyList<Tweak> tweaks, Dictionary<string, TweakState> states)
+    public OptimizerWindow(TweakService service, IReadOnlyList<Tweak> tweaks, Dictionary<string, TweakState> states, SystemProfile profile)
     {
         InitializeComponent();
 
         _service = service;
+        _profile = profile;
 
         var ordered = tweaks.OrderBy(t =>
         {
@@ -39,7 +41,9 @@ public partial class OptimizerWindow : Window
         foreach (var tweak in ordered)
         {
             var state = states.TryGetValue(tweak.Id, out var known) ? known : TweakState.Off;
-            _items.Add(new TweakItem(tweak, state));
+            var reason = service.UnsupportedReason(tweak, profile);
+            var recommended = service.IsRecommended(tweak, profile);
+            _items.Add(new TweakItem(tweak, state, reason, recommended, _settings.AdvancedMode));
         }
 
         _view = CollectionViewSource.GetDefaultView(_items);
@@ -53,6 +57,9 @@ public partial class OptimizerWindow : Window
             : "Verze " + version.Major + "." + version.Minor + ".b" + version.Build + "." + Math.Max(version.Revision, 0);
         BuildNav();
         AutoRestoreCheck.IsChecked = _settings.AutoRestorePoint;
+        AdvancedCheck.IsChecked = _settings.AdvancedMode;
+        SystemText.Text = profile.Summary;
+        SystemDetails.Text = BuildSystemDetails(profile);
 
         UpdateCounts();
         SourceInitialized += (_, _) => EnableDarkTitleBar();
@@ -105,21 +112,38 @@ public partial class OptimizerWindow : Window
 
         var fps = AddNav("FPS tester (brzy)", "#fps", false);
         fps.IsEnabled = false;
-        AddNav("Nastavení a údržba", "#settings", false);
+        AddNav("Údržba", "#maint", false);
+        AddNav("Nastavení", "#settings", false);
     }
 
     private void Nav_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not RadioButton { Tag: string tag }) return;
 
-        var settings = tag == "#settings";
-        PageTweaks.Visibility = settings ? Visibility.Collapsed : Visibility.Visible;
-        PageSettings.Visibility = settings ? Visibility.Visible : Visibility.Collapsed;
-        if (settings) return;
+        PageTweaks.Visibility = tag.StartsWith('#') ? Visibility.Collapsed : Visibility.Visible;
+        PageMaintenance.Visibility = tag == "#maint" ? Visibility.Visible : Visibility.Collapsed;
+        PageSettings.Visibility = tag == "#settings" ? Visibility.Visible : Visibility.Collapsed;
+        if (tag.StartsWith('#')) return;
 
         _category = tag;
         PageTitle.Text = tag.Length == 0 ? "Všechny optimalizace" : tag;
         _view.Refresh();
+    }
+
+    private static string BuildSystemDetails(SystemProfile p)
+    {
+        var lines = new List<string>
+        {
+            "Windows:  " + p.WindowsName + " (build " + p.Build + ")",
+            "Procesor:  " + (p.CpuName.Length > 0 ? p.CpuName : "nezjištěno") +
+                (p.Cores > 0 ? "  (" + p.Cores + " jader, " + p.Threads + " vláken)" : ""),
+            "Grafika:  " + p.GpuText,
+            "Základní deska:  " + p.BoardText,
+            "Typ počítače:  " + p.TypeText,
+            "Systémový disk:  " + p.DriveText
+        };
+        if (p.RamGb > 0) lines.Add("Paměť:  " + p.RamGb + " GB");
+        return string.Join(Environment.NewLine, lines);
     }
 
     private void Filter_Click(object sender, RoutedEventArgs e)
@@ -148,7 +172,10 @@ public partial class OptimizerWindow : Window
         {
             case "on" when !item.IsOn: return false;
             case "off" when item.IsOn: return false;
-            case "rec" when !item.Recommended: return false;
+            case "rec" when !item.IsRecommended: return false;
+            case "new" when !item.IsNew: return false;
+            case "exp" when !item.IsExperimental: return false;
+            case "unsup" when item.IsSupported: return false;
         }
 
         var text = SearchBox.Text?.Trim() ?? "";
@@ -160,9 +187,12 @@ public partial class OptimizerWindow : Window
 
     private void UpdateCounts()
     {
-        var available = _items.Count(i => i.IsAvailable);
-        var on = _items.Count(i => i.IsOn);
-        CountText.Text = "Zapnuto " + on + " z " + available + " dostupných optimalizací";
+        var available = _items.Count(i => i.IsAvailable && i.IsSupported);
+        var on = _items.Count(i => i.IsOn && i.IsSupported);
+        var unsupported = _items.Count(i => !i.IsSupported);
+
+        CountText.Text = "Zapnuto " + on + " z " + available + " dostupných optimalizací" +
+                         (unsupported > 0 ? "  ·  " + unsupported + " nepodporovaných" : "");
     }
 
     // --- čekací překrytí ----------------------------------------------------------------------
@@ -239,13 +269,24 @@ public partial class OptimizerWindow : Window
     {
         if (sender is not FrameworkElement { DataContext: TweakItem item } || !item.CanToggle) return;
 
+        var enable = !item.IsOn;
+
+        if (enable && !item.IsSupported)
+        {
+            var answer = MessageBox.Show(this,
+                "Optimalizace „" + item.Name + "“ není podporovaná na tomto počítači.\n\n" + item.UnsupportedReason +
+                "\n\nZapnutí může být zbytečné nebo způsobit potíže. Chceš ji přesto zapnout?",
+                "Nepodporovaná optimalizace", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+            if (answer != MessageBoxResult.Yes) return;
+        }
+
         // Zapnuto -> vrátit původní stav. Vypnuto nebo částečně -> zapnout celé.
-        await RunToggleAsync(item, !item.IsOn);
+        await RunToggleAsync(item, enable);
     }
 
     private async void ApplyRecommended_Click(object sender, RoutedEventArgs e)
     {
-        var targets = _items.Where(i => i.Recommended && i.IsAvailable && !i.IsOn).ToList();
+        var targets = _items.Where(i => i.IsRecommended && i.IsSupported && i.IsAvailable && !i.IsOn).ToList();
         if (targets.Count == 0)
         {
             MessageBox.Show(this, "Všechny doporučené optimalizace jsou už zapnuté.", "Gasbyn Optimizer",
@@ -326,6 +367,18 @@ public partial class OptimizerWindow : Window
     }
 
     // --- nastavení a údržba -------------------------------------------------------------------
+
+    private void Advanced_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.AdvancedMode = AdvancedCheck.IsChecked == true;
+        _settings.Save();
+
+        foreach (var item in _items)
+            item.SetAdvanced(_settings.AdvancedMode);
+
+        _view.Refresh();
+        UpdateCounts();
+    }
 
     private void AutoRestore_Click(object sender, RoutedEventArgs e)
     {

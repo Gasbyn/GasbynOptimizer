@@ -40,6 +40,10 @@ public partial class App : System.Windows.Application
                 return;
             }
 
+            splash.SetStatus("Kontroluji počítač (Windows, procesor, grafika, deska)…");
+            splash.SetFraction(0);
+            var profile = await Task.Run(SystemProfile.Detect);
+
             splash.SetStatus("Čekejte, zjišťuji stav optimalizací…");
             splash.SetProgress(0, 1);
 
@@ -52,7 +56,7 @@ public partial class App : System.Windows.Application
             var scan = Task.Run(() => service.ScanAll(tweaks, progress));
             await Task.WhenAll(scan, Task.Delay(900));
 
-            var window = new OptimizerWindow(service, tweaks, scan.Result);
+            var window = new OptimizerWindow(service, tweaks, scan.Result, profile);
             MainWindow = window;
             ShutdownMode = ShutdownMode.OnMainWindowClose;
             window.Show();

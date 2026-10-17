@@ -23,7 +23,7 @@ public static class Catalog
     /// <summary>Pořadí kategorií v levém menu.</summary>
     internal static readonly string[] CategoryOrder =
     {
-        CatPrivacy, CatUpdate, CatInternet, CatGaming, CatSystem, CatVisual, CatalogFonts.CatFonts, CatUi, CatServices
+        CatPrivacy, CatUpdate, CatInternet, CatGaming, CatSystem, CatVisual, CatalogFonts.CatFonts, CatUi, CatServices, CatalogHardware.CatHardware
     };
 
     // --- pomocné továrny ---------------------------------------------------------------------
@@ -52,7 +52,7 @@ public static class Catalog
 
     // --- katalog -----------------------------------------------------------------------------
 
-    public static IReadOnlyList<Tweak> All() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).ToList();
+    public static IReadOnlyList<Tweak> All() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).ToList();
 
     private static IReadOnlyList<Tweak> Base()
     {
@@ -286,7 +286,7 @@ public static class Catalog
             },
             new()
             {
-                Id = "hags", Category = CatGaming,
+                Id = "hags", Category = CatGaming, Requires = Needs.HagsGpu,
                 Name = "Plánování GPU s hardwarovou akcelerací (HAGS)",
                 Description = "Grafická karta si sama řídí frontu úloh. Nutné například pro generování snímků (DLSS 3 / FSR 3).",
                 Note = "Doporučeno pro GeForce RTX 20xx a novější, Radeon RX 5000 a novější. Vyžaduje aktuální ovladač.",
@@ -356,7 +356,7 @@ public static class Catalog
             },
             new()
             {
-                Id = "ultimate-performance", Category = CatGaming,
+                Id = "ultimate-performance", Category = CatGaming, Requires = Needs.Desktop,
                 Name = "Plán napájení Ultimate Performance",
                 Description = "Procesor nesnižuje frekvence a odezva je okamžitá. Původní plán se při vypnutí obnoví.",
                 Note = "Ideální pro stolní PC. Na notebooku výrazně zvyšuje spotřebu baterie.",
@@ -451,7 +451,7 @@ public static class Catalog
             },
             new()
             {
-                Id = "sysmain", Category = CatServices,
+                Id = "sysmain", Category = CatServices, Requires = Needs.Ssd, RecommendWhen = p => p.SystemDriveIsSsd == true,
                 Name = "Vypnout SysMain (Superfetch)",
                 Description = "Zastaví předčítání aplikací do paměti. Na SSD nemá význam a šetří to RAM a zápisy.",
                 Note = "Doporučeno jen pro systém na SSD disku.",

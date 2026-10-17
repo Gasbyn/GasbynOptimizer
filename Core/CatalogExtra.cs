@@ -40,7 +40,7 @@ internal static class CatalogExtra
             // ===== Internet a síť =====
             new()
             {
-                Id = "nagle", Category = Catalog.CatInternet,
+                Id = "nagle", Experimental = true, Category = Catalog.CatInternet,
                 Name = "Nižší odezva sítě (vypnout Nagleův algoritmus)",
                 Description = "Malé pakety se odesílají hned, bez čekání na seskupení. Může snížit ping v některých online hrách.",
                 Note = "Efekt závisí na hře a připojení, na stahování souborů nemá vliv. Týká se síťových karet existujících v době zapnutí.",
@@ -48,7 +48,7 @@ internal static class CatalogExtra
             },
             new()
             {
-                Id = "teredo", Category = Catalog.CatInternet,
+                Id = "teredo", Experimental = true, Category = Catalog.CatInternet,
                 Name = "Vypnout Teredo a IPv6 přechodové tunely",
                 Description = "Zakáže tunelování IPv6 přes IPv4 (Teredo, 6to4, ISATAP), které většina domácností nepoužívá.",
                 Note = "Může ovlivnit párty chat a některé multiplayerové funkce na Xboxu a v Microsoft Storu (NAT).",
@@ -104,7 +104,7 @@ internal static class CatalogExtra
             },
             new()
             {
-                Id = "wu-defer-features", Category = Catalog.CatUpdate,
+                Id = "wu-defer-features", Experimental = true, Category = Catalog.CatUpdate,
                 Name = "Odložit velké aktualizace Windows o 30 dní",
                 Description = "Funkční aktualizace dorazí až měsíc po vydání, kdy jsou nejhorší chyby většinou opravené. Bezpečnostní záplaty to neovlivní.",
                 Ops = new TweakOp[]
@@ -245,7 +245,7 @@ internal static class CatalogExtra
             },
             new()
             {
-                Id = "priority-separation", Category = Catalog.CatGaming,
+                Id = "priority-separation", Experimental = true, Category = Catalog.CatGaming,
                 Name = "Přednost aplikace v popředí",
                 Description = "Procesor dává více času aplikaci, kterou právě používáš (hře), než službám na pozadí.",
                 Ops = new TweakOp[]
@@ -278,7 +278,7 @@ internal static class CatalogExtra
             },
             new()
             {
-                Id = "xbox-services", Category = Catalog.CatGaming,
+                Id = "xbox-services", Experimental = true, Category = Catalog.CatGaming,
                 Name = "Vypnout služby Xboxu",
                 Description = "Zakáže služby Xbox Live (přihlášení, cloudové uložené hry, síť, příslušenství).",
                 Note = "Nepoužívej, pokud hraješ hry z Xbox aplikace, Game Pass nebo hry vyžadující přihlášení k Xbox Live.",
@@ -395,12 +395,12 @@ internal static class CatalogExtra
             new()
             {
                 Id = "show-seconds", Category = Catalog.CatUi,
-                Name = "Zobrazit sekundy v hodinách",
-                Description = "Hodiny na hlavním panelu ukazují i sekundy.",
+                Name = "Skrýt sekundy v hodinách",
+                Description = "Hodiny na hlavním panelu ukazují jen hodiny a minuty. Méně rušivé a o trochu méně překreslování.",
                 RequiresRestart = false,
                 Ops = new TweakOp[]
                 {
-                    Catalog.Hkcu(explorerAdv, "ShowSecondsInSystemClock", 1, 0)
+                    Catalog.Hkcu(explorerAdv, "ShowSecondsInSystemClock", 0, 1)
                 }
             },
             new()
@@ -450,13 +450,13 @@ internal static class CatalogExtra
             new()
             {
                 Id = "this-pc-icon", Category = Catalog.CatUi,
-                Name = "Ikona „Tento počítač“ na ploše",
-                Description = "Na ploše se zobrazí ikona Tento počítač.",
+                Name = "Skrýt ikonu „Tento počítač“ na ploše",
+                Description = "Z plochy zmizí ikona Tento počítač a plocha bude čistší.",
                 RequiresRestart = false,
                 Ops = new TweakOp[]
                 {
                     Catalog.Hkcu(@"Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel",
-                        "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", 0, 1)
+                        "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", 1, 0)
                 }
             }
         };

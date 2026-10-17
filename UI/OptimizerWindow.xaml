@@ -10,7 +10,7 @@
 
         <!-- Karta jedné optimalizace -->
         <DataTemplate x:Key="TweakTemplate">
-            <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}"
+            <Border x:Name="Card" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}"
                     BorderThickness="1" CornerRadius="10" Padding="18,14" Margin="0,0,0,8">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -20,14 +20,28 @@
 
                     <StackPanel Grid.Column="0" Margin="0,0,20,0">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
                             <Border x:Name="RecommendedBadge" Visibility="Collapsed" Background="{StaticResource OrangeSoftBrush}"
                                     CornerRadius="4" Padding="6,1" Margin="10,0,0,0" VerticalAlignment="Center">
                                 <TextBlock Text="DOPORUČENO" FontSize="10" FontWeight="Bold" Foreground="{StaticResource OrangeBrush}"/>
                             </Border>
+                            <Border x:Name="NewBadge" Visibility="Collapsed" Background="#10281E"
+                                    CornerRadius="4" Padding="6,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="NOVÉ" FontSize="10" FontWeight="Bold" Foreground="{StaticResource GreenBrush}"/>
+                            </Border>
+                            <Border x:Name="ExperimentalBadge" Visibility="Collapsed" Background="#2B2210"
+                                    CornerRadius="4" Padding="6,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="EXPERIMENTÁLNÍ" FontSize="10" FontWeight="Bold" Foreground="{StaticResource AmberBrush}"/>
+                            </Border>
+                            <Border x:Name="UnsupportedBadge" Visibility="Collapsed" Background="#2A1414"
+                                    CornerRadius="4" Padding="6,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="NEPODPOROVANÉ" FontSize="10" FontWeight="Bold" Foreground="{StaticResource RedBrush}"/>
+                            </Border>
                         </StackPanel>
                         <TextBlock Text="{Binding Description}" Foreground="{StaticResource MutedBrush}"
                                    TextWrapping="Wrap" FontSize="12.5" Margin="0,4,0,0"/>
+                        <TextBlock x:Name="UnsupportedText" Text="{Binding UnsupportedText}" Visibility="Collapsed"
+                                   Foreground="{StaticResource RedBrush}" TextWrapping="Wrap" FontSize="12" Margin="0,4,0,0"/>
                         <TextBlock x:Name="NoteText" Text="{Binding Note}" Visibility="Collapsed"
                                    Foreground="{StaticResource AmberBrush}" TextWrapping="Wrap" FontSize="12" Margin="0,4,0,0"/>
                         <TextBlock x:Name="StatusText" Text="{Binding Status}" Visibility="Collapsed"
@@ -35,7 +49,8 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" MinWidth="76">
-                        <TextBlock Text="{Binding StateText}" Foreground="{StaticResource MutedBrush}" FontSize="11"
+                        <TextBlock x:Name="StateLabel" Text="{Binding StateText}" Foreground="{StaticResource MutedBrush}" FontSize="11"
+                                   FontFamily="Segoe UI, Segoe UI Emoji"
                                    HorizontalAlignment="Right" Margin="0,0,0,5"/>
                         <Button Style="{StaticResource SwitchButton}" HorizontalAlignment="Right"
                                 IsEnabled="{Binding CanToggle}" Click="Toggle_Click"/>
@@ -43,8 +58,23 @@
                 </Grid>
             </Border>
             <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding Recommended}" Value="True">
+                <DataTrigger Binding="{Binding IsRecommended}" Value="True">
                     <Setter TargetName="RecommendedBadge" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsNew}" Value="True">
+                    <Setter TargetName="NewBadge" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsExperimental}" Value="True">
+                    <Setter TargetName="ExperimentalBadge" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ShowUnsupportedBadge}" Value="True">
+                    <Setter TargetName="UnsupportedBadge" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsSupported}" Value="False">
+                    <Setter TargetName="UnsupportedText" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ShowLock}" Value="True">
+                    <Setter TargetName="Card" Property="Opacity" Value="0.45"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding HasNote}" Value="True">
                     <Setter TargetName="NoteText" Property="Visibility" Value="Visible"/>
@@ -135,6 +165,7 @@
                         <StackPanel Grid.Column="0">
                             <TextBlock x:Name="PageTitle" Text="Všechny optimalizace" FontSize="24" FontWeight="Bold"/>
                             <TextBlock x:Name="CountText" Foreground="{StaticResource MutedBrush}" FontSize="12.5" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="SystemText" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button Style="{StaticResource GhostButton}" Content="Vrátit vše" Click="RevertAll_Click" Margin="0,0,8,0"/>
@@ -142,29 +173,27 @@
                         </StackPanel>
                     </Grid>
 
-                    <Grid Grid.Row="1" Margin="0,16,0,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <Border Grid.Column="0" MaxWidth="340" HorizontalAlignment="Left" Background="{StaticResource Panel2Brush}"
+                    <StackPanel Grid.Row="1" Margin="0,16,0,12">
+                        <Border Width="380" HorizontalAlignment="Left" Background="{StaticResource Panel2Brush}"
                                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8">
                             <Grid>
                                 <TextBox x:Name="SearchBox" Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextBrush}"
-                                         CaretBrush="{StaticResource TextBrush}" FontSize="13" Padding="12,8" TextChanged="SearchBox_TextChanged"/>
+                                         CaretBrush="{StaticResource TextBrush}" FontSize="13" Padding="14,9" TextChanged="SearchBox_TextChanged"/>
                                 <TextBlock x:Name="SearchPlaceholder" Text="Hledat optimalizace…" Foreground="{StaticResource MutedBrush}"
-                                           FontSize="13" Margin="14,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                                           FontSize="13" Margin="16,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
                             </Grid>
                         </Border>
 
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <RadioButton Style="{StaticResource ChipButton}" Content="Vše" Tag="all" GroupName="filter" IsChecked="True" Click="Filter_Click"/>
-                            <RadioButton Style="{StaticResource ChipButton}" Content="Zapnuto" Tag="on" GroupName="filter" Click="Filter_Click"/>
-                            <RadioButton Style="{StaticResource ChipButton}" Content="Vypnuto" Tag="off" GroupName="filter" Click="Filter_Click"/>
-                            <RadioButton Style="{StaticResource ChipButton}" Content="Doporučené" Tag="rec" GroupName="filter" Click="Filter_Click"/>
-                        </StackPanel>
-                    </Grid>
+                        <WrapPanel Margin="0,10,0,0">
+                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Vše" Tag="all" GroupName="filter" IsChecked="True" Click="Filter_Click"/>
+                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Zapnuto" Tag="on" GroupName="filter" Click="Filter_Click"/>
+                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Vypnuto" Tag="off" GroupName="filter" Click="Filter_Click"/>
+                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Doporučené" Tag="rec" GroupName="filter" Click="Filter_Click"/>
+                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Nové" Tag="new" GroupName="filter" Click="Filter_Click"/>
+                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Experimentální" Tag="exp" GroupName="filter" Click="Filter_Click"/>
+                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Nepodporované" Tag="unsup" GroupName="filter" Click="Filter_Click"/>
+                        </WrapPanel>
+                    </StackPanel>
 
                     <Border Grid.Row="2" x:Name="RestartBanner" Visibility="Collapsed" Background="{StaticResource OrangeSoftBrush}"
                             BorderBrush="{StaticResource OrangeBrush}" BorderThickness="1" CornerRadius="8" Padding="16,10" Margin="0,0,6,12">
@@ -180,7 +209,7 @@
                         </Grid>
                     </Border>
 
-                    <ListBox Grid.Row="3" x:Name="TweakList" Background="Transparent" BorderThickness="0"
+                    <ListBox Grid.Row="3" x:Name="TweakList" Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextBrush}"
                              ItemTemplate="{StaticResource TweakTemplate}" ItemContainerStyle="{StaticResource PlainItem}"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="False"
                              HorizontalContentAlignment="Stretch"
@@ -198,10 +227,39 @@
                     </ListBox>
                 </Grid>
 
-                <!-- Stránka: Nastavení a údržba -->
-                <ScrollViewer x:Name="PageSettings" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" Margin="0,0,0,0">
+                <!-- Stránka: Údržba -->
+                <ScrollViewer x:Name="PageMaintenance" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="28,24,28,28" MaxWidth="760" HorizontalAlignment="Left">
-                        <TextBlock Text="Nastavení a údržba" FontSize="24" FontWeight="Bold" Margin="0,0,0,18"/>
+                        <TextBlock Text="Údržba" FontSize="24" FontWeight="Bold" Margin="0,0,0,18"/>
+
+                        <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Úklid" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Style="{StaticResource SectionText}"
+                                           Text="Jednorázové akce. Na rozdíl od optimalizací se nedají vrátit zpět (mažou se jen dočasné soubory a mezipaměť DNS)."/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Style="{StaticResource GhostButton}" Content="Vyčistit dočasné soubory" Click="CleanTemp_Click" Margin="0,0,8,0"/>
+                                    <Button Style="{StaticResource GhostButton}" Content="Vyprázdnit DNS cache" Click="FlushDns_Click"/>
+                                </StackPanel>
+                                <TextBlock x:Name="MaintenanceResult" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Stránka: Nastavení -->
+                <ScrollViewer x:Name="PageSettings" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="28,24,28,28" MaxWidth="760" HorizontalAlignment="Left">
+                        <TextBlock Text="Nastavení" FontSize="24" FontWeight="Bold" Margin="0,0,0,18"/>
+
+                        <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Pokročilý režim" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Style="{StaticResource SectionText}"
+                                           Text="Optimalizace, které nejsou určené pro tento počítač (například pro grafiku Intel, když máš NVIDIA), jsou při vypnutém režimu ztmavené se zámkem a nejdou zapnout. Se zapnutým pokročilým režimem u nich zůstane jen štítek Nepodporované a jdou zapnout po potvrzení. Používej jen, když víš, co děláš."/>
+                                <CheckBox x:Name="AdvancedCheck" Content="Zapnout pokročilý režim" Foreground="{StaticResource TextBrush}" Click="Advanced_Click"/>
+                            </StackPanel>
+                        </Border>
 
                         <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,12">
                             <StackPanel>
@@ -216,14 +274,10 @@
 
                         <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="Údržba" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Text="Tento počítač" Style="{StaticResource SectionTitle}"/>
                                 <TextBlock Style="{StaticResource SectionText}"
-                                           Text="Jednorázové akce. Na rozdíl od optimalizací se nedají vrátit zpět (mažou se jen dočasné soubory a mezipaměť DNS)."/>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Style="{StaticResource GhostButton}" Content="Vyčistit dočasné soubory" Click="CleanTemp_Click" Margin="0,0,8,0"/>
-                                    <Button Style="{StaticResource GhostButton}" Content="Vyprázdnit DNS cache" Click="FlushDns_Click"/>
-                                </StackPanel>
-                                <TextBlock x:Name="MaintenanceResult" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                                           Text="Zjištěno při spuštění. Podle toho se určuje, které optimalizace jsou podporované a doporučené."/>
+                                <TextBlock x:Name="SystemDetails" Foreground="{StaticResource TextBrush}" FontSize="13" LineHeight="22" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
 
