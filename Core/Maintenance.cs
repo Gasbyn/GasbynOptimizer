@@ -66,7 +66,33 @@ public static class Maintenance
         var files = 0;
 
         DeleteContents(Path.GetTempPath(), ref bytes, ref files);
-        DeleteContents(Path.Combine(Env(Environment.SpecialFolder.Windows), "Temp"), ref bytes, ref files);
+        var windows = Env(Environment.SpecialFolder.Windows);
+        var local = Env(Environment.SpecialFolder.LocalApplicationData);
+        var programData = Env(Environment.SpecialFolder.CommonApplicationData);
+
+        DeleteContents(Path.Combine(windows, "Temp"), ref bytes, ref files);
+
+        // Hlášení o chybách, výpisy pádů, protokoly a stažené soubory Windows Update.
+        DeleteContents(Path.Combine(programData, "Microsoft", "Windows", "WER", "ReportArchive"), ref bytes, ref files);
+        DeleteContents(Path.Combine(programData, "Microsoft", "Windows", "WER", "ReportQueue"), ref bytes, ref files);
+        DeleteContents(Path.Combine(local, "Microsoft", "Windows", "WER", "ReportArchive"), ref bytes, ref files);
+        DeleteContents(Path.Combine(local, "Microsoft", "Windows", "WER", "ReportQueue"), ref bytes, ref files);
+        DeleteContents(Path.Combine(local, "CrashDumps"), ref bytes, ref files);
+        DeleteContents(Path.Combine(windows, "Minidump"), ref bytes, ref files);
+        DeleteContents(Path.Combine(windows, "Logs"), ref bytes, ref files);
+        DeleteFile(Path.Combine(windows, "MEMORY.DMP"), ref bytes, ref files);
+        DeleteContents(Path.Combine(windows, "SoftwareDistribution", "Download"), ref bytes, ref files);
+        DeleteContents(Path.Combine(windows, "ServiceProfiles", "NetworkService", "AppData", "Local", "Microsoft", "Windows", "DeliveryOptimization", "Cache"), ref bytes, ref files);
+
+        // Náhledy obrázků v Průzkumníku (vytvoří se znovu).
+        var explorer = Path.Combine(local, "Microsoft", "Windows", "Explorer");
+        try
+        {
+            if (Directory.Exists(explorer))
+                foreach (var file in Directory.EnumerateFiles(explorer, "thumbcache_*.db"))
+                    DeleteFile(file, ref bytes, ref files);
+        }
+        catch { /* bez přístupu přeskočíme */ }
 
         Log.Write("Vyčištěno dočasných souborů: " + files + " (" + bytes / 1024 / 1024 + " MB)");
         return new CleanResult(bytes, files);
@@ -79,7 +105,7 @@ public static class Maintenance
     }
 
     /// <summary>
-    /// Smaže mezipaměť (cache) oblíbených aplikací: Discord, Steam, Slack, Teams, Epic Games, Spotify a VS Code.
+    /// Smaže mezipaměť (cache) oblíbených aplikací a her: Discord, Steam, Slack, Teams, Epic Games, Fortnite, Ubisoft, Battle.net, EA, GOG, Spotify, VS Code, OBS a shadery grafických karet.
     /// Mažou se jen složky s mezipamětí. Přihlášení, nastavení a stažené hry ani hudba se nemění.
     /// </summary>
     public static CleanResult CleanAppCaches()
@@ -105,6 +131,31 @@ public static class Maintenance
 
         folders.Add(Path.Combine(local, "Steam", "htmlcache"));
         folders.Add(Path.Combine(local, "Spotify", "Browser"));
+
+        // Mezipaměť shaderů grafických karet a DirectX (hry ji při dalším spuštění znovu vytvoří, první start může být chvíli pomalejší).
+        folders.Add(Path.Combine(local, "D3DSCache"));
+        folders.Add(Path.Combine(local, "NVIDIA", "DXCache"));
+        folders.Add(Path.Combine(local, "NVIDIA", "GLCache"));
+        folders.Add(Path.Combine(local, "NVIDIA Corporation", "NV_Cache"));
+        folders.Add(Path.Combine(local, "AMD", "DxCache"));
+        folders.Add(Path.Combine(local, "AMD", "GLCache"));
+        folders.Add(Path.Combine(local, "Intel", "ShaderCache"));
+
+        // Hry a herní launchery.
+        folders.Add(Path.Combine(local, "FortniteGame", "Saved", "ShaderCache"));
+        folders.Add(Path.Combine(local, "FortniteGame", "Saved", "Logs"));
+        folders.Add(Path.Combine(local, "EpicGamesLauncher", "Saved", "Logs"));
+        folders.Add(Path.Combine(local, "Ubisoft Game Launcher", "cache"));
+        folders.Add(Path.Combine(local, "Battle.net", "Cache"));
+        folders.Add(Path.Combine(local, "Electronic Arts", "EA Desktop", "Cache"));
+        folders.Add(Path.Combine(local, "GOG.com", "Galaxy", "webcache"));
+        folders.Add(Path.Combine(local, "Riot Games", "Riot Client", "Logs"));
+        folders.Add(Path.Combine(roaming, ".minecraft", "logs"));
+
+        // OBS Studio: protokoly, hlášení o pádech a stažené aktualizace.
+        folders.Add(Path.Combine(roaming, "obs-studio", "logs"));
+        folders.Add(Path.Combine(roaming, "obs-studio", "crashes"));
+        folders.Add(Path.Combine(roaming, "obs-studio", "updates"));
 
         var epicSaved = Path.Combine(local, "EpicGamesLauncher", "Saved");
         try

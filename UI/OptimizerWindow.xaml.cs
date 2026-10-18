@@ -465,7 +465,7 @@ public partial class OptimizerWindow : Window
 
     private async void CleanTemp_Click(object sender, RoutedEventArgs e)
     {
-        ShowBusy("Čistím dočasné soubory…");
+        ShowBusy("Čistím dočasné a systémové soubory…");
         var (bytes, files) = await Task.Run(() => Maintenance.CleanTemp());
         HideBusy();
 

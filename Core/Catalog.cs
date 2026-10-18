@@ -84,9 +84,9 @@ public static class Catalog
             },
             new()
             {
-                Id = "telemetry-tasks", Category = CatPrivacy, Recommended = true,
+                Id = "telemetry-tasks", Category = CatPrivacy, Recommended = true, IsNew = true,
                 Name = "Vypnout telemetrické úlohy",
-                Description = "Zakáže naplánované úlohy, které sbírají diagnostická data (Compatibility Appraiser, CEIP a další).",
+                Description = "Zakáže naplánované úlohy, které sbírají diagnostická data (Compatibility Appraiser, CEIP, zpětná vazba, hlášení chyb, rodinná bezpečnost, mapy a další).",
                 RequiresRestart = false,
                 Ops = new TweakOp[]
                 {
@@ -99,7 +99,19 @@ public static class Catalog
                     SchedTask(@"\Microsoft\Windows\Feedback\Siuf\DmClient"),
                     SchedTask(@"\Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload"),
                     SchedTask(@"\Microsoft\Windows\Windows Error Reporting\QueueReporting"),
-                    SchedTask(@"\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector")
+                    SchedTask(@"\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector"),
+                    SchedTask(@"\Microsoft\Windows\Customer Experience Improvement Program\BthSQM"),
+                    SchedTask(@"\Microsoft\Windows\PI\Sqm-Tasks"),
+                    SchedTask(@"\Microsoft\Windows\Autochk\Proxy"),
+                    SchedTask(@"\Microsoft\Windows\Maintenance\WinSAT"),
+                    SchedTask(@"\Microsoft\Windows\Power Efficiency Diagnostics\AnalyzeSystem"),
+                    SchedTask(@"\Microsoft\Windows\DiskFootprint\Diagnostics"),
+                    SchedTask(@"\Microsoft\Windows\NetTrace\GatherNetworkInfo"),
+                    SchedTask(@"\Microsoft\Windows\Shell\FamilySafetyMonitor"),
+                    SchedTask(@"\Microsoft\Windows\Shell\FamilySafetyRefreshTask"),
+                    SchedTask(@"\Microsoft\Windows\WS\WSRefreshBannedAppsListTask"),
+                    SchedTask(@"\Microsoft\Windows\Maps\MapsUpdateTask"),
+                    SchedTask(@"\Microsoft\Windows\Maps\MapsToastTask")
                 }
             },
             new()

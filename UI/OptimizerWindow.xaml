@@ -308,9 +308,9 @@
                                 <StackPanel>
                                     <TextBlock Text="Úklid systému" Style="{StaticResource SectionTitle}"/>
                                     <TextBlock Style="{StaticResource SectionText}"
-                                               Text="Jednorázové akce. Na rozdíl od optimalizací se nedají vrátit zpět (mažou se jen dočasné soubory a mezipaměť DNS)."/>
+                                               Text="Jednorázové akce. Na rozdíl od optimalizací se nedají vrátit zpět (mažou se dočasné soubory, výpisy pádů, protokoly Windows, mezipaměť Windows Update a mezipaměť DNS)."/>
                                     <StackPanel Orientation="Horizontal">
-                                        <Button Style="{StaticResource GhostButton}" Content="Vyčistit dočasné soubory" Click="CleanTemp_Click" Margin="0,0,8,0"/>
+                                        <Button Style="{StaticResource GhostButton}" Content="Vyčistit dočasné a systémové soubory" Click="CleanTemp_Click" Margin="0,0,8,0"/>
                                         <Button Style="{StaticResource GhostButton}" Content="Vyprázdnit DNS cache" Click="FlushDns_Click"/>
                                     </StackPanel>
                                     <TextBlock x:Name="MaintenanceResult" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
@@ -320,7 +320,7 @@
                                 <StackPanel>
                                     <TextBlock Text="Mezipaměť aplikací" Style="{StaticResource SectionTitle}"/>
                                     <TextBlock Style="{StaticResource SectionText}"
-                                               Text="Smaže mezipaměť (cache) aplikací Discord, Steam, Slack, Teams, Epic Games, Spotify a Visual Studio Code. Přihlášení, nastavení, hry ani stažená hudba se nemění. Aplikace si mezipaměť časem vytvoří znovu."/>
+                                               Text="Smaže mezipaměť (cache) a protokoly aplikací a her: Discord, Steam, Slack, Teams, Epic Games a Fortnite, Ubisoft, Battle.net, EA, GOG, Spotify, VS Code, OBS a shadery grafických karet (NVIDIA, AMD, Intel, DirectX). Přihlášení, nastavení, hry ani stažená hudba se nemění. Po vyčištění shaderů může první spuštění hry chvíli trvat. Aplikace si mezipaměť časem vytvoří znovu."/>
                                     <Button Style="{StaticResource GhostButton}" Content="Vyčistit mezipaměť aplikací" HorizontalAlignment="Left" Click="CleanAppCaches_Click"/>
                                     <TextBlock x:Name="AppCacheResult" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
                                 </StackPanel>

@@ -11,7 +11,7 @@ internal static class CatalogAdvanced
         {
             new()
             {
-                Id = "adv-diagnostics", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-diagnostics", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout hlubší diagnostiku Windows",
                 Description = "Zakáže diagnostické služby (Diagnostic Policy, Diagnostic Execution, Troubleshooting Platform). Windows pak sám nehledá a neřeší problémy.",
                 Note = "Nedoporučeno: přestanou fungovat automatické poradce při potížích a část hlášení o chybách. Vypnutí vrátí původní stav.",
@@ -25,7 +25,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-printing", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-printing", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout podporu tiskáren a tisku",
                 Description = "Zakáže službu Tisková fronta (Spooler) a oznámení tiskáren. Šetří paměť a zavírá známý cíl útoků.",
                 Note = "Nedoporučeno, pokud tiskneš: nepůjde tisknout ani do PDF přes tiskárnu. Vypnutí vrátí původní stav.",
@@ -37,7 +37,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-midi", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-midi", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout službu MIDI",
                 Description = "Zakáže Windows MIDI službu. Hudební nástroje a programy pro MIDI pak nebudou fungovat.",
                 Note = "Vypni jen pokud MIDI zařízení nepoužíváš.",
@@ -48,7 +48,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-server-sharing", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-server-sharing", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout sdílení souborů a síťové servery",
                 Description = "Zakáže službu Server (sdílení složek a tiskáren v síti), Prohlížeč počítačů a odnímání sdílení.",
                 Note = "Nedoporučeno v domácí síti se sdílením složek: ostatní počítače se k tvému nedostanou. Vypnutí vrátí původní stav.",
@@ -60,7 +60,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-remote-desktop", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-remote-desktop", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout vzdálenou plochu",
                 Description = "Zakáže služby vzdálené plochy (RDP) a související pomocné služby. Zmenší plochu pro útoky z internetu.",
                 Note = "Po vypnutí se na tento PC nepůjde připojit vzdálenou plochou.",
@@ -73,7 +73,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-windows-update", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-windows-update", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout Windows Update úplně",
                 Description = "Zakáže automatické aktualizace (zásada) a služby Windows Update a Update Orchestrator.",
                 Note = "Silně nedoporučeno: Windows nebude dostávat opravy zabezpečení. Zapni jen dočasně a aktualizace spouštěj ručně po vrácení.",
@@ -86,7 +86,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-bluetooth", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-bluetooth", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout Bluetooth služby",
                 Description = "Zakáže služby Bluetooth. Šetří paměť, když Bluetooth nepoužíváš.",
                 Note = "Nepůjdou Bluetooth myši, sluchátka ani ovladače. Vypnutí vrátí původní stav.",
@@ -98,7 +98,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-smartcard-bio", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-smartcard-bio", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout čipové karty a biometrii",
                 Description = "Zakáže služby čteček čipových karet a Windows Hello otisku/obličeje.",
                 Note = "Nepůjde přihlášení otiskem ani obličejem (Windows Hello).",
@@ -112,7 +112,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-sensors-location", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-sensors-location", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout senzory a polohové služby",
                 Description = "Zakáže služby senzorů a geolokace. Hodí se na stolní PC.",
                 Note = "Na notebooku se může rozbít automatické otáčení obrazovky nebo jas podle světla.",
@@ -126,7 +126,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-smartscreen", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-smartscreen", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout SmartScreen",
                 Description = "Vypne kontrolu stahovaných souborů a programů přes Microsoft SmartScreen.",
                 Note = "Nedoporučeno: ztratíš varování před škodlivými programy.",
@@ -137,7 +137,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-defender-cloud", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-defender-cloud", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout cloudové hlášení Defenderu",
                 Description = "Vypne odesílání vzorků a hlášení Microsoft Defenderu (cloudová ochrana a automatické odesílání).",
                 Note = "Defender nadále chrání, ale hůř se brání úplně novým hrozbám.",
@@ -149,7 +149,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-hvci", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "adv-hvci", Category = CatAdvanced, Experimental = true, RequiresRestart = true,
                 Name = "Vypnout izolaci jádra (Integrita paměti)",
                 Description = "Vypne virtualizační ochranu jádra (HVCI). V některých hrách zvýší FPS.",
                 Note = "Nedoporučeno: snižuje ochranu proti škodlivému kódu v jádře. Vyžaduje restart.",
@@ -160,7 +160,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-spectre", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "adv-spectre", Category = CatAdvanced, Experimental = true, RequiresRestart = true,
                 Name = "Vypnout ochranu Spectre a Meltdown",
                 Description = "Vypne softwarové opravy procesorových chyb Spectre a Meltdown. Na starších procesorech zrychlí systém.",
                 Note = "Silně nedoporučeno: oslabuje zabezpečení procesoru. Vyžaduje restart.",

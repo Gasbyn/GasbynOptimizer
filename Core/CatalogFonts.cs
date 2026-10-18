@@ -17,7 +17,7 @@ internal static class CatalogFonts
             // ===== Písma =====
             new()
             {
-                Id = "online-fonts", IsNew = true, Category = CatFonts, Recommended = true,
+                Id = "online-fonts", Category = CatFonts, Recommended = true,
                 Name = "Nestahovat písma z internetu",
                 Description = "Windows nebude na pozadí stahovat dodatečná písma od Microsoftu. Menší síťový provoz a méně pozadí.",
                 Note = "Některé aplikace Office mohou chybějící písma nabídnout až po ruční instalaci.",
@@ -29,7 +29,7 @@ internal static class CatalogFonts
             // ===== Vzhled a animace =====
             new()
             {
-                Id = "acrylic-logon", IsNew = true, Category = Catalog.CatVisual,
+                Id = "acrylic-logon", Category = Catalog.CatVisual,
                 Name = "Vypnout rozostření pozadí přihlašovací obrazovky",
                 Description = "Přihlašovací obrazovka se zobrazí bez rozostřeného pozadí (rychlejší na slabších grafikách).",
                 Ops = new TweakOp[]
@@ -39,7 +39,7 @@ internal static class CatalogFonts
             },
             new()
             {
-                Id = "thumbnails-off", IsNew = true, Category = Catalog.CatVisual,
+                Id = "thumbnails-off", Category = Catalog.CatVisual,
                 Name = "Místo náhledů zobrazovat ikony",
                 Description = "Průzkumník nebude vytvářet miniatury obrázků a videí. Rychlejší otevírání velkých složek.",
                 Note = "V seznamech souborů uvidíš místo náhledů jen ikony.",
@@ -51,7 +51,7 @@ internal static class CatalogFonts
             },
             new()
             {
-                Id = "wallpaper-quality", IsNew = true, Category = Catalog.CatVisual,
+                Id = "wallpaper-quality", Category = Catalog.CatVisual,
                 Name = "Plná kvalita tapety",
                 Description = "Windows přestane tapetu komprimovat a zobrazí ji v plné kvalitě JPEG.",
                 Note = "Projeví se po novém nastavení tapety.",
@@ -65,7 +65,7 @@ internal static class CatalogFonts
             // ===== Systém a pohodlí =====
             new()
             {
-                Id = "autoplay-off", IsNew = true, Category = Catalog.CatSystem, Recommended = true,
+                Id = "autoplay-off", Category = Catalog.CatSystem, Recommended = true,
                 Name = "Vypnout automatické přehrávání vyměnitelných disků",
                 Description = "Po připojení USB disku nebo karty se nespustí nic samo. Bezpečnější a bez rušivých oken.",
                 RequiresRestart = false,
@@ -76,7 +76,7 @@ internal static class CatalogFonts
             },
             new()
             {
-                Id = "recent-files", IsNew = true, Category = Catalog.CatUi,
+                Id = "recent-files", Category = Catalog.CatUi,
                 Name = "Nezobrazovat nedávné a časté soubory",
                 Description = "Rychlý přístup v Průzkumníku nebude ukazovat nedávno otevřené soubory ani často používané složky.",
                 RequiresRestart = false,

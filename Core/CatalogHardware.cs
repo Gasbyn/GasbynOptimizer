@@ -11,7 +11,7 @@ internal static class CatalogHardware
         {
             new()
             {
-                Id = "nvidia-telemetry", Category = CatHardware, IsNew = true, Experimental = true,
+                Id = "nvidia-telemetry", Category = CatHardware, Experimental = true,
                 Requires = Needs.Nvidia,
                 RecommendWhen = p => p.HasGpu(GpuVendor.Nvidia),
                 Name = "NVIDIA: vypnout telemetrii ovladače",
@@ -31,7 +31,7 @@ internal static class CatalogHardware
             },
             new()
             {
-                Id = "amd-crash-defender", Category = CatHardware, IsNew = true, Experimental = true,
+                Id = "amd-crash-defender", Category = CatHardware, Experimental = true,
                 Requires = Needs.AmdGpu,
                 Name = "AMD: vypnout službu Crash Defender",
                 Description = "Zakáže službu AMD Crash Defender, která sbírá data o pádech ovladače.",
@@ -40,7 +40,7 @@ internal static class CatalogHardware
             },
             new()
             {
-                Id = "intel-usage-report", Category = CatHardware, IsNew = true,
+                Id = "intel-usage-report", Category = CatHardware,
                 Requires = Needs.IntelCpu,
                 RecommendWhen = p => p.CpuVendor == "Intel",
                 Name = "Intel: vypnout hlášení o používání",
@@ -50,7 +50,7 @@ internal static class CatalogHardware
             },
             new()
             {
-                Id = "asus-armoury", Category = CatHardware, IsNew = true, Experimental = true,
+                Id = "asus-armoury", Category = CatHardware, Experimental = true,
                 Requires = Needs.Asus,
                 Name = "ASUS: vypnout služby Armoury Crate a ASUS aplikací",
                 Description = "Zakáže služby na pozadí od ASUS (Armoury Crate, ASUS Link, diagnostika). Šetří paměť a procesor.",
@@ -71,7 +71,7 @@ internal static class CatalogHardware
             },
             new()
             {
-                Id = "msi-center", Category = CatHardware, IsNew = true, Experimental = true,
+                Id = "msi-center", Category = CatHardware, Experimental = true,
                 Requires = Needs.Msi,
                 Name = "MSI: vypnout služby MSI Center",
                 Description = "Zakáže služby na pozadí od MSI Center. Šetří paměť a procesor.",
@@ -84,7 +84,7 @@ internal static class CatalogHardware
             },
             new()
             {
-                Id = "win10-news", Category = Catalog.CatUi, IsNew = true,
+                Id = "win10-news", Category = Catalog.CatUi,
                 Requires = Needs.Windows10, RecommendWhen = p => !p.IsWindows11,
                 RequiresRestart = false,
                 Name = "Windows 10: vypnout Zpravodajství na hlavním panelu",
