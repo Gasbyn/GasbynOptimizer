@@ -100,12 +100,16 @@ public sealed class TweakService
 
     public Dictionary<string, TweakState> ScanAll(IReadOnlyList<Tweak> tweaks, IProgress<(int, int)>? progress)
     {
-        var result = new Dictionary<string, TweakState>(StringComparer.OrdinalIgnoreCase);
-        for (var i = 0; i < tweaks.Count; i++)
+        var states = new TweakState[tweaks.Count];
+        var done = 0;
+        Parallel.For(0, tweaks.Count, new ParallelOptions { MaxDegreeOfParallelism = Math.Min(8, Environment.ProcessorCount * 2) }, i =>
         {
-            result[tweaks[i].Id] = Scan(tweaks[i]);
-            progress?.Report((i + 1, tweaks.Count));
-        }
+            states[i] = Scan(tweaks[i]);
+            progress?.Report((Interlocked.Increment(ref done), tweaks.Count));
+        });
+
+        var result = new Dictionary<string, TweakState>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < tweaks.Count; i++) result[tweaks[i].Id] = states[i];
         return result;
     }
 
@@ -120,6 +124,9 @@ public sealed class TweakService
         {
             var backup = _store.Get(tweak.Id);
             var errors = new List<string>();
+
+            if (enable && tweak.Ops.All(o => { try { return o.Detect() == OpState.Missing; } catch { return false; } }))
+                return new ToggleResult(false, "Nic se nezměnilo – tato součást na tomto PC neexistuje.", false);
 
             foreach (var op in tweak.Ops)
             {

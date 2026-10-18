@@ -63,6 +63,26 @@ public partial class OptimizerWindow : Window
 
         UpdateCounts();
         SourceInitialized += (_, _) => EnableDarkTitleBar();
+        StateChanged += (_, _) => UpdateWindowState();
+    }
+
+    // --- vlastní horní lišta ------------------------------------------------------------------
+
+    private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void Maximize_Click(object sender, RoutedEventArgs e) =>
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void UpdateWindowState()
+    {
+        var maximized = WindowState == WindowState.Maximized;
+        MaxIcon.Visibility = maximized ? Visibility.Collapsed : Visibility.Visible;
+        RestoreIcon.Visibility = maximized ? Visibility.Visible : Visibility.Collapsed;
+
+        // Okno bez systémového rámu po maximalizaci přesahuje obrazovku o šířku rámu, proto ho odsadíme.
+        WindowRoot.Margin = maximized ? SystemParameters.WindowResizeBorderThickness : new Thickness(0);
     }
 
     // --- tmavý titulek okna -------------------------------------------------------------------
@@ -86,11 +106,22 @@ public partial class OptimizerWindow : Window
 
     // --- navigace a filtry --------------------------------------------------------------------
 
+    private static StackPanel NavContent(string text, string tag)
+    {
+        var panel = new StackPanel { Orientation = Orientation.Horizontal };
+        var icon = Icons.Create<RadioButton>(Icons.ForCategory(tag), 18);
+        icon.Margin = new Thickness(0, 0, 12, 0);
+        icon.VerticalAlignment = VerticalAlignment.Center;
+        panel.Children.Add(icon);
+        panel.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
+        return panel;
+    }
+
     private RadioButton AddNav(string text, string tag, bool selected)
     {
         var button = new RadioButton
         {
-            Content = text,
+            Content = NavContent(text, tag),
             Tag = tag,
             GroupName = "nav",
             IsChecked = selected,
@@ -200,10 +231,16 @@ public partial class OptimizerWindow : Window
     private void ShowBusy(string text)
     {
         BusyText.Text = text;
+        BusySpinner.Data = Icons.Get("Sync");
+        Icons.Spin(BusySpinner, true);
         BusyOverlay.Visibility = Visibility.Visible;
     }
 
-    private void HideBusy() => BusyOverlay.Visibility = Visibility.Collapsed;
+    private void HideBusy()
+    {
+        Icons.Spin(BusySpinner, false);
+        BusyOverlay.Visibility = Visibility.Collapsed;
+    }
 
     // --- změny optimalizací -------------------------------------------------------------------
 
@@ -280,6 +317,13 @@ public partial class OptimizerWindow : Window
         if (sender is not FrameworkElement { DataContext: TweakItem item } || !item.CanToggle) return;
 
         var enable = !item.IsOn;
+
+        // Pokročilý režim dovolí kliknout i na optimalizaci, která na tomto PC nemá co měnit. Není co provést.
+        if (!item.IsAvailable)
+        {
+            item.SetStatus(TweakItem.NothingToChange, true);
+            return;
+        }
 
         if (enable && !item.IsSupported)
         {

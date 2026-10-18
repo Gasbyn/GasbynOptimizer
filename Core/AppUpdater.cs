@@ -22,7 +22,7 @@ public static class AppUpdater
 
     private static HttpClient CreateClient()
     {
-        var client = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+        var client = new HttpClient(new SocketsHttpHandler { AutomaticDecompression = System.Net.DecompressionMethods.All, ConnectTimeout = TimeSpan.FromSeconds(10) }) { Timeout = TimeSpan.FromMinutes(5) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("GasbynOptimizer-Updater");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return client;
@@ -108,9 +108,9 @@ public static class AppUpdater
         var total = response.Content.Headers.ContentLength ?? -1;
 
         await using (var source = await response.Content.ReadAsStreamAsync(ct))
-        await using (var target = File.Create(path))
+        await using (var target = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 20, true))
         {
-            var buffer = new byte[81920];
+            var buffer = new byte[1 << 20];
             long done = 0;
             int read;
             while ((read = await source.ReadAsync(buffer, ct)) > 0)

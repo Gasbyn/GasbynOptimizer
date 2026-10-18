@@ -7,6 +7,8 @@ public partial class SplashWindow : Window
     public SplashWindow()
     {
         InitializeComponent();
+        Spinner.Data = Icons.Get("Sync");
+        Icons.Spin(Spinner, true);
     }
 
     public void SetStatus(string text) => Status.Text = text;

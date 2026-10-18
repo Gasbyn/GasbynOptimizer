@@ -73,6 +73,7 @@ jobs:
           --runtime win-x64
           --self-contained true
           -p:PublishSingleFile=true
+          -p:PublishReadyToRun=true
           -p:IncludeNativeLibrariesForSelfExtract=true
           -p:Version=${{ steps.ver.outputs.version }}
           --output publish

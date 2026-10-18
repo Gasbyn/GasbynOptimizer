@@ -287,12 +287,34 @@ public sealed class TaskOp : TweakOp
 {
     private readonly string _path;
 
+    private static readonly Lazy<bool> TasksFolderReadable = new(() =>
+    {
+        try { return Directory.EnumerateFileSystemEntries(Path.Combine(Environment.SystemDirectory, "Tasks")).Any(); }
+        catch { return false; }
+    });
+
     public TaskOp(string path) => _path = path;
 
     public override string Key => "TASK:" + _path;
 
     public override OpState Detect()
     {
+        // Rychlá cesta: definice úlohy je soubor v System32\Tasks (bez spouštění schtasks).
+        try
+        {
+            var file = Path.Combine(Environment.SystemDirectory, "Tasks", _path.Trim('\\').Replace('/', '\\'));
+            if (!File.Exists(file) && TasksFolderReadable.Value) return OpState.Missing;
+            if (File.Exists(file))
+            {
+                var xml = File.ReadAllText(file);
+                var block = Regex.Match(xml, "<Settings>.*?</Settings>", RegexOptions.Singleline);
+                if (!block.Success) return OpState.Off;
+                return Regex.IsMatch(block.Value, @"<Enabled>\s*false\s*</Enabled>", RegexOptions.IgnoreCase)
+                    ? OpState.On : OpState.Off;
+            }
+        }
+        catch { /* pokračuje se přes schtasks */ }
+
         var result = Shell.Run(Shell.System32("schtasks.exe"), "/Query /TN \"" + _path + "\" /XML", 30000);
         if (result.ExitCode != 0) return OpState.Missing;
 

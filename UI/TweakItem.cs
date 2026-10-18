@@ -83,14 +83,23 @@ public sealed class TweakItem : INotifyPropertyChanged
     public bool IsPartial => State == TweakState.Partial;
     public bool IsAvailable => State != TweakState.NotApplicable;
 
+    /// <summary>
+    /// Zapnout nebo vrátit jde podporovanou optimalizaci. Nepodporovanou jen v pokročilém režimu.
+    /// V pokročilém režimu jde kliknout i na nepodporovanou optimalizaci, která na tomto PC nemá co měnit
+    /// (aplikace pak vysvětlí, že se nic nezměnilo).
+    /// </summary>
     public bool CanToggle =>
-        IsAvailable && !IsBusy && (IsSupported || _advanced || IsOn || IsPartial) && !(IsApplyOnly && IsOn);
+        !IsBusy && !(IsApplyOnly && IsOn) &&
+        (IsAvailable ? IsSupported || _advanced || IsOn || IsPartial : _advanced && !IsSupported);
 
-    /// <summary>Podporovaná optimalizace, ale na tomto PC chybí to, co mění (služba, úloha, program).</summary>
-    public bool ShowUnavailable => IsSupported && !IsAvailable;
+    /// <summary>Na tomto PC chybí to, co optimalizace mění (služba, úloha, program výrobce).</summary>
+    public bool ShowUnavailable => !IsAvailable;
 
     public string UnavailableText =>
-        "Nelze zapnout: na tomto počítači nebylo nalezeno nic, co by tato optimalizace měnila (např. chybí služba nebo program).";
+        "Na tomto počítači není nainstalováno nic, co by tato optimalizace měnila (například služba nebo program výrobce), takže není co zapnout.";
+
+    public const string NothingToChange =
+        "Nic se nezměnilo: na tomto počítači není nainstalováno nic, co by tato optimalizace měnila (například služba nebo program výrobce).";
 
     public string StateText
     {
