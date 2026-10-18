@@ -64,6 +64,15 @@ public partial class OptimizerWindow : Window
         UpdateCounts();
         SourceInitialized += (_, _) => EnableDarkTitleBar();
         StateChanged += (_, _) => UpdateWindowState();
+        WindowRoot.SizeChanged += (_, _) => ClipRoot();
+    }
+
+    /// <summary>Ořízne obsah do zaoblených rohů okna.</summary>
+    private void ClipRoot()
+    {
+        var radius = WindowState == WindowState.Maximized ? 0 : WindowRoot.CornerRadius.TopLeft;
+        WindowRoot.Clip = new System.Windows.Media.RectangleGeometry(
+            new Rect(0, 0, WindowRoot.ActualWidth, WindowRoot.ActualHeight), radius, radius);
     }
 
     // --- vlastní horní lišta ------------------------------------------------------------------
@@ -83,6 +92,8 @@ public partial class OptimizerWindow : Window
 
         // Okno bez systémového rámu po maximalizaci přesahuje obrazovku o šířku rámu, proto ho odsadíme.
         WindowRoot.Margin = maximized ? SystemParameters.WindowResizeBorderThickness : new Thickness(0);
+        WindowRoot.CornerRadius = new CornerRadius(maximized ? 0 : 14);
+        ClipRoot();
     }
 
     // --- tmavý titulek okna -------------------------------------------------------------------

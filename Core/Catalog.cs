@@ -23,7 +23,7 @@ public static class Catalog
     /// <summary>Pořadí kategorií v levém menu.</summary>
     internal static readonly string[] CategoryOrder =
     {
-        CatPrivacy, CatUpdate, CatInternet, CatGaming, CatalogPower.CatPower, CatSystem, CatVisual, CatalogFonts.CatFonts, CatUi, CatServices, CatalogHardware.CatHardware
+        CatPrivacy, CatUpdate, CatInternet, CatGaming, CatalogPower.CatPower, CatSystem, CatVisual, CatalogFonts.CatFonts, CatUi, CatServices, CatalogHardware.CatHardware, CatalogAdvanced.CatAdvanced
     };
 
     // --- pomocné továrny ---------------------------------------------------------------------
@@ -52,7 +52,7 @@ public static class Catalog
 
     // --- katalog -----------------------------------------------------------------------------
 
-    public static IReadOnlyList<Tweak> All() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).Concat(CatalogPower.Create()).ToList();
+    public static IReadOnlyList<Tweak> All() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).Concat(CatalogPower.Create()).Concat(CatalogAdvanced.Create()).ToList();
 
     private static IReadOnlyList<Tweak> Base()
     {

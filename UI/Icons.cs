@@ -110,6 +110,7 @@ public static class Icons
         "Rozhraní a pohodlí" => "Tune",
         "Služby a úlohy" => "Server",
         "Hardware a zařízení" => "Chip",
+        "Pokročilé" => "Bolt",
         "#fps" => "Speed",
         "#maint" => "Build",
         "#settings" => "Settings",

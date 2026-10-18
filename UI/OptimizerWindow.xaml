@@ -4,8 +4,8 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Title="Gasbyn Optimizer" Width="1120" Height="760" MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen" Icon="/Logo.png"
-        WindowStyle="None" ResizeMode="CanResize"
-        Background="{StaticResource BgBrush}" Foreground="{StaticResource TextBrush}"
+        WindowStyle="None" ResizeMode="CanResize" AllowsTransparency="True"
+        Background="Transparent" Foreground="{StaticResource TextBrush}"
         FontFamily="Segoe UI" UseLayoutRounding="True">
 
     <shell:WindowChrome.WindowChrome>
@@ -134,7 +134,7 @@
 
     </Window.Resources>
 
-    <Border x:Name="WindowRoot" Background="{StaticResource BgBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+    <Border x:Name="WindowRoot" Background="{StaticResource BgBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="14" SnapsToDevicePixels="True">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="36"/>

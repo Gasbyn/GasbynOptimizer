@@ -2,10 +2,10 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Gasbyn Optimizer" Width="460" Height="300"
-        WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="NoResize"
-        Background="{StaticResource BgBrush}" Foreground="{StaticResource TextBrush}"
+        WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True"
+        Background="Transparent" Foreground="{StaticResource TextBrush}"
         FontFamily="Segoe UI" ShowInTaskbar="True">
-    <Border BorderBrush="{StaticResource OrangeBrush}" BorderThickness="1">
+    <Border Background="{StaticResource BgBrush}" BorderBrush="{StaticResource OrangeBrush}" BorderThickness="1" CornerRadius="16">
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="340">
             <Image Source="/Logo.png" Height="84" Margin="0,0,0,14" RenderOptions.BitmapScalingMode="HighQuality"/>
             <TextBlock Text="GASBYN OPTIMIZER" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
