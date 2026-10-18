@@ -169,6 +169,40 @@ internal static class CatalogAdvanced
                     Catalog.Hklm(@"SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", "FeatureSettingsOverride", 3, null),
                     Catalog.Hklm(@"SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", "FeatureSettingsOverrideMask", 3, null)
                 }
+            },
+            new()
+            {
+                Id = "adv-paging-executive", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Name = "Držet jádro systému v paměti RAM",
+                Description = "Zakáže stránkování jádra a ovladačů na disk, takže zůstanou v RAM. Hodí se při větším množství paměti (16 GB a víc).",
+                Note = "Experimentální: na PC s málem RAM může způsobit nedostatek paměti. Vyžaduje restart.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Hklm(@"SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", "DisablePagingExecutive", 1, 0)
+                }
+            },
+            new()
+            {
+                Id = "adv-push-notifications", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Name = "Vypnout službu push oznámení",
+                Description = "Zakáže službu oznámení Windows (WpnService). Aplikace přestanou zobrazovat oznámení.",
+                Note = "Experimentální: nechodí oznámení z aplikací ani z Obchodu.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Service("WpnService", "auto")
+                }
+            },
+            new()
+            {
+                Id = "adv-defender-off", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Name = "Vypnout Microsoft Defender",
+                Description = "Vypne antivirus Microsoft Defender a ochranu v reálném čase přes zásady.",
+                Note = "Silně nedoporučeno bez jiného antiviru. Při zapnuté ochraně proti neoprávněným změnám (Tamper Protection) Windows změnu nepřijme.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows Defender", "DisableAntiSpyware", 1, null),
+                    Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection", "DisableRealtimeMonitoring", 1, null)
+                }
             }
         };
     }

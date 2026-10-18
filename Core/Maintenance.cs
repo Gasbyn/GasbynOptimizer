@@ -57,6 +57,41 @@ public static class Maintenance
         }
     }
 
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 4)]
+    private struct ShQueryRbInfo
+    {
+        public int cbSize;
+        public long i64Size;
+        public long i64NumItems;
+    }
+
+    [System.Runtime.InteropServices.DllImport("shell32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int SHQueryRecycleBin(string? rootPath, ref ShQueryRbInfo info);
+
+    [System.Runtime.InteropServices.DllImport("shell32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int SHEmptyRecycleBin(IntPtr hwnd, string? rootPath, uint flags);
+
+    /// <summary>Vysype koš na všech discích bez potvrzení. Vrací velikost a počet smazaných položek.</summary>
+    private static void EmptyRecycleBin(ref long bytes, ref int files)
+    {
+        try
+        {
+            var info = new ShQueryRbInfo { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<ShQueryRbInfo>() };
+            if (SHQueryRecycleBin(null, ref info) != 0 || info.i64NumItems == 0) return;
+
+            // 0x7 = bez potvrzení, bez okna s průběhem, bez zvuku.
+            if (SHEmptyRecycleBin(IntPtr.Zero, null, 0x7) == 0)
+            {
+                bytes += info.i64Size;
+                files += (int)Math.Min(info.i64NumItems, int.MaxValue);
+            }
+        }
+        catch
+        {
+            // Koš se nepodařilo vysypat, pokračuje se dál.
+        }
+    }
+
     private static string Env(Environment.SpecialFolder folder) => Environment.GetFolderPath(folder);
 
     /// <summary>Smaže dočasné soubory uživatele a systému.</summary>
@@ -83,6 +118,9 @@ public static class Maintenance
         DeleteFile(Path.Combine(windows, "MEMORY.DMP"), ref bytes, ref files);
         DeleteContents(Path.Combine(windows, "SoftwareDistribution", "Download"), ref bytes, ref files);
         DeleteContents(Path.Combine(windows, "ServiceProfiles", "NetworkService", "AppData", "Local", "Microsoft", "Windows", "DeliveryOptimization", "Cache"), ref bytes, ref files);
+
+        // Koš na všech discích.
+        EmptyRecycleBin(ref bytes, ref files);
 
         // Náhledy obrázků v Průzkumníku (vytvoří se znovu).
         var explorer = Path.Combine(local, "Microsoft", "Windows", "Explorer");

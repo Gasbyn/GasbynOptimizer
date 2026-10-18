@@ -52,7 +52,7 @@ public static class Catalog
 
     // --- katalog -----------------------------------------------------------------------------
 
-    public static IReadOnlyList<Tweak> All() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).Concat(CatalogPower.Create()).Concat(CatalogAdvanced.Create()).ToList();
+    public static IReadOnlyList<Tweak> All() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).Concat(CatalogPower.Create()).Concat(CatalogAdvanced.Create()).Concat(CatalogMore.Create()).ToList();
 
     private static IReadOnlyList<Tweak> Base()
     {
@@ -84,7 +84,7 @@ public static class Catalog
             },
             new()
             {
-                Id = "telemetry-tasks", Category = CatPrivacy, Recommended = true, IsNew = true,
+                Id = "telemetry-tasks", Category = CatPrivacy, Recommended = true,
                 Name = "Vypnout telemetrické úlohy",
                 Description = "Zakáže naplánované úlohy, které sbírají diagnostická data (Compatibility Appraiser, CEIP, zpětná vazba, hlášení chyb, rodinná bezpečnost, mapy a další).",
                 RequiresRestart = false,

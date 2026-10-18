@@ -308,7 +308,7 @@
                                 <StackPanel>
                                     <TextBlock Text="Úklid systému" Style="{StaticResource SectionTitle}"/>
                                     <TextBlock Style="{StaticResource SectionText}"
-                                               Text="Jednorázové akce. Na rozdíl od optimalizací se nedají vrátit zpět (mažou se dočasné soubory, výpisy pádů, protokoly Windows, mezipaměť Windows Update a mezipaměť DNS)."/>
+                                               Text="Jednorázové akce. Na rozdíl od optimalizací se nedají vrátit zpět (mažou se dočasné soubory, výpisy pádů, protokoly Windows, mezipaměť Windows Update, koš a mezipaměť DNS)."/>
                                     <StackPanel Orientation="Horizontal">
                                         <Button Style="{StaticResource GhostButton}" Content="Vyčistit dočasné a systémové soubory" Click="CleanTemp_Click" Margin="0,0,8,0"/>
                                         <Button Style="{StaticResource GhostButton}" Content="Vyprázdnit DNS cache" Click="FlushDns_Click"/>
