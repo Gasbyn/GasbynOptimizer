@@ -23,7 +23,7 @@ public static class Catalog
     /// <summary>Pořadí kategorií v levém menu.</summary>
     internal static readonly string[] CategoryOrder =
     {
-        CatPrivacy, CatUpdate, CatInternet, CatGaming, CatSystem, CatVisual, CatalogFonts.CatFonts, CatUi, CatServices, CatalogHardware.CatHardware
+        CatPrivacy, CatUpdate, CatInternet, CatGaming, CatalogPower.CatPower, CatSystem, CatVisual, CatalogFonts.CatFonts, CatUi, CatServices, CatalogHardware.CatHardware
     };
 
     // --- pomocné továrny ---------------------------------------------------------------------
@@ -52,7 +52,7 @@ public static class Catalog
 
     // --- katalog -----------------------------------------------------------------------------
 
-    public static IReadOnlyList<Tweak> All() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).ToList();
+    public static IReadOnlyList<Tweak> All() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).Concat(CatalogPower.Create()).ToList();
 
     private static IReadOnlyList<Tweak> Base()
     {
@@ -354,16 +354,6 @@ public static class Catalog
                     Hklm(@"SYSTEM\CurrentControlSet\Control\Power\PowerThrottling", "PowerThrottlingOff", 1, null)
                 }
             },
-            new()
-            {
-                Id = "ultimate-performance", Category = CatGaming, Requires = Needs.Desktop,
-                Name = "Plán napájení Ultimate Performance",
-                Description = "Procesor nesnižuje frekvence a odezva je okamžitá. Původní plán se při vypnutí obnoví.",
-                Note = "Ideální pro stolní PC. Na notebooku výrazně zvyšuje spotřebu baterie.",
-                RequiresRestart = false,
-                Ops = new TweakOp[] { new PowerPlanOp() }
-            },
-
             // ===== Systém a napájení =====
             new()
             {

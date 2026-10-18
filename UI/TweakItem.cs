@@ -30,6 +30,8 @@ public sealed class TweakItem : INotifyPropertyChanged
     public string Note => Tweak.Note;
     public bool HasNote => !string.IsNullOrEmpty(Tweak.Note);
     public bool IsExperimental => Tweak.Experimental;
+    public bool IsApplyOnly => Tweak.ApplyOnly;
+    public string ApplyText => IsOn ? "Aktivní" : "Použít";
     public bool IsNew => Tweak.IsNew;
 
     /// <summary>Doporučeno pro tento počítač (podle hardwaru a Windows).</summary>
@@ -72,6 +74,8 @@ public sealed class TweakItem : INotifyPropertyChanged
             Raise(nameof(IsAvailable));
             Raise(nameof(CanToggle));
             Raise(nameof(StateText));
+            Raise(nameof(ApplyText));
+            Raise(nameof(ShowUnavailable));
         }
     }
 
@@ -79,13 +83,23 @@ public sealed class TweakItem : INotifyPropertyChanged
     public bool IsPartial => State == TweakState.Partial;
     public bool IsAvailable => State != TweakState.NotApplicable;
 
-    public bool CanToggle => IsAvailable && !IsBusy && (IsSupported || _advanced || IsOn || IsPartial);
+    public bool CanToggle =>
+        IsAvailable && !IsBusy && (IsSupported || _advanced || IsOn || IsPartial) && !(IsApplyOnly && IsOn);
+
+    /// <summary>Podporovaná optimalizace, ale na tomto PC chybí to, co mění (služba, úloha, program).</summary>
+    public bool ShowUnavailable => IsSupported && !IsAvailable;
+
+    public string UnavailableText =>
+        "Nelze zapnout: na tomto počítači nebylo nalezeno nic, co by tato optimalizace měnila (např. chybí služba nebo program).";
 
     public string StateText
     {
         get
         {
             if (ShowLock) return "🔒 Nepodporováno";
+            if (IsApplyOnly)
+                return State == TweakState.On ? "Aktivní plán" : State == TweakState.NotApplicable ? "Nedostupné" : "Neaktivní";
+
             return State switch
             {
                 TweakState.On => "Zapnuto",

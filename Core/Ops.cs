@@ -228,7 +228,7 @@ public sealed class ServiceOp : TweakOp
         SetStart(ToWord(_targetStart, false));
 
         if (_targetStart == 4)
-            Shell.Run(Shell.System32("sc.exe"), "stop " + _name, 20000); // best-effort, chyba nevadí
+            Shell.Run(Shell.System32("sc.exe"), "stop \"" + _name + "\"", 20000); // best-effort, chyba nevadí
     }
 
     public override void Revert(TweakBackup backup)
@@ -241,9 +241,35 @@ public sealed class ServiceOp : TweakOp
 
     private void SetStart(string word)
     {
-        var result = Shell.Run(Shell.System32("sc.exe"), "config " + _name + " start= " + word, 30000);
-        if (result.ExitCode != 0)
-            throw new InvalidOperationException("Službu " + _name + " se nepodařilo upravit (kód " + result.ExitCode + "): " + result.Output);
+        // Název služby se musí dát do uvozovek, jinak služby s mezerou v názvu (např. „AMD Crash Defender Service“) selžou.
+        var result = Shell.Run(Shell.System32("sc.exe"), "config \"" + _name + "\" start= " + word, 30000);
+        if (result.ExitCode == 0) return;
+
+        // Záloha: některé služby odmítnou sc.exe, ale jdou přepnout přímo v registru (správce má právo zápisu).
+        try
+        {
+            using var key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + _name, true);
+            if (key == null) throw new InvalidOperationException("Služba v registru neexistuje.");
+
+            var (start, delayed) = word switch
+            {
+                "boot" => (0, false),
+                "system" => (1, false),
+                "auto" => (2, false),
+                "delayed-auto" => (2, true),
+                "demand" => (3, false),
+                _ => (4, false)
+            };
+
+            key.SetValue("Start", start, RegistryValueKind.DWord);
+            if (delayed) key.SetValue("DelayedAutostart", 1, RegistryValueKind.DWord);
+            else key.DeleteValue("DelayedAutostart", false);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Službu „" + _name + "“ se nepodařilo upravit. sc.exe: " + result.Output.Trim() +
+                                                " | registr: " + ex.Message);
+        }
     }
 
     private static string ToWord(int start, bool delayed) => start switch
@@ -308,19 +334,29 @@ public sealed class TaskOp : TweakOp
     }
 }
 
-/// <summary>Plán napájení Ultimate Performance (vlastní kopie, původní plán se při vrácení obnoví).</summary>
-public sealed class PowerPlanOp : TweakOp
+/// <summary>
+/// Vlastní plán napájení vložený v aplikaci jako soubor .pow. Zapnutí ho naimportuje (pod pevným GUID)
+/// a nastaví jako aktivní. Původní aktivní plán zůstává ve Windows, jde na něj kdykoli přepnout.
+/// </summary>
+public sealed class PowerPlanImportOp : TweakOp
 {
-    private const string UltimateTemplate = "e9a42b02-d5df-448d-aa00-03f14749eb61";
-    private const string OurPlan = "9a6b7c50-3f8e-4c1d-b7a4-5d6e8f102a31";
     private const string Balanced = "381b4222-f694-41f0-9685-ff5bb260df2e";
 
     private static readonly Regex GuidRegex =
         new("[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}", RegexOptions.Compiled);
 
+    private readonly string _resource;
+    private readonly string _guid;
+
+    public PowerPlanImportOp(string resourceName, string planGuid)
+    {
+        _resource = resourceName;
+        _guid = planGuid.ToLowerInvariant();
+    }
+
     private static string PowerCfg => Shell.System32("powercfg.exe");
 
-    public override string Key => "POWERPLAN";
+    public override string Key => "POWERPLAN:" + _guid;
 
     private static string? ActivePlan()
     {
@@ -329,48 +365,61 @@ public sealed class PowerPlanOp : TweakOp
         return match.Success ? match.Value.ToLowerInvariant() : null;
     }
 
+    private static bool PlanExists(string guid) =>
+        Shell.Run(PowerCfg, "/list", 20000).Output.ToLowerInvariant().Contains(guid);
+
     public override OpState Detect()
     {
         var active = ActivePlan();
         if (active == null) return OpState.Missing;
-        return active == OurPlan || active == UltimateTemplate ? OpState.On : OpState.Off;
+        return active == _guid ? OpState.On : OpState.Off;
+    }
+
+    private string ExtractResource()
+    {
+        var dir = Path.Combine(AppPaths.DataDir, "plans");
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, _guid + ".pow");
+
+        using var stream = typeof(PowerPlanImportOp).Assembly.GetManifestResourceStream(_resource)
+            ?? throw new InvalidOperationException("Soubor plánu napájení není součástí aplikace: " + _resource);
+        using var file = File.Create(path);
+        stream.CopyTo(file);
+        return path;
     }
 
     public override void Apply(TweakBackup backup)
     {
         var active = ActivePlan();
-        if (active == OurPlan || active == UltimateTemplate) return;
+        if (active == _guid) return;
 
         if (active != null && !backup.Entries.ContainsKey(Key))
             backup.Entries[Key] = new OpBackup { Existed = true, Kind = "powerplan", Data = active };
+        Log.Write("Plán napájení: dosavadní aktivní plán " + (active ?? "neznámý") + ", aplikuji " + _guid);
 
-        var list = Shell.Run(PowerCfg, "/list", 20000).Output.ToLowerInvariant();
-        if (!list.Contains(OurPlan))
-        {
-            var copy = Shell.Run(PowerCfg, "/duplicatescheme " + UltimateTemplate + " " + OurPlan, 20000);
-            if (copy.ExitCode != 0)
-                throw new InvalidOperationException("Plán Ultimate Performance není na tomto PC dostupný: " + copy.Output);
+        var path = ExtractResource();
 
-            Shell.Run(PowerCfg, "/changename " + OurPlan + " \"Gasbyn Ultimate Performance\"", 20000);
-        }
+        // Stejný plán už mohl být naimportován dřív. Smažeme ho a naimportujeme znovu, aby odpovídal souboru v aplikaci.
+        if (PlanExists(_guid))
+            Shell.Run(PowerCfg, "/delete " + _guid, 20000);
 
-        var set = Shell.Run(PowerCfg, "/setactive " + OurPlan, 20000);
+        var import = Shell.Run(PowerCfg, "/import \"" + path + "\" " + _guid, 30000);
+        if (import.ExitCode != 0)
+            throw new InvalidOperationException("Plán napájení se nepodařilo naimportovat (kód " + import.ExitCode + "): " + import.Output.Trim());
+
+        var set = Shell.Run(PowerCfg, "/setactive " + _guid, 20000);
         if (set.ExitCode != 0)
-            throw new InvalidOperationException("Plán napájení se nepodařilo aktivovat: " + set.Output);
+            throw new InvalidOperationException("Plán napájení se nepodařilo aktivovat: " + set.Output.Trim());
     }
 
     public override void Revert(TweakBackup backup)
     {
         var target = backup.Entries.TryGetValue(Key, out var saved) ? saved.Data : Balanced;
-
-        var list = Shell.Run(PowerCfg, "/list", 20000).Output.ToLowerInvariant();
-        if (!list.Contains(target)) target = Balanced;
+        if (!PlanExists(target)) target = Balanced;
 
         var set = Shell.Run(PowerCfg, "/setactive " + target, 20000);
         if (set.ExitCode != 0)
-            throw new InvalidOperationException("Původní plán napájení se nepodařilo obnovit: " + set.Output);
-
-        Shell.Run(PowerCfg, "/delete " + OurPlan, 20000); // best-effort úklid vlastní kopie
+            throw new InvalidOperationException("Původní plán napájení se nepodařilo obnovit: " + set.Output.Trim());
     }
 }
 

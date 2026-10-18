@@ -187,8 +187,8 @@ public partial class OptimizerWindow : Window
 
     private void UpdateCounts()
     {
-        var available = _items.Count(i => i.IsAvailable && i.IsSupported);
-        var on = _items.Count(i => i.IsOn && i.IsSupported);
+        var available = _items.Count(i => i.IsAvailable && i.IsSupported && !i.IsApplyOnly);
+        var on = _items.Count(i => i.IsOn && i.IsSupported && !i.IsApplyOnly);
         var unsupported = _items.Count(i => !i.IsSupported);
 
         CountText.Text = "Zapnuto " + on + " z " + available + " dostupných optimalizací" +
@@ -257,6 +257,16 @@ public partial class OptimizerWindow : Window
         item.SetStatus(outcome.Result.Message, !outcome.Result.Success);
         item.IsBusy = false;
 
+        // U plánů napájení je aktivní vždy jen jeden, ostatní se musí překreslit.
+        if (item.IsApplyOnly)
+        {
+            foreach (var other in _items.Where(i => i.IsApplyOnly && !ReferenceEquals(i, item)).ToList())
+            {
+                var captured = other;
+                captured.State = await Task.Run(() => _service.Scan(captured.Tweak));
+            }
+        }
+
         if (outcome.Result.Success && outcome.Result.RestartNeeded)
             RestartBanner.Visibility = Visibility.Visible;
 
@@ -286,7 +296,7 @@ public partial class OptimizerWindow : Window
 
     private async void ApplyRecommended_Click(object sender, RoutedEventArgs e)
     {
-        var targets = _items.Where(i => i.IsRecommended && i.IsSupported && i.IsAvailable && !i.IsOn).ToList();
+        var targets = _items.Where(i => i.IsRecommended && i.IsSupported && i.IsAvailable && !i.IsOn && !i.IsApplyOnly).ToList();
         if (targets.Count == 0)
         {
             MessageBox.Show(this, "Všechny doporučené optimalizace jsou už zapnuté.", "Gasbyn Optimizer",
@@ -320,7 +330,7 @@ public partial class OptimizerWindow : Window
 
     private async void RevertAll_Click(object sender, RoutedEventArgs e)
     {
-        var targets = _items.Where(i => i.IsOn || i.IsPartial).ToList();
+        var targets = _items.Where(i => (i.IsOn || i.IsPartial) && !i.IsApplyOnly).ToList();
         if (targets.Count == 0)
         {
             MessageBox.Show(this, "Žádná optimalizace není zapnutá.", "Gasbyn Optimizer",

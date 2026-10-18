@@ -11,13 +11,23 @@ internal static class CatalogHardware
         {
             new()
             {
-                Id = "nvidia-telemetry", Category = CatHardware, IsNew = true,
+                Id = "nvidia-telemetry", Category = CatHardware, IsNew = true, Experimental = true,
                 Requires = Needs.Nvidia,
                 RecommendWhen = p => p.HasGpu(GpuVendor.Nvidia),
                 Name = "NVIDIA: vypnout telemetrii ovladače",
-                Description = "Zakáže telemetrický kontejner NVIDIA (NvTelemetryContainer). Ovladač a GeForce Experience fungují dál.",
-                Note = "Novější ovladače tuto službu už nemusí obsahovat, pak se optimalizace zobrazí jako nedostupná.",
-                Ops = new TweakOp[] { Catalog.Service("NvTelemetryContainer", "auto") }
+                Description = "Vypne odesílání telemetrie NVIDIA (nastavení v registru, telemetrické úlohy a starší telemetrickou službu). Ovladač a GeForce Experience fungují dál.",
+                Note = "Experimentální: klíče registru pocházejí z veřejných návodů. Novější ovladače starou službu a úlohy už nemají, ty se pak přeskočí. Vypnutí vrátí původní stav.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Hklm(@"SOFTWARE\NVIDIA Corporation\NvControlPanel2\Client", "OptInOrOutPreference", 0, null),
+                    Catalog.Hklm(@"SOFTWARE\NVIDIA Corporation\Global\FTS", "EnableRID44231", 0, null),
+                    Catalog.Hklm(@"SOFTWARE\NVIDIA Corporation\Global\FTS", "EnableRID64640", 0, null),
+                    Catalog.Hklm(@"SOFTWARE\NVIDIA Corporation\Global\FTS", "EnableRID66610", 0, null),
+                    Catalog.Service("NvTelemetryContainer", "auto"),
+                    Catalog.SchedTask(@"\NvTmRep_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}"),
+                    Catalog.SchedTask(@"\NvTmMon_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}"),
+                    Catalog.SchedTask(@"\NvTmRepOnLogon_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}")
+                }
             },
             new()
             {

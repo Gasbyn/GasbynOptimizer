@@ -22,6 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\PowerPlans\*.pow" LogicalName="PowerPlans.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Logo.png" />
   </ItemGroup>
 

@@ -35,6 +35,9 @@ public sealed class Tweak
 
     /// <summary>Nově přidaná optimalizace (filtr Nové).</summary>
     public bool IsNew { get; init; }
+
+    /// <summary>Není přepínač ZAPNUTO/VYPNUTO, jen tlačítko „Použít“ (např. plán napájení).</summary>
+    public bool ApplyOnly { get; init; }
 }
 
 public sealed record ToggleResult(bool Success, string Message, bool RestartNeeded);

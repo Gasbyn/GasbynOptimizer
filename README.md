@@ -13,7 +13,8 @@ Optimalizace Windows 10/11 s přepínači **ZAPNUTO / VYPNUTO**. Každá změna 
 - **Čekací okno při startu.** Při každém spuštění se zjistí aktuální stav všech optimalizací.
 - **Bod obnovení systému** před první změnou (jde vypnout v Nastavení) i ručně na tlačítko.
 - **Zapnout doporučené** a **Vrátit vše** jedním tlačítkem, vyhledávání a filtry.
-- **Údržba** (samostatná stránka): vyčištění dočasných souborů, vyprázdnění DNS cache.
+- **Plány napájení:** dva vlastní plány (Gasbyn PC a Gasbyn Notebook) se použijí tlačítkem, ne přepínačem. Aplikace při startu pozná, jestli jde o stolní PC nebo notebook, a doporučí ten správný. Původní plán ve Windows zůstane.
+- **Údržba** (samostatná stránka se záložkami): úklid dočasných souborů a DNS, vyčištění mezipaměti aplikací, aktualizace aplikací (winget), odinstalace aplikací a čištění prohlížečů (označeno jako nedoporučené, protože smaže cookies a je potřeba se znovu přihlásit).
 - Tmavý herní vzhled s logem.
 
 Zdroje nápadů: ChrisTitusTool, Winhance, EXM, GTweaks. Zařazené jsou jen bezpečné a vratné úpravy.
@@ -64,6 +65,7 @@ Do `Core/Catalog.cs` přidej položku `Tweak` s popisem a seznamem dílčích zm
 - `RegistryOp` – hodnota v registru (zapnutá hodnota, výchozí hodnota pro vrácení),
 - `ServiceOp` – typ spouštění služby,
 - `TaskOp` – naplánovaná úloha,
-- `PowerPlanOp`, `CommandOp` – plán napájení a obecný příkaz.
+- `PowerPlanImportOp` – plán napájení ze souboru `.pow` v `Resources/PowerPlans`,
+- `CommandOp` – obecný příkaz.
 
 Zálohu a vrácení zpět zajišťuje `TweakService` automaticky.

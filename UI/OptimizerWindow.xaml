@@ -42,6 +42,8 @@
                                    TextWrapping="Wrap" FontSize="12.5" Margin="0,4,0,0"/>
                         <TextBlock x:Name="UnsupportedText" Text="{Binding UnsupportedText}" Visibility="Collapsed"
                                    Foreground="{StaticResource RedBrush}" TextWrapping="Wrap" FontSize="12" Margin="0,4,0,0"/>
+                        <TextBlock x:Name="UnavailableLabel" Text="{Binding UnavailableText}" Visibility="Collapsed"
+                                   Foreground="{StaticResource AmberBrush}" TextWrapping="Wrap" FontSize="12" Margin="0,4,0,0"/>
                         <TextBlock x:Name="NoteText" Text="{Binding Note}" Visibility="Collapsed"
                                    Foreground="{StaticResource AmberBrush}" TextWrapping="Wrap" FontSize="12" Margin="0,4,0,0"/>
                         <TextBlock x:Name="StatusText" Text="{Binding Status}" Visibility="Collapsed"
@@ -52,7 +54,10 @@
                         <TextBlock x:Name="StateLabel" Text="{Binding StateText}" Foreground="{StaticResource MutedBrush}" FontSize="11"
                                    FontFamily="Segoe UI, Segoe UI Emoji"
                                    HorizontalAlignment="Right" Margin="0,0,0,5"/>
-                        <Button Style="{StaticResource SwitchButton}" HorizontalAlignment="Right"
+                        <Button x:Name="SwitchBtn" Style="{StaticResource SwitchButton}" HorizontalAlignment="Right"
+                                IsEnabled="{Binding CanToggle}" Click="Toggle_Click"/>
+                        <Button x:Name="ApplyBtn" Style="{StaticResource PrimaryButton}" Visibility="Collapsed" HorizontalAlignment="Right"
+                                Padding="16,7" Content="{Binding ApplyText}"
                                 IsEnabled="{Binding CanToggle}" Click="Toggle_Click"/>
                     </StackPanel>
                 </Grid>
@@ -75,6 +80,13 @@
                 </DataTrigger>
                 <DataTrigger Binding="{Binding ShowLock}" Value="True">
                     <Setter TargetName="Card" Property="Opacity" Value="0.45"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ShowUnavailable}" Value="True">
+                    <Setter TargetName="UnavailableLabel" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsApplyOnly}" Value="True">
+                    <Setter TargetName="SwitchBtn" Property="Visibility" Value="Collapsed"/>
+                    <Setter TargetName="ApplyBtn" Property="Visibility" Value="Visible"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding HasNote}" Value="True">
                     <Setter TargetName="NoteText" Property="Visibility" Value="Visible"/>
@@ -229,21 +241,139 @@
 
                 <!-- Stránka: Údržba -->
                 <ScrollViewer x:Name="PageMaintenance" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="28,24,28,28" MaxWidth="760" HorizontalAlignment="Left">
-                        <TextBlock Text="Údržba" FontSize="24" FontWeight="Bold" Margin="0,0,0,18"/>
+                    <StackPanel Margin="28,24,28,28" MaxWidth="820" HorizontalAlignment="Left">
+                        <TextBlock Text="Údržba" FontSize="24" FontWeight="Bold" Margin="0,0,0,14"/>
 
-                        <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,12">
-                            <StackPanel>
-                                <TextBlock Text="Úklid" Style="{StaticResource SectionTitle}"/>
-                                <TextBlock Style="{StaticResource SectionText}"
-                                           Text="Jednorázové akce. Na rozdíl od optimalizací se nedají vrátit zpět (mažou se jen dočasné soubory a mezipaměť DNS)."/>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Style="{StaticResource GhostButton}" Content="Vyčistit dočasné soubory" Click="CleanTemp_Click" Margin="0,0,8,0"/>
-                                    <Button Style="{StaticResource GhostButton}" Content="Vyprázdnit DNS cache" Click="FlushDns_Click"/>
+                        <WrapPanel Margin="0,0,0,16">
+                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Úklid" Tag="clean" GroupName="mtab" IsChecked="True" Click="MaintTab_Click"/>
+                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Aktualizace aplikací" Tag="update" GroupName="mtab" Click="MaintTab_Click"/>
+                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Odinstalace aplikací" Tag="uninstall" GroupName="mtab" Click="MaintTab_Click"/>
+                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Prohlížeče" Tag="browser" GroupName="mtab" Click="MaintTab_Click"/>
+                        </WrapPanel>
+
+                        <!-- Úklid -->
+                        <StackPanel x:Name="MaintClean">
+                            <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="Úklid systému" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Style="{StaticResource SectionText}"
+                                               Text="Jednorázové akce. Na rozdíl od optimalizací se nedají vrátit zpět (mažou se jen dočasné soubory a mezipaměť DNS)."/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Style="{StaticResource GhostButton}" Content="Vyčistit dočasné soubory" Click="CleanTemp_Click" Margin="0,0,8,0"/>
+                                        <Button Style="{StaticResource GhostButton}" Content="Vyprázdnit DNS cache" Click="FlushDns_Click"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="MaintenanceResult" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
                                 </StackPanel>
-                                <TextBlock x:Name="MaintenanceResult" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </Border>
+                            </Border>
+                            <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="Mezipaměť aplikací" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Style="{StaticResource SectionText}"
+                                               Text="Smaže mezipaměť (cache) aplikací Discord, Steam, Slack, Teams, Epic Games, Spotify a Visual Studio Code. Přihlášení, nastavení, hry ani stažená hudba se nemění. Aplikace si mezipaměť časem vytvoří znovu."/>
+                                    <Button Style="{StaticResource GhostButton}" Content="Vyčistit mezipaměť aplikací" HorizontalAlignment="Left" Click="CleanAppCaches_Click"/>
+                                    <TextBlock x:Name="AppCacheResult" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Aktualizace aplikací -->
+                        <StackPanel x:Name="MaintUpdate" Visibility="Collapsed">
+                            <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="Aktualizace aplikací" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Style="{StaticResource SectionText}"
+                                               Text="Používá Windows Package Manager (winget), který je součástí Windows 10 a 11. Aktualizují se jen aplikace, které winget zná."/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Style="{StaticResource GhostButton}" Content="Zkontrolovat aktualizace" Click="CheckUpdates_Click" Margin="0,0,8,0"/>
+                                        <Button Style="{StaticResource PrimaryButton}" Content="Aktualizovat vše" Click="UpdateAll_Click"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="UpdateStatus" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                            <ItemsControl x:Name="UpdateList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{StaticResource Panel2Brush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,0,6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Margin="0,0,16,0">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding Subtitle}" FontSize="12" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="Aktualizovat" Padding="14,6" VerticalAlignment="Center" Click="UpdateApp_Click"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- Odinstalace aplikací -->
+                        <StackPanel x:Name="MaintUninstall" Visibility="Collapsed">
+                            <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="Odinstalace aplikací" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Style="{StaticResource SectionText}"
+                                               Text="Seznam nainstalovaných programů. Odinstalace spustí odinstalátor dané aplikace a může zobrazit vlastní okno. Nedá se vrátit zpět."/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Background="{StaticResource Panel2Brush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" MaxWidth="380" HorizontalAlignment="Left">
+                                            <Grid>
+                                                <TextBox x:Name="AppSearchBox" Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextBrush}"
+                                                         CaretBrush="{StaticResource TextBrush}" FontSize="13" Padding="14,9" TextChanged="AppSearchBox_TextChanged"/>
+                                                <TextBlock x:Name="AppSearchPlaceholder" Text="Hledat aplikace…" Foreground="{StaticResource MutedBrush}"
+                                                           FontSize="13" Margin="16,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                                            </Grid>
+                                        </Border>
+                                        <Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="Obnovit seznam" Margin="8,0,0,0" Click="RefreshApps_Click"/>
+                                    </Grid>
+                                    <TextBlock x:Name="UninstallStatus" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                            <ItemsControl x:Name="AppList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{StaticResource Panel2Brush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,0,6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Margin="0,0,16,0">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding Details}" FontSize="12" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="Odinstalovat" Padding="14,6" VerticalAlignment="Center" Click="Uninstall_Click"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- Prohlížeče -->
+                        <StackPanel x:Name="MaintBrowser" Visibility="Collapsed">
+                            <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="Vyčistit prohlížeče" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        <Border Background="#2A1414" CornerRadius="4" Padding="6,1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="NEDOPORUČENO" FontSize="10" FontWeight="Bold" Foreground="{StaticResource RedBrush}"/>
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Style="{StaticResource SectionText}"
+                                               Text="Smaže mezipaměť a cookies v prohlížečích Chrome, Edge, Brave, Opera, Vivaldi a Firefox. Nedoporučujeme to: po vyčištění se budeš muset znovu přihlásit na všech webech. Hesla, historie a záložky zůstanou. Prohlížeče musí být zavřené."/>
+                                    <Button Style="{StaticResource GhostButton}" Content="Vyčistit prohlížeče" HorizontalAlignment="Left" Click="CleanBrowsers_Click"/>
+                                    <TextBlock x:Name="BrowserResult" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
 
