@@ -484,3 +484,87 @@ public sealed class CommandOp : TweakOp
             throw new InvalidOperationException(Path.GetFileName(exe) + " " + args + " selhalo (kód " + result.ExitCode + "): " + result.Output);
     }
 }
+
+/// <summary>
+/// Automatické spouštění programu se systémem (položka v klíči Run). Vypíná se stejně jako ve Správci úloh,
+/// přes příznak ve StartupApproved, takže se položka nemaže a jde vrátit zpět.
+/// </summary>
+public sealed class StartupEntryOp : TweakOp
+{
+    private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string RunKey32 = @"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Run";
+    private const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+
+    private readonly string _name;
+
+    public StartupEntryOp(string valueName) => _name = valueName;
+
+    public override string Key => "RUN:" + _name;
+
+    /// <summary>Najde položku Run a vrátí, zda je v HKLM.</summary>
+    private bool? FindEntry()
+    {
+        foreach (var (hklm, sub) in new[] { (false, RunKey), (true, RunKey), (true, RunKey32) })
+        {
+            using var root = Reg.Base(hklm);
+            using var key = root.OpenSubKey(sub, false);
+            if (key?.GetValue(_name) != null) return hklm;
+        }
+        return null;
+    }
+
+    private static string ApprovedSub(bool hklm) => ApprovedKey;
+
+    public override OpState Detect()
+    {
+        var hklm = FindEntry();
+        if (hklm == null) return OpState.Missing;
+
+        using var root = Reg.Base(hklm.Value);
+        using var key = root.OpenSubKey(ApprovedSub(hklm.Value), false);
+        return key?.GetValue(_name) is byte[] { Length: > 0 } data && (data[0] & 1) == 1 ? OpState.On : OpState.Off;
+    }
+
+    public override void Apply(TweakBackup backup)
+    {
+        var hklm = FindEntry();
+        if (hklm == null) return;
+
+        using var root = Reg.Base(hklm.Value);
+        using var key = root.CreateSubKey(ApprovedSub(hklm.Value), true);
+
+        if (!backup.Entries.ContainsKey(Key))
+        {
+            var current = key.GetValue(_name) as byte[];
+            backup.Entries[Key] = new OpBackup
+            {
+                Existed = current != null,
+                Kind = "bytes",
+                Data = current == null ? "" : Convert.ToHexString(current)
+            };
+        }
+
+        var disabled = new byte[12];
+        disabled[0] = 3;
+        BitConverter.GetBytes(DateTime.UtcNow.ToFileTimeUtc()).CopyTo(disabled, 4);
+        key.SetValue(_name, disabled, RegistryValueKind.Binary);
+    }
+
+    public override void Revert(TweakBackup backup)
+    {
+        var hklm = FindEntry();
+        if (hklm == null) return;
+
+        using var root = Reg.Base(hklm.Value);
+        using var key = root.CreateSubKey(ApprovedSub(hklm.Value), true);
+
+        if (backup.Entries.TryGetValue(Key, out var saved) && saved.Existed && saved.Data.Length > 0)
+            key.SetValue(_name, Convert.FromHexString(saved.Data), RegistryValueKind.Binary);
+        else
+        {
+            var enabled = new byte[12];
+            enabled[0] = 2;
+            key.SetValue(_name, enabled, RegistryValueKind.Binary);
+        }
+    }
+}

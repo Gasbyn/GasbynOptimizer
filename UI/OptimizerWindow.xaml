@@ -470,6 +470,19 @@
                                 <Button Style="{StaticResource GhostButton}" Content="Otevřít datovou složku" HorizontalAlignment="Left" Click="OpenData_Click"/>
                             </StackPanel>
                         </Border>
+
+                        <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,12,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Podmínky a podpora" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Style="{StaticResource SectionText}"
+                                           Text="Máš problém nebo nápad? Napiš nám na Discord server. Podmínky použití si můžeš znovu přečíst."/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Style="{StaticResource GhostButton}" Content="Podmínky použití" Click="ShowTerms_Click" Margin="0,0,8,0"/>
+                                    <Button Style="{StaticResource GhostButton}" Content="Discord server" Click="DiscordServer_Click" Margin="0,0,8,0"/>
+                                    <Button Style="{StaticResource GhostButton}" Content="Hlášení problémů" Click="DiscordChat_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>

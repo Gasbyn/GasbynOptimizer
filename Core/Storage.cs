@@ -110,6 +110,9 @@ public sealed class AppSettings
     /// <summary>Poslední pokus o aktualizaci (verze|čas UTC). Brání nekonečné smyčce, kdyby instalace selhala.</summary>
     public string LastUpdateAttempt { get; set; } = "";
 
+    /// <summary>Verze podmínek použití, kterou uživatel odsouhlasil (0 = zatím žádnou).</summary>
+    public int AcceptedTermsVersion { get; set; }
+
     public static AppSettings Load()
     {
         try

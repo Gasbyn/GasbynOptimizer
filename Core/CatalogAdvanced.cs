@@ -5,6 +5,15 @@ internal static class CatalogAdvanced
 {
     internal const string CatAdvanced = "Pokročilé";
 
+    /// <summary>Hypervizor je vypnutý, když bcdedit hlásí hypervisorlaunchtype Off.</summary>
+    internal static OpState HypervisorState()
+    {
+        var result = Shell.Run(Shell.System32("bcdedit.exe"), "/enum {current}", 15000);
+        if (result.ExitCode != 0) return OpState.Missing;
+        return System.Text.RegularExpressions.Regex.IsMatch(result.Output, @"hypervisorlaunchtype\s+Off", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+            ? OpState.On : OpState.Off;
+    }
+
     public static IReadOnlyList<Tweak> Create()
     {
         return new List<Tweak>
@@ -172,7 +181,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-paging-executive", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "adv-paging-executive", Category = CatAdvanced, Experimental = true, RequiresRestart = true,
                 Name = "Držet jádro systému v paměti RAM",
                 Description = "Zakáže stránkování jádra a ovladačů na disk, takže zůstanou v RAM. Hodí se při větším množství paměti (16 GB a víc).",
                 Note = "Experimentální: na PC s málem RAM může způsobit nedostatek paměti. Vyžaduje restart.",
@@ -183,7 +192,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-push-notifications", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-push-notifications", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout službu push oznámení",
                 Description = "Zakáže službu oznámení Windows (WpnService). Aplikace přestanou zobrazovat oznámení.",
                 Note = "Experimentální: nechodí oznámení z aplikací ani z Obchodu.",
@@ -194,7 +203,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-defender-off", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "adv-defender-off", Category = CatAdvanced, Experimental = true, RequiresRestart = true,
                 Name = "Vypnout Microsoft Defender",
                 Description = "Vypne antivirus Microsoft Defender a ochranu v reálném čase přes zásady.",
                 Note = "Silně nedoporučeno bez jiného antiviru. Při zapnuté ochraně proti neoprávněným změnám (Tamper Protection) Windows změnu nepřijme.",
@@ -202,6 +211,122 @@ internal static class CatalogAdvanced
                 {
                     Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows Defender", "DisableAntiSpyware", 1, null),
                     Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection", "DisableRealtimeMonitoring", 1, null)
+                }
+            },
+            new()
+            {
+                Id = "adv-xbox-controller", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Name = "Vypnout podporu herních ovladačů (gamepad)",
+                Description = "Zakáže služby Xbox Accessory Management a Microsoft GameInput. Gamepady a ovladače připojené přes Xbox protokol pak nemusí fungovat.",
+                Note = "Nepoužívej, pokud hraješ s gamepadem (Xbox ovladač, Xbox příslušenství). Klávesnice a myš nejsou dotčené.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Service("XboxGipSvc", "demand"),
+                    Catalog.Service("GameInputSvc", "demand")
+                }
+            },
+            new()
+            {
+                Id = "adv-security-services", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Name = "Vypnout zbytečné bezpečnostní služby",
+                Description = "Zakáže Centrum zabezpečení, službu stavu zabezpečení a webovou ochranu Defenderu.",
+                Note = "Experimentální: Windows nebude hlásit stav antiviru a firewallu. Nenalezené služby se přeskočí.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Service("wscsvc", "auto"),
+                    Catalog.Service("SecurityHealthService", "demand"),
+                    Catalog.Service("webthreatdefsvc", "demand"),
+                    Catalog.Service("Sense", "demand")
+                }
+            },
+            new()
+            {
+                Id = "adv-firewall-off", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Name = "Vypnout Windows Firewall",
+                Description = "Vypne Windows Defender Firewall pro všechny typy sítí přes zásady.",
+                Note = "Silně nedoporučeno bez jiného firewallu, hlavně na veřejných sítích.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\WindowsFirewall\DomainProfile", "EnableFirewall", 0, null),
+                    Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile", "EnableFirewall", 0, null),
+                    Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\WindowsFirewall\PublicProfile", "EnableFirewall", 0, null)
+                }
+            },
+            new()
+            {
+                Id = "adv-sehop", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Name = "Vypnout SEHOP (ochrana výjimek)",
+                Description = "Vypne kontrolu řetězce výjimek, jednu z mitigací proti zneužití paměti. Dřívější doporučení pro starší hry a programy.",
+                Note = "Experimentální: oslabuje ochranu proti zneužití paměti. Vyžaduje restart.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Hklm(@"SYSTEM\CurrentControlSet\Control\Session Manager\kernel", "DisableExceptionChainValidation", 1, null)
+                }
+            },
+            new()
+            {
+                Id = "adv-vbs", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Name = "Částečně vypnout virtualizaci: VBS",
+                Description = "Vypne zabezpečení na bázi virtualizace (VBS). V hrách zlepší výkon, Hyper-V a virtuální stroje zůstávají funkční.",
+                Note = "Nedoporučeno: snižuje ochranu jádra. Vyžaduje restart.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Hklm(@"SYSTEM\CurrentControlSet\Control\DeviceGuard", "EnableVirtualizationBasedSecurity", 0, null)
+                }
+            },
+            new()
+            {
+                Id = "adv-hypervisor", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Name = "Úplně vypnout virtualizaci (Hyper-V)",
+                Description = "Vypne hypervizor Windows a služby Hyper-V. Přestane fungovat Hyper-V, WSL 2, Windows Sandbox i Android podsystémy. Uvolní procesor od režie virtualizace.",
+                Note = "Experimentální: nepoužívej, pokud pracuješ s virtuálními stroji nebo WSL 2. Vyžaduje restart.",
+                Ops = new TweakOp[]
+                {
+                    new CommandOp("hypervisor", CatalogAdvanced.HypervisorState, Shell.System32("bcdedit.exe"), "/set hypervisorlaunchtype off", Shell.System32("bcdedit.exe"), "/set hypervisorlaunchtype auto"),
+                    Catalog.Service("HvHost", "demand"),
+                    Catalog.Service("vmcompute", "demand"),
+                    Catalog.Service("vmms", "demand")
+                }
+            },
+            new()
+            {
+                Id = "adv-remote-all", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Name = "Vypnout všechna vzdálená připojení",
+                Description = "Zakáže vzdálenou plochu, vzdálenou pomoc, vzdálenou správu (WinRM), směrování a vzdálený přístup a objevování zařízení v síti (SSDP, UPnP).",
+                Note = "Nepůjde se k PC připojit odjinud (ani přes nástroje pro vzdálenou správu). Router může přestat automaticky otevírat porty pro hry.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Hklm(@"SYSTEM\CurrentControlSet\Control\Terminal Server", "fDenyTSConnections", 1, null),
+                    Catalog.Hklm(@"SYSTEM\CurrentControlSet\Control\Remote Assistance", "fAllowToGetHelp", 0, null),
+                    Catalog.Service("WinRM", "demand"),
+                    Catalog.Service("RemoteAccess", "demand"),
+                    Catalog.Service("SSDPSRV", "demand"),
+                    Catalog.Service("upnphost", "demand")
+                }
+            },
+            new()
+            {
+                Id = "adv-iphone", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Name = "Vypnout podporu iPhone",
+                Description = "Zakáže služby Apple pro iPhone a iPad (Apple Mobile Device, Bonjour, iPod). Existují jen s nainstalovaným iTunes nebo aplikacemi Apple.",
+                Note = "Přestane fungovat připojení iPhonu k PC přes iTunes a Apple zařízení.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Service("Apple Mobile Device Service", "auto"),
+                    Catalog.Service("Bonjour Service", "auto"),
+                    Catalog.Service("iPod Service", "demand")
+                }
+            },
+            new()
+            {
+                Id = "adv-android", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Name = "Vypnout podporu Android telefonů",
+                Description = "Vypne propojení telefonu s počítačem (Telefon propojený s počítačem, služba telefonu).",
+                Note = "Experimentální: přenos souborů kabelem (MTP) funguje dál, vypíná se jen propojení Windows s telefonem.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows\System", "EnableMmx", 0, null),
+                    Catalog.Service("PhoneSvc", "demand")
                 }
             }
         };

@@ -278,16 +278,15 @@ internal static class CatalogExtra
             },
             new()
             {
-                Id = "xbox-services", Experimental = true, Category = Catalog.CatGaming,
+                Id = "xbox-services", Experimental = true, IsNew = true, Category = Catalog.CatGaming,
                 Name = "Vypnout služby Xboxu",
-                Description = "Zakáže služby Xbox Live (přihlášení, cloudové uložené hry, síť, příslušenství).",
+                Description = "Zakáže služby Xbox Live (přihlášení, cloudové uložené hry, síť). Ovladače a příslušenství řeší samostatná optimalizace.",
                 Note = "Nepoužívej, pokud hraješ hry z Xbox aplikace, Game Pass nebo hry vyžadující přihlášení k Xbox Live.",
                 Ops = new TweakOp[]
                 {
                     Catalog.Service("XblAuthManager", "demand"),
                     Catalog.Service("XblGameSave", "demand"),
-                    Catalog.Service("XboxNetApiSvc", "demand"),
-                    Catalog.Service("XboxGipSvc", "demand")
+                    Catalog.Service("XboxNetApiSvc", "demand")
                 }
             },
 

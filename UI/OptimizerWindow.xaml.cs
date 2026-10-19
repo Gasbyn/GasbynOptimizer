@@ -23,7 +23,6 @@ public partial class OptimizerWindow : Window
 
     private bool _restorePointDone;
     private string _filter = "all";
-    private string _category = "";
 
     public OptimizerWindow(TweakService service, IReadOnlyList<Tweak> tweaks, Dictionary<string, TweakState> states, SystemProfile profile)
     {
@@ -143,12 +142,25 @@ public partial class OptimizerWindow : Window
         return button;
     }
 
+    // Levé menu je záměrně krátké. Ostatní kategorie (soukromí, aktualizace, internet atd.)
+    // se zobrazují jen v položce „Všechny optimalizace“, kde jsou seskupené pod nadpisy.
+    private static readonly (string Name, string[] Categories)[] NavGroups =
+    {
+        ("Hraní a výkon", new[] { Catalog.CatGaming, CatalogPower.CatPower, Catalog.CatSystem, CatalogHardware.CatHardware }),
+        ("Vzhled", new[] { Catalog.CatVisual, CatalogFonts.CatFonts, Catalog.CatUi }),
+        ("Služby", new[] { Catalog.CatServices }),
+        ("Debloat", new[] { CatalogDebloat.CatDebloat }),
+        ("Pokročilé", new[] { CatalogAdvanced.CatAdvanced })
+    };
+
+    private string[] _categories = Array.Empty<string>();
+
     private void BuildNav()
     {
         AddNav("Všechny optimalizace", "", true);
 
-        foreach (var category in _items.Select(i => i.Category).Distinct())
-            AddNav(category, category, false);
+        foreach (var (name, _) in NavGroups)
+            AddNav(name, name, false);
 
         NavPanel.Children.Add(new Border { Height = 1, Background = (System.Windows.Media.Brush)FindResource("BorderBrush"), Margin = new Thickness(8, 10, 8, 10) });
 
@@ -167,7 +179,7 @@ public partial class OptimizerWindow : Window
         PageSettings.Visibility = tag == "#settings" ? Visibility.Visible : Visibility.Collapsed;
         if (tag.StartsWith('#')) return;
 
-        _category = tag;
+        _categories = NavGroups.FirstOrDefault(g => g.Name == tag).Categories ?? Array.Empty<string>();
         PageTitle.Text = tag.Length == 0 ? "Všechny optimalizace" : tag;
         _view.Refresh();
     }
@@ -208,7 +220,7 @@ public partial class OptimizerWindow : Window
     {
         if (obj is not TweakItem item) return false;
 
-        if (_category.Length > 0 && !string.Equals(item.Category, _category, StringComparison.Ordinal)) return false;
+        if (_categories.Length > 0 && Array.IndexOf(_categories, item.Category) < 0) return false;
 
         switch (_filter)
         {
@@ -345,6 +357,12 @@ public partial class OptimizerWindow : Window
             if (answer != MessageBoxResult.Yes) return;
         }
 
+        if (enable && item.Tweak.Confirm is { } confirm)
+        {
+            var sure = MessageBox.Show(this, confirm, item.Name, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+            if (sure != MessageBoxResult.Yes) return;
+        }
+
         // Zapnuto -> vrátit původní stav. Vypnuto nebo částečně -> zapnout celé.
         await RunToggleAsync(item, enable);
     }
@@ -462,6 +480,12 @@ public partial class OptimizerWindow : Window
         MessageBox.Show(this, message, "Gasbyn Optimizer", MessageBoxButton.OK,
             ok ? MessageBoxImage.Information : MessageBoxImage.Warning);
     }
+
+    private void ShowTerms_Click(object sender, RoutedEventArgs e) => new TermsWindow(false) { Owner = this }.ShowDialog();
+
+    private void DiscordServer_Click(object sender, RoutedEventArgs e) => SupportLinks.Open(SupportLinks.Server);
+
+    private void DiscordChat_Click(object sender, RoutedEventArgs e) => SupportLinks.Open(SupportLinks.Chat);
 
     private async void CleanTemp_Click(object sender, RoutedEventArgs e)
     {

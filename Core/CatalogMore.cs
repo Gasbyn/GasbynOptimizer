@@ -9,7 +9,7 @@ internal static class CatalogMore
         {
             new()
             {
-                Id = "onedrive-off", Category = Catalog.CatPrivacy, IsNew = true,
+                Id = "onedrive-off", Category = Catalog.CatPrivacy,
                 Name = "Vypnout synchronizaci OneDrive",
                 Description = "Zakáže OneDrive přes zásadu systému, takže se nespouští ani nesynchronizuje soubory.",
                 Note = "Soubory v OneDrive zůstanou na disku, jen se přestanou synchronizovat.",
@@ -20,7 +20,7 @@ internal static class CatalogMore
             },
             new()
             {
-                Id = "settings-sync-off", Category = Catalog.CatPrivacy, IsNew = true,
+                Id = "settings-sync-off", Category = Catalog.CatPrivacy,
                 Name = "Vypnout synchronizaci nastavení účtu Microsoft",
                 Description = "Nesynchronizuje motivy, hesla Wi-Fi ani nastavení mezi počítači přes účet Microsoft.",
                 Ops = new TweakOp[]
@@ -31,7 +31,7 @@ internal static class CatalogMore
             },
             new()
             {
-                Id = "cdp-off", Category = Catalog.CatPrivacy, IsNew = true,
+                Id = "cdp-off", Category = Catalog.CatPrivacy,
                 Name = "Vypnout sdílení mezi zařízeními",
                 Description = "Vypne platformu připojených zařízení (Sdílení v okolí, pokračování na jiném PC).",
                 Note = "Nepůjde Sdílení v okolí ani propojení telefonu s počítačem.",
@@ -42,7 +42,7 @@ internal static class CatalogMore
             },
             new()
             {
-                Id = "explorer-ads", Category = Catalog.CatUi, IsNew = true, Recommended = true,
+                Id = "explorer-ads", Category = Catalog.CatUi, Recommended = true,
                 Name = "Vypnout reklamy a oznámení v Průzkumníku",
                 Description = "Skryje upozornění poskytovatele synchronizace (reklamy OneDrive a Office) v Průzkumníku.",
                 Ops = new TweakOp[]
@@ -52,7 +52,7 @@ internal static class CatalogMore
             },
             new()
             {
-                Id = "start-recommendations", Category = Catalog.CatUi, IsNew = true,
+                Id = "start-recommendations", Category = Catalog.CatUi,
                 Name = "Vypnout doporučení v nabídce Start",
                 Description = "Skryje doporučené položky a oznámení účtu v nabídce Start (Windows 11).",
                 Ops = new TweakOp[]
@@ -63,7 +63,7 @@ internal static class CatalogMore
             },
             new()
             {
-                Id = "startup-sound", Category = Catalog.CatUi, IsNew = true,
+                Id = "startup-sound", Category = Catalog.CatUi,
                 Name = "Vypnout zvuk spuštění Windows",
                 Description = "Vypne přehrávání melodie při startu a přihlášení.",
                 Ops = new TweakOp[]
@@ -73,7 +73,7 @@ internal static class CatalogMore
             },
             new()
             {
-                Id = "prefetch-off", Category = Catalog.CatSystem, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "prefetch-off", Category = Catalog.CatSystem, Experimental = true, RequiresRestart = true,
                 Name = "Vypnout Prefetch a Superfetch v registru",
                 Description = "Vypne předčítání souborů při startu. Má smysl hlavně na SSD, kde ho nepotřebuješ.",
                 Note = "Na pevném disku (HDD) systém zpomalí. Vyžaduje restart.",

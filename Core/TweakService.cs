@@ -38,6 +38,9 @@ public sealed class Tweak
 
     /// <summary>Není přepínač ZAPNUTO/VYPNUTO, jen tlačítko „Použít“ (např. plán napájení).</summary>
     public bool ApplyOnly { get; init; }
+
+    /// <summary>Když je zadáno, před zapnutím se zobrazí potvrzení s tímto textem (nevratné nebo riskantní akce).</summary>
+    public string? Confirm { get; init; }
 }
 
 public sealed record ToggleResult(bool Success, string Message, bool RestartNeeded);

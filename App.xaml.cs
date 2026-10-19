@@ -40,6 +40,22 @@ public partial class App : System.Windows.Application
                 return;
             }
 
+            // Podmínky použití: při prvním spuštění (a po jejich změně) je musí uživatel odsouhlasit.
+            var settings = AppSettings.Load();
+            if (settings.AcceptedTermsVersion < SupportLinks.TermsVersion)
+            {
+                splash.Hide();
+                var terms = new TermsWindow(true);
+                if (terms.ShowDialog() != true)
+                {
+                    Shutdown();
+                    return;
+                }
+                settings.AcceptedTermsVersion = SupportLinks.TermsVersion;
+                settings.Save();
+                splash.Show();
+            }
+
             splash.SetStatus("Čekejte, kontroluji počítač a stav optimalizací…");
             splash.SetProgress(0, 1);
 
