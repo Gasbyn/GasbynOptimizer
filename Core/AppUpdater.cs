@@ -63,6 +63,9 @@ public static class AppUpdater
             var tag = release.TryGetProperty("tag_name", out var tagElement) ? tagElement.GetString() : null;
             var version = ParseVersion(tag);
             if (version == null || tag == null) continue;
+
+            // Předběžné (beta) vydání typu v2.0.b1.N se přeskakuje, aktualizuje se jen na stabilní vydání v2.0.N.
+            if (!Regex.IsMatch(tag, @"^[vV]?\d+(\.\d+){1,3}$")) continue;
             if (best != null && version <= best.Version) continue;
             if (!release.TryGetProperty("assets", out var assets)) continue;
 

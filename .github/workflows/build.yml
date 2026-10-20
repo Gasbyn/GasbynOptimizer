@@ -28,9 +28,21 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      # Jednorázový úklid: omylem vydané v2.0.2 (sestavené z commitu f7423bb) se smaže, aby první stabilní vydání bylo v2.0.0.
+      # Podmínka na commit zajistí, že se nikdy nesmaže pozdější legitimní vydání v2.0.2.
+      - name: Smazat omylem vydané v2.0.2
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $sha = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/v2.0.2" --jq '.target_commitish' 2>$null
+          if ($sha -eq 'f7423bb965b9ae1c5d91c9361f2e92b0497a1aab') {
+            gh release delete v2.0.2 --cleanup-tag --yes
+            Write-Host 'Vydání v2.0.2 smazáno.'
+          }
+
       # Každý push do main (nebo větve rewrite/v3-clean) vydá nový release v2.0.N s instalátorem (už to není beta).
-      # Číslo N je nejvyšší dosavadní + 1. Číselná verze 2.0.N.0 používá .NET i instalátor a podle ní se aplikace sama aktualizuje.
-      # N musí být vyšší než u poslední bety (2.0.1.9), proto první stabilní vydání začíná na 2.
+      # Číslo N je nejvyšší dosavadní + 1 (první je v2.0.0). Číselná verze 2.0.N.0 používá .NET i instalátor a podle ní se aplikace sama aktualizuje.
+      # Betaverze (2.0.1.N) aplikace při hledání aktualizací ignoruje.
       - name: Určit verzi
         id: ver
         shell: pwsh
@@ -48,14 +60,14 @@ jobs:
             $tag = ''
           } else {
             $tags = @(gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=100" --paginate --jq '.[].tag_name')
-            # Stabilní vydání jsou v2.0.N (první je v2.0.2 = „Gasbyn Optimizer 2.0“). Starší betaverze v2.0.b1.N se nepočítají.
-            $max = 1
+            # Stabilní vydání jsou v2.0.N (první je v2.0.0 = „Gasbyn Optimizer 2.0.0“). Starší betaverze v2.0.b1.N se nepočítají.
+            $max = -1
             foreach ($t in $tags) {
               $m = [regex]::Match([string]$t, '^v2\.0\.(\d+)$')
               if ($m.Success -and [int]$m.Groups[1].Value -gt $max) { $max = [int]$m.Groups[1].Value }
             }
             $n = $max + 1
-            $label = if ($n -eq 2) { '2.0' } else { "2.0.$n" }
+            $label = "2.0.$n"
             $tag = "v2.0.$n"
             $version = "2.0.$n.0"
             $release = 'true'
