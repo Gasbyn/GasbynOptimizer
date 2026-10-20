@@ -53,7 +53,9 @@ public partial class OptimizerWindow : Window
         var version = Assembly.GetExecutingAssembly().GetName().Version;
         VersionText.Text = version == null
             ? ""
-            : "Verze " + version.Major + "." + version.Minor + ".b" + version.Build + "." + Math.Max(version.Revision, 0);
+            : version.Build == 1
+                ? "Verze " + version.Major + "." + version.Minor + ".b" + version.Build + "." + Math.Max(version.Revision, 0)
+                : "Verze " + version.Major + "." + version.Minor + (version.Build > 2 ? "." + version.Build : "");
         BuildNav();
         AutoRestoreCheck.IsChecked = _settings.AutoRestorePoint;
         AdvancedCheck.IsChecked = _settings.AdvancedMode;

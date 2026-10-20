@@ -28,9 +28,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      # Každý push do main (nebo větve rewrite/v3-clean) vydá nový release v2.0.b1.N s instalátorem.
-      # Číslo N je nejvyšší dosavadní + 1 (první vydání je v2.0.b1.0). Z 2.0.b1.N vznikne číselná verze 2.0.1.N,
-      # kterou používá .NET i instalátor a podle které se aplikace sama aktualizuje.
+      # Každý push do main (nebo větve rewrite/v3-clean) vydá nový release v2.0.N s instalátorem (už to není beta).
+      # Číslo N je nejvyšší dosavadní + 1. Číselná verze 2.0.N.0 používá .NET i instalátor a podle ní se aplikace sama aktualizuje.
+      # N musí být vyšší než u poslední bety (2.0.1.9), proto první stabilní vydání začíná na 2.
       - name: Určit verzi
         id: ver
         shell: pwsh
@@ -48,15 +48,16 @@ jobs:
             $tag = ''
           } else {
             $tags = @(gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=100" --paginate --jq '.[].tag_name')
-            $max = -1
+            # Stabilní vydání jsou v2.0.N (první je v2.0.2 = „Gasbyn Optimizer 2.0“). Starší betaverze v2.0.b1.N se nepočítají.
+            $max = 1
             foreach ($t in $tags) {
-              $m = [regex]::Match([string]$t, '^v2\.0\.b1\.(\d+)$')
+              $m = [regex]::Match([string]$t, '^v2\.0\.(\d+)$')
               if ($m.Success -and [int]$m.Groups[1].Value -gt $max) { $max = [int]$m.Groups[1].Value }
             }
             $n = $max + 1
-            $label = "2.0.b1.$n"
-            $tag = "v$label"
-            $version = "2.0.1.$n"
+            $label = if ($n -eq 2) { '2.0' } else { "2.0.$n" }
+            $tag = "v2.0.$n"
+            $version = "2.0.$n.0"
             $release = 'true'
           }
           if (-not $version -or $version -notmatch '^\d+(\.\d+){1,3}$') { throw "Verzi se nepodařilo určit: '$version'" }
