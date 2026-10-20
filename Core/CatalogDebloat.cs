@@ -7,7 +7,7 @@ internal static class CatalogDebloat
 {
     internal const string CatDebloat = "Debloat";
 
-    private static string EdgeExe =>
+    internal static string EdgeExe =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft", "Edge", "Application", "msedge.exe");
 
     /// <summary>Edge je odinstalovaný, když neexistuje msedge.exe.</summary>
@@ -34,7 +34,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
         {
             new()
             {
-                Id = "debloat-chrome", Category = CatalogDebloat.CatDebloat, IsNew = true,
+                Id = "debloat-chrome", Category = CatalogDebloat.CatDebloat, IsNew = true, InstalledCheck = () => AppPresence.ByExe("chrome.exe", @"%ProgramFiles%\Google\Chrome\Application\chrome.exe", @"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe", @"%LocalAppData%\Google\Chrome\Application\chrome.exe"),
                 Name = "Chrome: odstranit balast a hlášení",
                 Description = "Vypne hlášení statistik, běh na pozadí, rychlé spuštění, reklamní karty, nákupního asistenta a zpětnou vazbu přes zásady Chrome.",
                 Note = "Chrome v nastavení ukáže „Spravováno vaší organizací“. Vypnutí to vrátí.",
@@ -51,7 +51,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
             },
             new()
             {
-                Id = "debloat-brave", Category = CatalogDebloat.CatDebloat, IsNew = true,
+                Id = "debloat-brave", Category = CatalogDebloat.CatDebloat, IsNew = true, InstalledCheck = () => AppPresence.ByExe("brave.exe", @"%ProgramFiles%\BraveSoftware\Brave-Browser\Application\brave.exe", @"%ProgramFiles(x86)%\BraveSoftware\Brave-Browser\Application\brave.exe", @"%LocalAppData%\BraveSoftware\Brave-Browser\Application\brave.exe"),
                 Name = "Brave: odstranit balast",
                 Description = "Vypne Brave Rewards, peněženku, VPN, AI chat, hlášení statistik a běh na pozadí přes zásady Brave.",
                 Note = "Brave v nastavení ukáže „Spravováno vaší organizací“. Vypnutí to vrátí.",
@@ -67,7 +67,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
             },
             new()
             {
-                Id = "debloat-edge", Category = CatalogDebloat.CatDebloat, IsNew = true,
+                Id = "debloat-edge", Category = CatalogDebloat.CatDebloat, IsNew = true, InstalledCheck = () => File.Exists(CatalogDebloat.EdgeExe),
                 Name = "Edge: odstranit balast a hlášení",
                 Description = "Vypne rychlé spuštění, nákupního asistenta, postranní panel, Microsoft Rewards, personalizaci a odesílání diagnostiky v Edge.",
                 Note = "Edge v nastavení ukáže „Spravováno vaší organizací“. Vypnutí to vrátí.",
@@ -84,7 +84,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
             },
             new()
             {
-                Id = "debloat-edge-off", Category = CatalogDebloat.CatDebloat, IsNew = true,
+                Id = "debloat-edge-off", Category = CatalogDebloat.CatDebloat, IsNew = true, InstalledCheck = () => File.Exists(CatalogDebloat.EdgeExe),
                 Name = "Edge: vypnout úplně (aktualizace a služby)",
                 Description = "Vypne běh Edge na pozadí a zakáže jeho aktualizace a služby (Edge Update, Elevation Service). Prohlížeč zůstane nainstalovaný, ale nic nedělá na pozadí.",
                 Note = "Experimentální: Edge se přestane aktualizovat, což může být riziko, pokud ho používáš. Vypnutí vše vrátí.",
@@ -99,7 +99,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
             },
             new()
             {
-                Id = "debloat-edge-uninstall", Category = CatalogDebloat.CatDebloat, IsNew = true, Experimental = true, ApplyOnly = true,
+                Id = "debloat-edge-uninstall", Category = CatalogDebloat.CatDebloat, Experimental = true, ApplyOnly = true,
                 Name = "Edge: odinstalovat úplně",
                 Description = "Odinstaluje Microsoft Edge z počítače a zablokuje jeho automatickou přeinstalaci. WebView2 zůstává, aby fungovaly aplikace, které ho potřebují.",
                 Note = "Experimentální a nevratné: zpět se Edge dostane jen novou instalací z webu Microsoftu. Zajisti si jiný prohlížeč.",
@@ -111,7 +111,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
             },
             new()
             {
-                Id = "debloat-spotify", Category = CatalogDebloat.CatDebloat, IsNew = true,
+                Id = "debloat-spotify", Category = CatalogDebloat.CatDebloat,
                 Name = "Spotify: nespouštět se systémem",
                 Description = "Spotify se přestane spouštět samo po startu Windows. Aplikace zůstane nainstalovaná.",
                 Note = "Dostupné, jen když Spotify má položku automatického spuštění.",
@@ -122,7 +122,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
             },
             new()
             {
-                Id = "debloat-discord", Category = CatalogDebloat.CatDebloat, IsNew = true,
+                Id = "debloat-discord", Category = CatalogDebloat.CatDebloat,
                 Name = "Discord: nespouštět se systémem",
                 Description = "Discord se přestane spouštět sám po startu Windows. Aplikace zůstane nainstalovaná.",
                 Note = "Dostupné, jen když Discord má položku automatického spuštění.",
@@ -133,7 +133,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
             },
             new()
             {
-                Id = "debloat-steam", Category = CatalogDebloat.CatDebloat, IsNew = true,
+                Id = "debloat-steam", Category = CatalogDebloat.CatDebloat,
                 Name = "Steam: nespouštět se systémem",
                 Description = "Steam se přestane spouštět sám po startu Windows. Hry a knihovna zůstanou beze změny.",
                 Note = "Dostupné, jen když Steam má položku automatického spuštění.",
@@ -144,7 +144,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
             },
             new()
             {
-                Id = "debloat-epic", Category = CatalogDebloat.CatDebloat, IsNew = true,
+                Id = "debloat-epic", Category = CatalogDebloat.CatDebloat,
                 Name = "Epic Games Launcher: nespouštět se systémem",
                 Description = "Epic Games Launcher se přestane spouštět sám po startu Windows. Hry zůstanou beze změny.",
                 Note = "Dostupné, jen když Epic Games Launcher má položku automatického spuštění.",

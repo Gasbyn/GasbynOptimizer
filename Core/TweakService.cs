@@ -41,6 +41,9 @@ public sealed class Tweak
 
     /// <summary>Když je zadáno, před zapnutím se zobrazí potvrzení s tímto textem (nevratné nebo riskantní akce).</summary>
     public string? Confirm { get; init; }
+
+    /// <summary>Zjistí, jestli je dotčená aplikace nainstalovaná. Když ne, optimalizace je nedostupná (není co měnit).</summary>
+    public Func<bool>? InstalledCheck { get; init; }
 }
 
 public sealed record ToggleResult(bool Success, string Message, bool RestartNeeded);
@@ -79,6 +82,12 @@ public sealed class TweakService
 
     public TweakState Scan(Tweak tweak)
     {
+        if (tweak.InstalledCheck != null)
+        {
+            try { if (!tweak.InstalledCheck()) return TweakState.NotApplicable; }
+            catch { /* při chybě kontroly se bere jako nainstalováno */ }
+        }
+
         var on = 0;
         var off = 0;
         foreach (var op in tweak.Ops)
@@ -127,6 +136,9 @@ public sealed class TweakService
         {
             var backup = _store.Get(tweak.Id);
             var errors = new List<string>();
+
+            if (enable && tweak.InstalledCheck != null && !tweak.InstalledCheck())
+                return new ToggleResult(false, "Nic se nezměnilo – aplikace není na tomto PC nainstalovaná.", false);
 
             if (enable && tweak.Ops.All(o => { try { return o.Detect() == OpState.Missing; } catch { return false; } }))
                 return new ToggleResult(false, "Nic se nezměnilo – tato součást na tomto PC neexistuje.", false);

@@ -568,3 +568,213 @@ public sealed class StartupEntryOp : TweakOp
         }
     }
 }
+
+/// <summary>
+/// Stejná hodnota v registru u více podklíčů najednou (např. u všech síťových karet nebo USB zařízení).
+/// Podklíče se hledají při každém použití, takže se vezmou i nově připojená zařízení.
+/// </summary>
+public sealed class MultiKeyOp : TweakOp
+{
+    private readonly string _id;
+    private readonly Func<IEnumerable<string>> _paths;
+    private readonly string _valueName;
+    private readonly RegistryValueKind _kind;
+    private readonly object _on;
+    private readonly object? _offDefault;
+    private readonly bool _requirePresent;
+    private readonly Func<bool>? _gate;
+
+    /// <param name="paths">Cesty podklíčů v HKLM.</param>
+    /// <param name="requirePresent">Upraví jen podklíče, které danou hodnotu už mají (ostatní karty ji nepodporují).</param>
+    /// <param name="gate">Když vrátí false, optimalizace je na tomto PC nedostupná.</param>
+    public MultiKeyOp(string id, Func<IEnumerable<string>> paths, string valueName, RegistryValueKind kind,
+        object on, object? offDefault, bool requirePresent, Func<bool>? gate = null)
+    {
+        _id = id;
+        _paths = paths;
+        _valueName = valueName;
+        _kind = kind;
+        _on = on;
+        _offDefault = offDefault;
+        _requirePresent = requirePresent;
+        _gate = gate;
+    }
+
+    public override string Key => "MULTI:" + _id + ":" + _valueName;
+
+    private static string Text(object? value) => value is null ? "" : Convert.ToString(value, CultureInfo.InvariantCulture) ?? "";
+
+    private List<string> Targets()
+    {
+        var result = new List<string>();
+        using var root = Reg.Base(true);
+        foreach (var path in _paths())
+        {
+            using var key = TryOpen(root, path);
+            if (key == null) continue;
+            if (_requirePresent && key.GetValue(_valueName) == null) continue;
+            result.Add(path);
+        }
+        return result;
+    }
+
+    public override OpState Detect()
+    {
+        if (_gate != null && !_gate()) return OpState.Missing;
+
+        var targets = Targets();
+        if (targets.Count == 0) return OpState.Missing;
+
+        using var root = Reg.Base(true);
+        foreach (var path in targets)
+        {
+            using var key = TryOpen(root, path);
+            if (!Text(key?.GetValue(_valueName)).Equals(Text(_on), StringComparison.OrdinalIgnoreCase))
+                return OpState.Off;
+        }
+        return OpState.On;
+    }
+
+    private object Coerce(object value) => _kind == RegistryValueKind.DWord ? Convert.ToInt32(value, CultureInfo.InvariantCulture) : value;
+
+    public override void Apply(TweakBackup backup)
+    {
+        if (_gate != null && !_gate()) return;
+
+        var targets = Targets();
+        if (targets.Count == 0) return;
+
+        var lines = new List<string>();
+        var failed = 0;
+        using var root = Reg.Base(true);
+        foreach (var path in targets)
+        {
+            try
+            {
+                using var key = root.OpenSubKey(path, true);
+                if (key == null) { failed++; continue; }
+
+                var current = key.GetValue(_valueName);
+                if (!Text(current).Equals(Text(_on), StringComparison.OrdinalIgnoreCase))
+                    lines.Add(path + "\t" + (current == null ? "<none>" : Text(current)));
+
+                key.SetValue(_valueName, Coerce(_on), _kind);
+            }
+            catch
+            {
+                failed++; // zařízení může zápis odmítnout, ostatní se upraví
+            }
+        }
+
+        if (failed == targets.Count)
+            throw new InvalidOperationException("Hodnotu „" + _valueName + "“ se nepodařilo zapsat (chybí oprávnění).");
+
+        if (!backup.Entries.ContainsKey(Key))
+            backup.Entries[Key] = new OpBackup { Existed = true, Kind = "multi", Data = string.Join("\n", lines) };
+    }
+
+    public override void Revert(TweakBackup backup)
+    {
+        using var root = Reg.Base(true);
+
+        var saved = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (backup.Entries.TryGetValue(Key, out var entry))
+            foreach (var line in entry.Data.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var parts = line.Split('\t', 2);
+                if (parts.Length == 2) saved[parts[0]] = parts[1];
+            }
+
+        foreach (var path in Targets())
+        {
+            try
+            {
+                using var key = root.OpenSubKey(path, true);
+                if (key == null) continue;
+
+                if (saved.TryGetValue(path, out var old))
+                {
+                    if (old == "<none>") key.DeleteValue(_valueName, false);
+                    else key.SetValue(_valueName, _kind == RegistryValueKind.DWord ? Convert.ToInt32(old, CultureInfo.InvariantCulture) : old, _kind);
+                }
+                else if (_offDefault == null) key.DeleteValue(_valueName, false);
+                else key.SetValue(_valueName, Coerce(_offDefault), _kind);
+            }
+            catch
+            {
+                // zařízení může zápis odmítnout
+            }
+        }
+    }
+
+    // --- výčty podklíčů ---------------------------------------------------------------------
+
+    private const string ClassRoot = @"SYSTEM\CurrentControlSet\Control\Class\";
+
+    private static RegistryKey? TryOpen(RegistryKey parent, string name)
+    {
+        try { return parent.OpenSubKey(name, false); }
+        catch { return null; } // zařízení bez oprávnění ke čtení se přeskočí
+    }
+
+    /// <summary>Podklíče třídy zařízení (0000, 0001...), které mají zadanou hodnotu (poznávací znamení skutečného zařízení).</summary>
+    public static IEnumerable<string> ClassKeys(string classGuid, string mustHaveValue)
+    {
+        using var root = Reg.Base(true);
+        using var cls = root.OpenSubKey(ClassRoot + classGuid, false);
+        if (cls == null) yield break;
+
+        foreach (var name in cls.GetSubKeyNames())
+        {
+            if (!name.All(char.IsDigit)) continue;
+            using var sub = TryOpen(cls, name);
+            if (sub?.GetValue(mustHaveValue) != null) yield return ClassRoot + classGuid + "\\" + name;
+        }
+    }
+
+    /// <summary>Skutečné síťové karty (mají NetCfgInstanceId a nejsou to virtuální adaptéry s příznakem *IfType 0).</summary>
+    public static IEnumerable<string> NetworkAdapters() =>
+        ClassKeys("{4d36e972-e325-11ce-bfc1-08002be10318}", "NetCfgInstanceId");
+
+    public static IEnumerable<string> BluetoothAdapters() =>
+        ClassKeys("{e0cbf06c-cd8b-4647-bb8a-263b43f0f974}", "DriverDesc");
+
+    public static IEnumerable<string> NetBtInterfaces()
+    {
+        const string path = @"SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces";
+        using var root = Reg.Base(true);
+        using var key = root.OpenSubKey(path, false);
+        if (key == null) yield break;
+        foreach (var name in key.GetSubKeyNames())
+            if (name.StartsWith("Tcpip_", StringComparison.OrdinalIgnoreCase)) yield return path + "\\" + name;
+    }
+
+    /// <summary>USB zařízení: Enum\USB\VID_...\sériové číslo\Device Parameters.</summary>
+    public static IEnumerable<string> UsbDeviceParameters()
+    {
+        const string path = @"SYSTEM\CurrentControlSet\Enum\USB";
+        using var root = Reg.Base(true);
+        using var usb = root.OpenSubKey(path, false);
+        if (usb == null) yield break;
+
+        foreach (var hw in usb.GetSubKeyNames())
+        {
+            using var hwKey = TryOpen(usb, hw);
+            if (hwKey == null) continue;
+            foreach (var instance in hwKey.GetSubKeyNames())
+            {
+                var full = path + "\\" + hw + "\\" + instance + "\\Device Parameters";
+                using var test = TryOpen(root, full);
+                if (test != null) yield return full;
+            }
+        }
+    }
+
+    /// <summary>Bluetooth je k dispozici, když existuje adaptér a služba Bluetooth není zakázaná.</summary>
+    public static bool BluetoothUsable()
+    {
+        using var svc = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\bthserv", false);
+        if (svc == null || svc.GetValue("Start") is int { } start && start == 4) return false;
+        return BluetoothAdapters().Any();
+    }
+}

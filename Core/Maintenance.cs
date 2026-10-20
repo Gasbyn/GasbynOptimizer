@@ -214,4 +214,180 @@ public static class Maintenance
         Log.Write("Vyčištěna mezipaměť aplikací: " + files + " souborů (" + bytes / 1024 / 1024 + " MB)");
         return new CleanResult(bytes, files);
     }
+
+    public sealed record LeftoverResult(int UninstallEntries, int PackageFolders, long Bytes, string? BackupFile);
+
+    private const string UninstallPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
+    private const string UninstallPath32 = @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall";
+
+    /// <summary>Vytáhne cestu k programu z řetězce odinstalace (v uvozovkách, nebo do přípony .exe).</summary>
+    internal static string? ExecutableFrom(string? command)
+    {
+        if (string.IsNullOrWhiteSpace(command)) return null;
+        command = command.Trim();
+
+        string path;
+        if (command[0] == '"')
+        {
+            var end = command.IndexOf('"', 1);
+            if (end < 0) return null;
+            path = command.Substring(1, end - 1);
+        }
+        else
+        {
+            var exe = command.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+            if (exe < 0) return null;
+            path = command.Substring(0, exe + 4);
+        }
+
+        path = Environment.ExpandEnvironmentVariables(path);
+        return Path.IsPathRooted(path) ? path : null;
+    }
+
+    private static bool PathExistsOrUnknown(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return false;
+        try
+        {
+            path = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"'));
+            var comma = path.LastIndexOf(',');
+            if (comma > 2) path = path.Substring(0, comma);
+            if (!Path.IsPathRooted(path)) return true;           // neznámý tvar, raději nemazat
+            var root = Path.GetPathRoot(path);
+            if (root == null || !Directory.Exists(root)) return true; // disk není připojený, nelze rozhodnout
+            return File.Exists(path) || Directory.Exists(path);
+        }
+        catch { return true; }
+    }
+
+    /// <summary>Záznamy v „Programy a funkce“, jejichž program už neexistuje. Před smazáním se zálohují do souboru .reg.</summary>
+    private static int CleanStaleUninstallEntries(out string? backupFile)
+    {
+        backupFile = null;
+        var removed = 0;
+        var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+        var sources = new[] { (true, UninstallPath), (true, UninstallPath32), (false, UninstallPath) };
+
+        foreach (var (hklm, path) in sources)
+        {
+            var stale = new List<string>();
+            try
+            {
+                using var root = Reg.Base(hklm);
+                using var parent = root.OpenSubKey(path, false);
+                if (parent == null) continue;
+
+                foreach (var name in parent.GetSubKeyNames())
+                {
+                    using var key = parent.OpenSubKey(name, false);
+                    if (key == null) continue;
+
+                    if (key.GetValue("DisplayName") is not string { Length: > 0 }) continue;
+                    if (key.GetValue("SystemComponent") is int sc && sc == 1) continue;
+                    if (key.GetValue("WindowsInstaller") is int wi && wi == 1) continue;
+                    if (key.GetValue("ParentKeyName") != null) continue;
+
+                    var uninstall = key.GetValue("UninstallString") as string ?? key.GetValue("QuietUninstallString") as string;
+                    var exe = ExecutableFrom(uninstall);
+                    if (exe == null) continue;
+                    var driveRoot = Path.GetPathRoot(exe);
+                    if (driveRoot == null || !Directory.Exists(driveRoot)) continue;
+                    if (File.Exists(exe)) continue;
+
+                    if (PathExistsOrUnknown(key.GetValue("InstallLocation") as string)) continue;
+                    if (PathExistsOrUnknown(key.GetValue("DisplayIcon") as string)) continue;
+
+                    stale.Add(name);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Hledání zbytků v seznamu programů selhalo: " + ex.Message);
+                continue;
+            }
+
+            if (stale.Count == 0) continue;
+
+            // Záloha celé větve před mazáním.
+            AppPaths.EnsureDataDir();
+            var hive = hklm ? "HKLM" : "HKCU";
+            var file = Path.Combine(AppPaths.DataDir, "zaloha-programy-" + hive + (path == UninstallPath32 ? "-32" : "") + "-" + stamp + ".reg");
+            var export = Shell.Run(Shell.System32("reg.exe"), "export \"" + hive + "\\" + path + "\" \"" + file + "\" /y", 30000);
+            if (export.ExitCode != 0)
+            {
+                Log.Write("Záloha seznamu programů selhala, zbytky se nemažou: " + export.Output);
+                continue;
+            }
+            backupFile = file;
+
+            using var root2 = Reg.Base(hklm);
+            using var parent2 = root2.OpenSubKey(path, true);
+            if (parent2 == null) continue;
+            foreach (var name in stale)
+            {
+                try { parent2.DeleteSubKeyTree(name, false); removed++; }
+                catch (Exception ex) { Log.Write("Záznam „" + name + "“ nejde smazat: " + ex.Message); }
+            }
+        }
+
+        return removed;
+    }
+
+    /// <summary>Složky s daty odinstalovaných aplikací z Obchodu (v %LocalAppData%\Packages).</summary>
+    private static int CleanOrphanPackageFolders(ref long bytes)
+    {
+        var packages = Path.Combine(Env(Environment.SpecialFolder.LocalApplicationData), "Packages");
+        if (!Directory.Exists(packages)) return 0;
+
+        var result = Shell.Run(Shell.PowerShellExe,
+            "-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"Get-AppxPackage -AllUsers | ForEach-Object { $_.PackageFamilyName }\"", 90000);
+        if (result.ExitCode != 0) return 0;
+
+        var known = result.Output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(l => l.Trim()).Where(l => l.Contains('_')).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (known.Count < 5) return 0; // seznam je podezřele krátký, raději nemazat
+
+        var removed = 0;
+        foreach (var dir in Directory.EnumerateDirectories(packages))
+        {
+            var name = Path.GetFileName(dir);
+            if (known.Contains(name)) continue;
+            if (name.StartsWith("Microsoft.Windows.", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("MicrosoftWindows.", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("windows.", StringComparison.OrdinalIgnoreCase)) continue;
+
+            long folderBytes = 0;
+            var files = 0;
+            DeleteContents(dir, ref folderBytes, ref files);
+            try
+            {
+                Directory.Delete(dir, false);
+                removed++;
+                bytes += folderBytes;
+            }
+            catch
+            {
+                bytes += folderBytes; // složka zůstala, ale část obsahu se smazala
+            }
+        }
+        return removed;
+    }
+
+    /// <summary>Uklidí zbytky odinstalovaných aplikací: záznamy v seznamu programů a složky aplikací z Obchodu.</summary>
+    public static LeftoverResult CleanLeftovers()
+    {
+        long bytes = 0;
+        var entries = 0;
+        string? backup = null;
+        var folders = 0;
+
+        try { entries = CleanStaleUninstallEntries(out backup); }
+        catch (Exception ex) { Log.Write("Čištění seznamu programů selhalo: " + ex.Message); }
+
+        try { folders = CleanOrphanPackageFolders(ref bytes); }
+        catch (Exception ex) { Log.Write("Čištění složek aplikací selhalo: " + ex.Message); }
+
+        Log.Write("Zbytky po aplikacích: záznamů " + entries + ", složek " + folders + " (" + bytes / 1024 / 1024 + " MB)");
+        return new LeftoverResult(entries, folders, bytes, backup);
+    }
 }

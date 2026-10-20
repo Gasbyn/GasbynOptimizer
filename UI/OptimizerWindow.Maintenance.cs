@@ -54,6 +54,24 @@ public partial class OptimizerWindow
             : "Smazáno " + result.Files + " souborů, uvolněno " + Megabytes(result.Bytes) + " MB.";
     }
 
+    private async void CleanLeftovers_Click(object sender, RoutedEventArgs e)
+    {
+        ShowBusy("Hledám zbytky odinstalovaných aplikací… může to chvíli trvat.");
+        var result = await Task.Run(() => Maintenance.CleanLeftovers());
+        HideBusy();
+
+        if (result.UninstallEntries == 0 && result.PackageFolders == 0)
+        {
+            LeftoversResult.Text = "Nenašel jsem žádné zbytky, vše je v pořádku.";
+            return;
+        }
+
+        var text = "Odstraněno záznamů v seznamu programů: " + result.UninstallEntries +
+                   ", složek aplikací z Obchodu: " + result.PackageFolders + " (uvolněno " + Megabytes(result.Bytes) + " MB).";
+        if (result.BackupFile != null) text += " Záloha seznamu programů: " + result.BackupFile;
+        LeftoversResult.Text = text;
+    }
+
     // --- aktualizace aplikací -------------------------------------------------------------------
 
     private async Task CheckUpdatesAsync()

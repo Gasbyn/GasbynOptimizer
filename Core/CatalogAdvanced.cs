@@ -215,7 +215,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-xbox-controller", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-xbox-controller", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout podporu herních ovladačů (gamepad)",
                 Description = "Zakáže služby Xbox Accessory Management a Microsoft GameInput. Gamepady a ovladače připojené přes Xbox protokol pak nemusí fungovat.",
                 Note = "Nepoužívej, pokud hraješ s gamepadem (Xbox ovladač, Xbox příslušenství). Klávesnice a myš nejsou dotčené.",
@@ -227,7 +227,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-security-services", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "adv-security-services", Category = CatAdvanced, Experimental = true, RequiresRestart = true,
                 Name = "Vypnout zbytečné bezpečnostní služby",
                 Description = "Zakáže Centrum zabezpečení, službu stavu zabezpečení a webovou ochranu Defenderu.",
                 Note = "Experimentální: Windows nebude hlásit stav antiviru a firewallu. Nenalezené služby se přeskočí.",
@@ -241,7 +241,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-firewall-off", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-firewall-off", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout Windows Firewall",
                 Description = "Vypne Windows Defender Firewall pro všechny typy sítí přes zásady.",
                 Note = "Silně nedoporučeno bez jiného firewallu, hlavně na veřejných sítích.",
@@ -254,7 +254,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-sehop", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "adv-sehop", Category = CatAdvanced, Experimental = true, RequiresRestart = true,
                 Name = "Vypnout SEHOP (ochrana výjimek)",
                 Description = "Vypne kontrolu řetězce výjimek, jednu z mitigací proti zneužití paměti. Dřívější doporučení pro starší hry a programy.",
                 Note = "Experimentální: oslabuje ochranu proti zneužití paměti. Vyžaduje restart.",
@@ -265,7 +265,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-vbs", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "adv-vbs", Category = CatAdvanced, Experimental = true, RequiresRestart = true,
                 Name = "Částečně vypnout virtualizaci: VBS",
                 Description = "Vypne zabezpečení na bázi virtualizace (VBS). V hrách zlepší výkon, Hyper-V a virtuální stroje zůstávají funkční.",
                 Note = "Nedoporučeno: snižuje ochranu jádra. Vyžaduje restart.",
@@ -276,7 +276,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-hypervisor", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "adv-hypervisor", Category = CatAdvanced, Experimental = true, RequiresRestart = true,
                 Name = "Úplně vypnout virtualizaci (Hyper-V)",
                 Description = "Vypne hypervizor Windows a služby Hyper-V. Přestane fungovat Hyper-V, WSL 2, Windows Sandbox i Android podsystémy. Uvolní procesor od režie virtualizace.",
                 Note = "Experimentální: nepoužívej, pokud pracuješ s virtuálními stroji nebo WSL 2. Vyžaduje restart.",
@@ -290,7 +290,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-remote-all", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-remote-all", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout všechna vzdálená připojení",
                 Description = "Zakáže vzdálenou plochu, vzdálenou pomoc, vzdálenou správu (WinRM), směrování a vzdálený přístup a objevování zařízení v síti (SSDP, UPnP).",
                 Note = "Nepůjde se k PC připojit odjinud (ani přes nástroje pro vzdálenou správu). Router může přestat automaticky otevírat porty pro hry.",
@@ -306,7 +306,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-iphone", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-iphone", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout podporu iPhone",
                 Description = "Zakáže služby Apple pro iPhone a iPad (Apple Mobile Device, Bonjour, iPod). Existují jen s nainstalovaným iTunes nebo aplikacemi Apple.",
                 Note = "Přestane fungovat připojení iPhonu k PC přes iTunes a Apple zařízení.",
@@ -319,7 +319,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-android", Category = CatAdvanced, IsNew = true, Experimental = true,
+                Id = "adv-android", Category = CatAdvanced, Experimental = true,
                 Name = "Vypnout podporu Android telefonů",
                 Description = "Vypne propojení telefonu s počítačem (Telefon propojený s počítačem, služba telefonu).",
                 Note = "Experimentální: přenos souborů kabelem (MTP) funguje dál, vypíná se jen propojení Windows s telefonem.",
@@ -327,6 +327,41 @@ internal static class CatalogAdvanced
                 {
                     Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows\System", "EnableMmx", 0, null),
                     Catalog.Service("PhoneSvc", "demand")
+                }
+            },
+            new()
+            {
+                Id = "adv-wireless-all", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Name = "Vypnout Wi-Fi a další bezdrátové funkce",
+                Description = "Zakáže služby Wi-Fi (WLAN AutoConfig), mobilní data, mobilní hotspot, Wi-Fi Direct a správu rádií. Spolu s optimalizacemi „Vypnout Bluetooth služby“ a „Vypnout senzory a polohové služby“ vypneš všechno bezdrátové i senzory.",
+                Note = "Experimentální: přijdeš o Wi-Fi a režim Letadlo. Používej jen na PC s kabelem. Vypnutí vrátí původní stav.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Service("WlanSvc", "auto"),
+                    Catalog.Service("WwanSvc", "demand"),
+                    Catalog.Service("icssvc", "demand"),
+                    Catalog.Service("WFDSConMgrSvc", "demand"),
+                    Catalog.Service("RmSvc", "demand")
+                }
+            },
+            new()
+            {
+                Id = "adv-reporting-off", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Name = "Vypnout všechny služby hlášení a logování",
+                Description = "Zakáže odesílání dat Microsoftu: kolektor diagnostiky, program zlepšování, kompatibilitu aplikací, záznam kroků a diagnostické logování.",
+                Note = "Doplňuje „Vypnout telemetrii“, „Vypnout služby telemetrie“ a „Vypnout hlášení chyb“. Experimentální: Windows nebude hlásit chyby ani kompatibilitu starších aplikací. Vyžaduje restart.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Service("diagnosticshub.standardcollector.service", "demand"),
+                    Catalog.Service("DcpSvc", "demand"),
+                    Catalog.Service("PcaSvc", "demand"),
+                    Catalog.Service("wercplsupport", "demand"),
+                    Catalog.Hklm(@"SOFTWARE\Microsoft\SQMClient\Windows", "CEIPEnable", 0, 1),
+                    Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows\AppCompat", "AITEnable", 0, null),
+                    Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows\AppCompat", "DisableInventory", 1, null),
+                    Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows\AppCompat", "DisableUAR", 1, null),
+                    Catalog.Hklm(@"SYSTEM\CurrentControlSet\Control\WMI\Autologger\AutoLogger-Diagtrack-Listener", "Start", 0, 1),
+                    Catalog.Hklm(@"SYSTEM\CurrentControlSet\Control\WMI\Autologger\SQMLogger", "Start", 0, 1)
                 }
             }
         };
