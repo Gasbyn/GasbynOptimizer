@@ -29,8 +29,8 @@ Záměrně chybí věci, které snižují zabezpečení (vypnutí Defenderu, mit
 - Při každém spuštění aplikace zkontroluje GitHub Releases. Pokud je novější vydání s instalátorem, zobrazí okno
   „Aktualizuje se Gasbyn Optimizer“, stáhne a ověří instalátor, tiše ho nainstaluje a aplikaci znovu spustí.
   Bez internetu aplikace normálně nastartuje.
-- Každý push do `main` (a větve `rewrite/v3-clean`) automaticky vydá nový release `v2.0.N` (první stabilní vydání je `v2.0.0`, tedy Gasbyn Optimizer 2.0.0; dřívější bety byly `v2.0.b1.N`)
-  s instalátorem. Číselná verze 2.0.N.0 se použije v aplikaci i v instalátoru.
+- Každý push do `main` (a větve `rewrite/v3-clean`) automaticky vydá nový release `v2.0.0.N` (první stabilní vydání je `v2.0.0`, další jsou `v2.0.0.6`, `v2.0.0.7`...; dřívější bety byly `v2.0.b1.N`)
+  s instalátorem. Číselná verze 2.0.0.N se použije v aplikaci i v instalátoru.
 
 ## Instalace
 

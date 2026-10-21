@@ -55,7 +55,7 @@ public partial class OptimizerWindow : Window
             ? ""
             : version.Build == 1 && version.Revision > 0
                 ? "Verze " + version.Major + "." + version.Minor + ".b" + version.Build + "." + version.Revision
-                : "Verze " + version.Major + "." + version.Minor + "." + Math.Max(version.Build, 0);
+                : "Verze " + version.Major + "." + version.Minor + "." + Math.Max(version.Build, 0) + "." + Math.Max(version.Revision, 0);
         BuildNav();
         AutoRestoreCheck.IsChecked = _settings.AutoRestorePoint;
         AdvancedCheck.IsChecked = _settings.AdvancedMode;

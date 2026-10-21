@@ -25,7 +25,7 @@ internal static class CatalogNetwork
         {
             new()
             {
-                Id = "net-adapter-power", Category = Catalog.CatInternet, IsNew = true, RequiresRestart = true, Recommended = true,
+                Id = "net-adapter-power", Category = Catalog.CatInternet, RequiresRestart = true, Recommended = true,
                 Name = "Vypnout úsporu energie síťových karet",
                 Description = "Síťová karta (Wi-Fi i kabel) se nebude vypínat kvůli šetření energie. Odstraní to výpadky a zpoždění po chvíli nečinnosti.",
                 Note = "Na notebooku na baterii může mírně zvýšit spotřebu. Projeví se po restartu nebo po novém připojení k síti.",
@@ -36,7 +36,7 @@ internal static class CatalogNetwork
             },
             new()
             {
-                Id = "net-eee", Category = Catalog.CatInternet, IsNew = true, Recommended = true,
+                Id = "net-eee", Category = Catalog.CatInternet, Recommended = true,
                 Name = "Vypnout Energy-Efficient Ethernet a úsporu karet",
                 Description = "Vypne úsporné režimy síťových karet (Energy-Efficient Ethernet, Green Ethernet, úsporný režim). Stabilnější odezva.",
                 Note = "Nastavení existuje jen u karet, které ho podporují. Ostatní se přeskočí.",
@@ -52,7 +52,7 @@ internal static class CatalogNetwork
             },
             new()
             {
-                Id = "net-tcp-tuning", Category = Catalog.CatInternet, IsNew = true, RequiresRestart = true, Recommended = true,
+                Id = "net-tcp-tuning", Category = Catalog.CatInternet, RequiresRestart = true, Recommended = true,
                 Name = "Optimalizace TCP/IP",
                 Description = "Zkrátí čekání na uvolnění spojení, zvýší počet dostupných portů a zapne zjišťování MTU. Bezpečné nastavení bez nevýhod.",
                 Note = "Vyžaduje restart.",
@@ -66,7 +66,7 @@ internal static class CatalogNetwork
             },
             new()
             {
-                Id = "net-qos-reserve", Category = Catalog.CatInternet, IsNew = true, Recommended = true,
+                Id = "net-qos-reserve", Category = Catalog.CatInternet, Recommended = true,
                 Name = "Uvolnit rezervovanou šířku pásma",
                 Description = "Windows přestane rezervovat část rychlosti internetu pro vlastní účely (QoS).",
                 Ops = new TweakOp[]
@@ -76,7 +76,7 @@ internal static class CatalogNetwork
             },
             new()
             {
-                Id = "net-netbios-off", Category = Catalog.CatInternet, IsNew = true,
+                Id = "net-netbios-off", Category = Catalog.CatInternet,
                 Name = "Vypnout NetBIOS přes TCP/IP",
                 Description = "Vypne starý protokol NetBIOS, který se nepoužívá a prozrazuje jméno počítače v síti.",
                 Note = "Ve staré domácí síti se mohou přestat zobrazovat počítače v okolí.",
@@ -87,7 +87,7 @@ internal static class CatalogNetwork
             },
             new()
             {
-                Id = "net-ipv6-off", Category = Catalog.CatInternet, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "net-ipv6-off", Category = Catalog.CatInternet, Experimental = true, RequiresRestart = true,
                 Name = "Vypnout IPv6",
                 Description = "Vypne protokol IPv6 na všech adaptérech.",
                 Note = "Experimentální: některé služby (Xbox, část webů, Microsoft Store) na IPv6 spoléhají a mohou zpomalit nebo přestat fungovat. Vyžaduje restart.",
@@ -98,7 +98,7 @@ internal static class CatalogNetwork
             },
             new()
             {
-                Id = "net-ncsi-off", Category = Catalog.CatInternet, IsNew = true, Experimental = true,
+                Id = "net-ncsi-off", Category = Catalog.CatInternet, Experimental = true,
                 Name = "Vypnout kontrolu připojení k internetu",
                 Description = "Windows přestane zkoušet spojení se servery Microsoftu (msftconnecttest), aby zjistil, jestli máš internet.",
                 Note = "Experimentální: ikona sítě může ukazovat „bez internetu“, i když internet funguje.",
@@ -109,7 +109,7 @@ internal static class CatalogNetwork
             },
             new()
             {
-                Id = "net-offload-off", Category = Catalog.CatInternet, IsNew = true, Experimental = true,
+                Id = "net-offload-off", Category = Catalog.CatInternet, Experimental = true,
                 Name = "Vypnout Large Send Offload a RSC",
                 Description = "Vypne dělení a slučování paketů na síťové kartě. Může snížit skoky odezvy (ping) ve hrách.",
                 Note = "Experimentální: u některých karet sníží rychlost stahování nebo zvýší zátěž procesoru.",
@@ -123,7 +123,7 @@ internal static class CatalogNetwork
             },
             new()
             {
-                Id = "net-moderation-off", Category = Catalog.CatInternet, IsNew = true, Experimental = true,
+                Id = "net-moderation-off", Category = Catalog.CatInternet, Experimental = true,
                 Name = "Vypnout moderaci přerušení a řízení toku",
                 Description = "Síťová karta zpracovává pakety okamžitě. Nižší zpoždění, vyšší zátěž procesoru.",
                 Note = "Experimentální: vyšší zátěž procesoru, u slabších PC to může zpomalit.",
@@ -135,7 +135,7 @@ internal static class CatalogNetwork
             },
             new()
             {
-                Id = "usb-power-saving", Category = CatalogHardware.CatHardware, IsNew = true,
+                Id = "usb-power-saving", Category = CatalogHardware.CatHardware,
                 RecommendWhen = p => Needs.Desktop(p) == null,
                 Name = "USB: vypnout úsporu energie",
                 Description = "Zařízení USB (myš, klávesnice, sluchátka, ovladače) se nebudou uspávat. Odstraní to výpadky a zpoždění po nečinnosti.",
@@ -149,7 +149,7 @@ internal static class CatalogNetwork
             },
             new()
             {
-                Id = "bluetooth-power-saving", Category = CatalogHardware.CatHardware, IsNew = true, RequiresRestart = true,
+                Id = "bluetooth-power-saving", Category = CatalogHardware.CatHardware, RequiresRestart = true,
                 RecommendWhen = p => Needs.Desktop(p) == null,
                 Name = "Bluetooth: vypnout úsporu energie",
                 Description = "Bluetooth adaptér se nebude vypínat kvůli šetření energie. Odstraní to výpadky sluchátek a ovladačů.",

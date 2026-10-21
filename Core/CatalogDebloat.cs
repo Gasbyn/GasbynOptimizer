@@ -34,7 +34,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
         {
             new()
             {
-                Id = "debloat-chrome", Category = CatalogDebloat.CatDebloat, IsNew = true, InstalledCheck = () => AppPresence.ByExe("chrome.exe", @"%ProgramFiles%\Google\Chrome\Application\chrome.exe", @"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe", @"%LocalAppData%\Google\Chrome\Application\chrome.exe"),
+                Id = "debloat-chrome", Category = CatalogDebloat.CatDebloat, InstalledCheck = () => AppPresence.ByExe("chrome.exe", @"%ProgramFiles%\Google\Chrome\Application\chrome.exe", @"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe", @"%LocalAppData%\Google\Chrome\Application\chrome.exe"),
                 Name = "Chrome: odstranit balast a hlášení",
                 Description = "Vypne hlášení statistik, běh na pozadí, rychlé spuštění, reklamní karty, nákupního asistenta a zpětnou vazbu přes zásady Chrome.",
                 Note = "Chrome v nastavení ukáže „Spravováno vaší organizací“. Vypnutí to vrátí.",
@@ -51,7 +51,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
             },
             new()
             {
-                Id = "debloat-brave", Category = CatalogDebloat.CatDebloat, IsNew = true, InstalledCheck = () => AppPresence.ByExe("brave.exe", @"%ProgramFiles%\BraveSoftware\Brave-Browser\Application\brave.exe", @"%ProgramFiles(x86)%\BraveSoftware\Brave-Browser\Application\brave.exe", @"%LocalAppData%\BraveSoftware\Brave-Browser\Application\brave.exe"),
+                Id = "debloat-brave", Category = CatalogDebloat.CatDebloat, InstalledCheck = () => AppPresence.ByExe("brave.exe", @"%ProgramFiles%\BraveSoftware\Brave-Browser\Application\brave.exe", @"%ProgramFiles(x86)%\BraveSoftware\Brave-Browser\Application\brave.exe", @"%LocalAppData%\BraveSoftware\Brave-Browser\Application\brave.exe"),
                 Name = "Brave: odstranit balast",
                 Description = "Vypne Brave Rewards, peněženku, VPN, AI chat, hlášení statistik a běh na pozadí přes zásady Brave.",
                 Note = "Brave v nastavení ukáže „Spravováno vaší organizací“. Vypnutí to vrátí.",
@@ -67,7 +67,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
             },
             new()
             {
-                Id = "debloat-edge", Category = CatalogDebloat.CatDebloat, IsNew = true, InstalledCheck = () => File.Exists(CatalogDebloat.EdgeExe),
+                Id = "debloat-edge", Category = CatalogDebloat.CatDebloat, InstalledCheck = () => File.Exists(CatalogDebloat.EdgeExe),
                 Name = "Edge: odstranit balast a hlášení",
                 Description = "Vypne rychlé spuštění, nákupního asistenta, postranní panel, Microsoft Rewards, personalizaci a odesílání diagnostiky v Edge.",
                 Note = "Edge v nastavení ukáže „Spravováno vaší organizací“. Vypnutí to vrátí.",
@@ -84,7 +84,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
             },
             new()
             {
-                Id = "debloat-edge-off", Category = CatalogDebloat.CatDebloat, IsNew = true, InstalledCheck = () => File.Exists(CatalogDebloat.EdgeExe),
+                Id = "debloat-edge-off", Category = CatalogDebloat.CatDebloat, InstalledCheck = () => File.Exists(CatalogDebloat.EdgeExe),
                 Name = "Edge: vypnout úplně (aktualizace a služby)",
                 Description = "Vypne běh Edge na pozadí a zakáže jeho aktualizace a služby (Edge Update, Elevation Service). Prohlížeč zůstane nainstalovaný, ale nic nedělá na pozadí.",
                 Note = "Experimentální: Edge se přestane aktualizovat, což může být riziko, pokud ho používáš. Vypnutí vše vrátí.",

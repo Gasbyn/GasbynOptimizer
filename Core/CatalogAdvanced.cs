@@ -331,7 +331,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-wireless-all", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "adv-wireless-all", Category = CatAdvanced, Experimental = true, RequiresRestart = true,
                 Name = "Vypnout Wi-Fi a další bezdrátové funkce",
                 Description = "Zakáže služby Wi-Fi (WLAN AutoConfig), mobilní data, mobilní hotspot, Wi-Fi Direct a správu rádií. Spolu s optimalizacemi „Vypnout Bluetooth služby“ a „Vypnout senzory a polohové služby“ vypneš všechno bezdrátové i senzory.",
                 Note = "Experimentální: přijdeš o Wi-Fi a režim Letadlo. Používej jen na PC s kabelem. Vypnutí vrátí původní stav.",
@@ -346,7 +346,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-reporting-off", Category = CatAdvanced, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "adv-reporting-off", Category = CatAdvanced, Experimental = true, RequiresRestart = true,
                 Name = "Vypnout všechny služby hlášení a logování",
                 Description = "Zakáže odesílání dat Microsoftu: kolektor diagnostiky, program zlepšování, kompatibilitu aplikací, záznam kroků a diagnostické logování.",
                 Note = "Doplňuje „Vypnout telemetrii“, „Vypnout služby telemetrie“ a „Vypnout hlášení chyb“. Experimentální: Windows nebude hlásit chyby ani kompatibilitu starších aplikací. Vyžaduje restart.",

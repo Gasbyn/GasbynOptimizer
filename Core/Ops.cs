@@ -736,6 +736,26 @@ public sealed class MultiKeyOp : TweakOp
     public static IEnumerable<string> NetworkAdapters() =>
         ClassKeys("{4d36e972-e325-11ce-bfc1-08002be10318}", "NetCfgInstanceId");
 
+    /// <summary>Grafické karty zadaného výrobce (podle názvu ovladače nebo poskytovatele).</summary>
+    public static IEnumerable<string> GpuAdapters(params string[] vendors)
+    {
+        const string display = "{4d36e968-e325-11ce-bfc1-08002be10318}";
+        using var root = Reg.Base(true);
+        using var cls = TryOpen(root, ClassRoot + display);
+        if (cls == null) yield break;
+
+        foreach (var name in cls.GetSubKeyNames())
+        {
+            if (!name.All(char.IsDigit)) continue;
+            using var sub = TryOpen(cls, name);
+            if (sub == null) continue;
+
+            var text = (sub.GetValue("DriverDesc") as string ?? "") + " " + (sub.GetValue("ProviderName") as string ?? "");
+            if (vendors.Any(v => text.Contains(v, StringComparison.OrdinalIgnoreCase)))
+                yield return ClassRoot + display + "\\" + name;
+        }
+    }
+
     public static IEnumerable<string> BluetoothAdapters() =>
         ClassKeys("{e0cbf06c-cd8b-4647-bb8a-263b43f0f974}", "DriverDesc");
 
