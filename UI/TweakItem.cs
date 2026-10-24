@@ -20,7 +20,11 @@ public sealed class TweakItem : INotifyPropertyChanged
         UnsupportedReason = unsupportedReason;
         IsRecommended = recommended;
         _advanced = advanced;
+        SearchWords = SearchIndex.Words(tweak.Name + " " + tweak.Description + " " + tweak.Note + " " + tweak.Category + " " + tweak.Id);
     }
+
+    /// <summary>Slova pro chytré hledání (název, popis, poznámka, kategorie, anglické klíčové názvy).</summary>
+    public HashSet<string> SearchWords { get; }
 
     public Tweak Tweak { get; }
 
@@ -31,7 +35,7 @@ public sealed class TweakItem : INotifyPropertyChanged
     public bool HasNote => !string.IsNullOrEmpty(Tweak.Note);
     public bool IsExperimental => Tweak.Experimental;
     public bool IsApplyOnly => Tweak.ApplyOnly;
-    public string ApplyText => IsOn ? "Aktivní" : "Použít";
+    public string ApplyText => IsOn ? (Tweak.DoneText ?? "Aktivní") : (Tweak.ApplyOnly && Tweak.DoneText != null ? "Odinstalovat" : "Použít");
     public bool IsNew => Tweak.IsNew;
 
     /// <summary>Doporučeno pro tento počítač (podle hardwaru a Windows).</summary>
@@ -107,6 +111,8 @@ public sealed class TweakItem : INotifyPropertyChanged
         {
             if (ShowLock) return "🔒 Nepodporováno";
             if (IsApplyOnly)
+                if (Tweak.DoneText != null)
+                    return State == TweakState.On ? Tweak.DoneText : State == TweakState.NotApplicable ? "Nedostupné" : Tweak.TodoText ?? "Neaktivní";
                 return State == TweakState.On ? "Aktivní plán" : State == TweakState.NotApplicable ? "Nedostupné" : "Neaktivní";
 
             return State switch

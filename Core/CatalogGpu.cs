@@ -24,7 +24,7 @@ internal static class CatalogGpu
         {
             new()
             {
-                Id = "nv-max-performance", Category = CatalogHardware.CatHardware, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "nv-max-performance", Category = CatalogHardware.CatHardware, Experimental = true, RequiresRestart = true,
                 Requires = Needs.Nvidia, RecommendWhen = p => false,
                 Name = "NVIDIA: maximální výkon grafiky (PowerMizer)",
                 Description = "Nastaví ovladač NVIDIA na trvalý maximální výkon. Grafika se při hraní nepřepíná do úsporných stavů, takže jsou menší výkyvy FPS.",
@@ -39,7 +39,7 @@ internal static class CatalogGpu
             },
             new()
             {
-                Id = "nv-no-dynamic-pstate", Category = CatalogHardware.CatHardware, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "nv-no-dynamic-pstate", Category = CatalogHardware.CatHardware, Experimental = true, RequiresRestart = true,
                 Requires = Needs.Nvidia, RecommendWhen = p => false,
                 Name = "NVIDIA: vypnout dynamické přepínání stavů (P-state)",
                 Description = "Grafika NVIDIA zůstane v nejvyšším výkonovém stavu a nepřepíná se podle zátěže.",
@@ -51,7 +51,7 @@ internal static class CatalogGpu
             },
             new()
             {
-                Id = "nv-deep-l1-off", Category = CatalogHardware.CatHardware, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "nv-deep-l1-off", Category = CatalogHardware.CatHardware, Experimental = true, RequiresRestart = true,
                 Requires = Needs.Nvidia, RecommendWhen = p => false,
                 Name = "NVIDIA: vypnout úsporu PCIe (Deep L1)",
                 Description = "Vypne hluboký úsporný stav sběrnice PCIe u grafiky NVIDIA. Menší zpoždění při probouzení grafiky ze spánku.",
@@ -63,7 +63,7 @@ internal static class CatalogGpu
             },
             new()
             {
-                Id = "nv-hdcp-off", Category = CatalogHardware.CatHardware, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "nv-hdcp-off", Category = CatalogHardware.CatHardware, Experimental = true, RequiresRestart = true,
                 Requires = Needs.Nvidia, RecommendWhen = p => false,
                 Name = "NVIDIA: vypnout HDCP",
                 Description = "Vypne ochranu obsahu HDCP v ovladači NVIDIA. Odstraní drobné zpoždění a problémy s některými monitory a záznamovými kartami.",
@@ -75,7 +75,7 @@ internal static class CatalogGpu
             },
             new()
             {
-                Id = "nv-gfe-services", Category = CatalogHardware.CatHardware, IsNew = true, Experimental = true,
+                Id = "nv-gfe-services", Category = CatalogHardware.CatHardware, Experimental = true,
                 Requires = Needs.Nvidia, RecommendWhen = p => false,
                 Name = "NVIDIA: vypnout služby GeForce Experience a Shield",
                 Description = "Zakáže služby GeForce Experience (GfExperienceService, NvContainerLocalSystem, NvBroadcast) a GameStream. Šetří paměť a procesor.",
@@ -91,7 +91,7 @@ internal static class CatalogGpu
             },
             new()
             {
-                Id = "nv-gfe-startup", Category = CatalogHardware.CatHardware, IsNew = true,
+                Id = "nv-gfe-startup", Category = CatalogHardware.CatHardware,
                 Requires = Needs.Nvidia, RecommendWhen = p => false,
                 Name = "NVIDIA: nespouštět GeForce Experience se systémem",
                 Description = "Program NVIDIA Backend (GeForce Experience) se přestane spouštět po startu Windows.",
@@ -103,7 +103,7 @@ internal static class CatalogGpu
             },
             new()
             {
-                Id = "gpu-tdr-delay", Category = CatalogHardware.CatHardware, IsNew = true, RequiresRestart = true, Recommended = true,
+                Id = "gpu-tdr-delay", Category = CatalogHardware.CatHardware, RequiresRestart = true, Recommended = true,
                 Name = "GPU: prodloužit časový limit ovladače (TDR)",
                 Description = "Prodlouží čas, po kterém Windows restartuje ovladač grafiky při velké zátěži. Odstraní hlášení „Ovladač přestal reagovat“ při těžších hrách a renderování.",
                 Note = "Vyžaduje restart.",
@@ -115,7 +115,7 @@ internal static class CatalogGpu
             },
             new()
             {
-                Id = "gpu-mpo-off", Category = CatalogHardware.CatHardware, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "gpu-mpo-off", Category = CatalogHardware.CatHardware, Experimental = true, RequiresRestart = true,
                 Name = "GPU: vypnout Multiplane Overlay (MPO)",
                 Description = "Vypne vykreslování po vrstvách (MPO) v okně Windows. Řeší záseky, blikání a černé obrazovky u grafik NVIDIA a AMD na některých ovladačích.",
                 Note = "Experimentální: u některých her a monitorů se nemusí nic změnit. Vyžaduje restart.",
@@ -126,7 +126,7 @@ internal static class CatalogGpu
             },
             new()
             {
-                Id = "gpu-pcie-link", Category = CatalogHardware.CatHardware, IsNew = true,
+                Id = "gpu-pcie-link", Category = CatalogHardware.CatHardware,
                 RecommendWhen = p => Needs.Desktop(p) == null,
                 Name = "GPU: vypnout úsporu energie sběrnice PCIe",
                 Description = "Vypne úsporný stav sběrnice PCIe (Link State Power Management) v plánu napájení. Grafika a disky NVMe se nepřepínají do spánku, takže jsou rychlejší odezvy.",
@@ -138,7 +138,7 @@ internal static class CatalogGpu
             },
             new()
             {
-                Id = "amd-ulps-off", Category = CatalogHardware.CatHardware, IsNew = true, Experimental = true, RequiresRestart = true,
+                Id = "amd-ulps-off", Category = CatalogHardware.CatHardware, Experimental = true, RequiresRestart = true,
                 Requires = Needs.AmdGpu, RecommendWhen = p => false,
                 Name = "AMD: vypnout úsporný stav ULPS",
                 Description = "Vypne Ultra Low Power State u grafiky AMD. Odstraní černé obrazovky a výpadky obrazu po probuzení a u více monitorů.",
@@ -150,7 +150,7 @@ internal static class CatalogGpu
             },
             new()
             {
-                Id = "amd-external-events", Category = CatalogHardware.CatHardware, IsNew = true, Experimental = true,
+                Id = "amd-external-events", Category = CatalogHardware.CatHardware, Experimental = true,
                 Requires = Needs.AmdGpu, RecommendWhen = p => false,
                 Name = "AMD: vypnout službu External Events Utility",
                 Description = "Zakáže službu AMD External Events Utility, která na pozadí hlídá události ovladače. Šetří paměť.",

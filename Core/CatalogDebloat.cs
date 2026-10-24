@@ -99,7 +99,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
             },
             new()
             {
-                Id = "debloat-edge-uninstall", Category = CatalogDebloat.CatDebloat, Experimental = true, ApplyOnly = true,
+                Id = "debloat-edge-uninstall", Category = CatalogDebloat.CatDebloat, Experimental = true, ApplyOnly = true, Recommended = true, IsNew = true, DoneText = "Odinstalováno", TodoText = "Nainstalováno",
                 Name = "Edge: odinstalovat úplně",
                 Description = "Odinstaluje Microsoft Edge z počítače a zablokuje jeho automatickou přeinstalaci. WebView2 zůstává, aby fungovaly aplikace, které ho potřebují.",
                 Note = "Experimentální a nevratné: zpět se Edge dostane jen novou instalací z webu Microsoftu. Zajisti si jiný prohlížeč.",

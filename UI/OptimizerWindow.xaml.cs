@@ -237,8 +237,7 @@ public partial class OptimizerWindow : Window
         var text = SearchBox.Text?.Trim() ?? "";
         if (text.Length == 0) return true;
 
-        return item.Name.Contains(text, StringComparison.CurrentCultureIgnoreCase)
-               || item.Description.Contains(text, StringComparison.CurrentCultureIgnoreCase);
+        return SearchIndex.Matches(item.SearchWords, text);
     }
 
     private void UpdateCounts()

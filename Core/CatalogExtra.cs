@@ -128,13 +128,17 @@ internal static class CatalogExtra
             // ===== Soukromí =====
             new()
             {
-                Id = "location", Category = Catalog.CatPrivacy,
-                Name = "Vypnout určování polohy",
-                Description = "Windows a aplikace nezjišťují polohu počítače.",
-                Note = "Přestanou fungovat funkce vyžadující polohu (mapy, počasí podle místa).",
+                Id = "location", Category = Catalog.CatPrivacy, IsNew = true,
+                Name = "Vypnout polohu a polohové služby (lokace, GPS)",
+                Description = "Windows a aplikace nezjišťují polohu počítače: vypne službu určování polohy, poskytovatele polohy, skripty s polohou a přístup aplikací k poloze.",
+                Note = "Přestanou fungovat funkce vyžadující polohu (mapy, počasí podle místa, Najít moje zařízení).",
                 Ops = new TweakOp[]
                 {
-                    Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", 1, null)
+                    Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", 1, null),
+                    Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocationScripting", 1, null),
+                    Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableWindowsLocationProvider", 1, null),
+                    Catalog.HklmStr(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location", "Value", "Deny", "Allow"),
+                    Catalog.HkcuStr(@"Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location", "Value", "Deny", "Allow")
                 }
             },
             new()

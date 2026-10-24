@@ -798,3 +798,54 @@ public sealed class MultiKeyOp : TweakOp
         return BluetoothAdapters().Any();
     }
 }
+
+/// <summary>
+/// Aplikace z Obchodu / předinstalovaná aplikace Windows (balíček AppX). Stav „Vypnuto“ = aplikace je nainstalovaná,
+/// „Zapnuto“ = odinstalovaná. Odinstalace je nevratná (aplikaci jde znovu nainstalovat z Microsoft Store).
+/// </summary>
+public sealed class StoreAppOp : TweakOp
+{
+    private readonly string[] _packages;
+
+    public StoreAppOp(params string[] packageNames) => _packages = packageNames;
+
+    public override string Key => "APPX:" + string.Join("+", _packages);
+
+    private static bool HasPackage(string name)
+    {
+        foreach (var (hklm, sub) in new[]
+                 {
+                     (false, @"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages"),
+                     (true, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Applications")
+                 })
+        {
+            try
+            {
+                using var root = Reg.Base(hklm);
+                using var key = root.OpenSubKey(sub, false);
+                if (key == null) continue;
+                foreach (var child in key.GetSubKeyNames())
+                    if (child.StartsWith(name + "_", StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            catch { /* klíč nejde číst, bere se jako nenalezeno */ }
+        }
+        return false;
+    }
+
+    public override OpState Detect() => _packages.Any(HasPackage) ? OpState.Off : OpState.On;
+
+    public override void Apply(TweakBackup backup)
+    {
+        var names = string.Join(",", _packages.Select(p => "'" + p + "'"));
+        var script = "$ErrorActionPreference='SilentlyContinue'; foreach($n in @(" + names + ")){ " +
+                     "Get-AppxPackage -AllUsers -Name $n | Remove-AppxPackage -AllUsers; " +
+                     "Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -eq $n } | Remove-AppxProvisionedPackage -Online | Out-Null }";
+        var encoded = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script));
+        var result = Shell.Run(Shell.PowerShellExe, "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + encoded, 180000);
+        if (Detect() != OpState.On)
+            throw new InvalidOperationException("Aplikaci se nepodařilo odinstalovat (kód " + result.ExitCode + "): " + result.Output);
+    }
+
+    /// <summary>Odinstalaci nejde vrátit tlačítkem, aplikaci lze znovu nainstalovat z Microsoft Store.</summary>
+    public override void Revert(TweakBackup backup) { }
+}

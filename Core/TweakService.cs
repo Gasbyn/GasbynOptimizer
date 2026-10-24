@@ -39,6 +39,10 @@ public sealed class Tweak
     /// <summary>Není přepínač ZAPNUTO/VYPNUTO, jen tlačítko „Použít“ (např. plán napájení).</summary>
     public bool ApplyOnly { get; init; }
 
+    /// <summary>Popisky stavu u tlačítkových optimalizací (např. „Odinstalováno“ / „Nainstalováno“).</summary>
+    public string? DoneText { get; init; }
+    public string? TodoText { get; init; }
+
     /// <summary>Když je zadáno, před zapnutím se zobrazí potvrzení s tímto textem (nevratné nebo riskantní akce).</summary>
     public string? Confirm { get; init; }
 
