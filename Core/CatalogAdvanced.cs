@@ -34,7 +34,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-printing", Category = CatAdvanced, Experimental = true, IsNew = true,
+                Id = "adv-printing", Category = CatAdvanced, Experimental = true,
                 Name = "Úplně vypnout tisk (tiskárny přestanou fungovat)",
                 Description = "Zakáže službu Tisková fronta (Spooler) a oznámení tiskáren. Tiskárna nebude fungovat, nepůjde tisknout ani do PDF přes tiskárnu. Šetří paměť a zavírá známý cíl útoků.",
                 Note = "Nedoporučeno, pokud tiskneš. Pro jemnější variantu použij „Vypnout některé funkce tiskáren“. Vypnutí vrátí původní stav.",
@@ -265,7 +265,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-vbs", Category = CatAdvanced, Experimental = true, RequiresRestart = true, IsNew = true,
+                Id = "adv-vbs", Category = CatAdvanced, Experimental = true, RequiresRestart = true,
                 Name = "Částečně vypnout virtualizaci (VBS)",
                 Description = "Vypne zabezpečení na bázi virtualizace (VBS). V hrách zlepší výkon, Hyper-V a virtuální stroje zůstávají funkční.",
                 Note = "Nedoporučeno: snižuje ochranu jádra. Vyžaduje restart.",
@@ -276,7 +276,7 @@ internal static class CatalogAdvanced
             },
             new()
             {
-                Id = "adv-hypervisor", Category = CatAdvanced, Experimental = true, RequiresRestart = true, IsNew = true,
+                Id = "adv-hypervisor", Category = CatAdvanced, Experimental = true, RequiresRestart = true,
                 Name = "Plně vypnout virtualizaci (hypervizor, Hyper-V, virtuální stroje)",
                 Description = "Vypne hypervizor Windows a služby Hyper-V. Přestane fungovat Hyper-V, WSL 2, Windows Sandbox i Android podsystémy. Uvolní procesor od režie virtualizace.",
                 Note = "Experimentální: nepoužívej, pokud pracuješ s virtuálními stroji nebo WSL 2. Vyžaduje restart.",

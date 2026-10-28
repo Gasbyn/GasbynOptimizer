@@ -7,7 +7,6 @@ public partial class SplashWindow : Window
     public SplashWindow()
     {
         InitializeComponent();
-        Spinner.Data = Icons.Get("Sync");
         Icons.Spin(Spinner, true);
     }
 
@@ -17,17 +16,17 @@ public partial class SplashWindow : Window
     {
         Status.Text = "Aktualizuje se Gasbyn Optimizer…";
         Counter.Text = "Verze " + label;
-        Bar.Value = 0;
+        Motion.SetBar(Bar, 0);
     }
 
     public void SetFraction(double fraction)
     {
-        Bar.Value = Math.Clamp(fraction, 0, 1);
+        Motion.SetBar(Bar, fraction);
     }
 
     public void SetProgress(int done, int total)
     {
-        Bar.Value = total == 0 ? 0 : (double)done / total;
+        Motion.SetBar(Bar, total == 0 ? 0 : (double)done / total);
         Counter.Text = done + " / " + total;
     }
 }

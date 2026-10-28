@@ -20,11 +20,22 @@ public sealed class TweakItem : INotifyPropertyChanged
         UnsupportedReason = unsupportedReason;
         IsRecommended = recommended;
         _advanced = advanced;
-        SearchWords = SearchIndex.Words(tweak.Name + " " + tweak.Description + " " + tweak.Note + " " + tweak.Category + " " + tweak.Id);
+        SearchDoc = new SearchIndex.Doc { Name = tweak.Name };
+        SearchDoc.Add(tweak.Name, 10);
+        SearchDoc.Add(tweak.Category, 7);
+        SearchDoc.Add(tweak.Id.Replace('-', ' '), 6);
+        SearchDoc.Add(tweak.Description, 3);
+        SearchDoc.Add(tweak.Note, 2);
+        if (recommended) SearchDoc.Add("doporučeno doporučené recommended", 6);
+        if (tweak.IsNew) SearchDoc.Add("nové nový nová new", 6);
+        if (tweak.Experimental) SearchDoc.Add("experimentální experimental", 6);
     }
 
-    /// <summary>Slova pro chytré hledání (název, popis, poznámka, kategorie, anglické klíčové názvy).</summary>
-    public HashSet<string> SearchWords { get; }
+    /// <summary>Slova pro chytré hledání (název, kategorie, popis, poznámka, stavy).</summary>
+    public SearchIndex.Doc SearchDoc { get; }
+
+    /// <summary>Výsledek posledního hledání, podle něj se při hledání řadí seznam.</summary>
+    public double SearchScore { get; set; }
 
     public Tweak Tweak { get; }
 
@@ -35,7 +46,7 @@ public sealed class TweakItem : INotifyPropertyChanged
     public bool HasNote => !string.IsNullOrEmpty(Tweak.Note);
     public bool IsExperimental => Tweak.Experimental;
     public bool IsApplyOnly => Tweak.ApplyOnly;
-    public string ApplyText => IsOn ? (Tweak.DoneText ?? "Aktivní") : (Tweak.ApplyOnly && Tweak.DoneText != null ? "Odinstalovat" : "Použít");
+    public string ApplyText => IsOn ? (Tweak.DoneText ?? "Zapnuto") : (Tweak.ApplyOnly && Tweak.DoneText != null ? "Odinstalovat" : "Použít");
     public bool IsNew => Tweak.IsNew;
 
     /// <summary>Doporučeno pro tento počítač (podle hardwaru a Windows).</summary>
@@ -112,8 +123,8 @@ public sealed class TweakItem : INotifyPropertyChanged
             if (ShowLock) return "🔒 Nepodporováno";
             if (IsApplyOnly)
                 if (Tweak.DoneText != null)
-                    return State == TweakState.On ? Tweak.DoneText : State == TweakState.NotApplicable ? "Nedostupné" : Tweak.TodoText ?? "Neaktivní";
-                return State == TweakState.On ? "Aktivní plán" : State == TweakState.NotApplicable ? "Nedostupné" : "Neaktivní";
+                    return State == TweakState.On ? Tweak.DoneText : State == TweakState.NotApplicable ? "Nedostupné" : Tweak.TodoText ?? "Vypnuto";
+                return State == TweakState.On ? "Zapnuto" : State == TweakState.NotApplicable ? "Nedostupné" : "Vypnuto";
 
             return State switch
             {

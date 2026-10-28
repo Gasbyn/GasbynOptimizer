@@ -15,7 +15,7 @@ internal static class CatalogPower
         {
             new()
             {
-                Id = "powerplan-pc", Category = CatPower, ApplyOnly = true, RequiresRestart = false,
+                Id = "powerplan-pc", Category = CatPower, ApplyOnly = true, IsNew = true, RequiresRestart = false,
                 Requires = Needs.Desktop,
                 RecommendWhen = p => p.IsLaptop == false,
                 Name = "Plán napájení: Gasbyn PC",
@@ -25,7 +25,7 @@ internal static class CatalogPower
             },
             new()
             {
-                Id = "powerplan-notebook", Category = CatPower, ApplyOnly = true, RequiresRestart = false,
+                Id = "powerplan-notebook", Category = CatPower, ApplyOnly = true, IsNew = true, RequiresRestart = false,
                 Requires = Needs.Laptop,
                 RecommendWhen = p => p.IsLaptop == true,
                 Name = "Plán napájení: Gasbyn Notebook",

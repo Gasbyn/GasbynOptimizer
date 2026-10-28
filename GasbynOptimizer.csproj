@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>GasbynOptimizer</AssemblyName>
     <RootNamespace>GasbynOptimizer</RootNamespace>
-    <Version>2.0.0.27</Version>
+    <Version>2.0.0.67</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>GasbynOptimizer.ico</ApplicationIcon>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>

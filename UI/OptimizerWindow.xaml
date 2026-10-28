@@ -109,6 +109,7 @@
 
         <!-- Řádek seznamu bez výběru a zvýraznění -->
         <Style x:Key="PlainItem" TargetType="ListBoxItem">
+            <EventSetter Event="Loaded" Handler="Card_Loaded"/>
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -272,6 +273,12 @@
                         </Grid>
                     </Border>
 
+                    <StackPanel Grid.Row="3" x:Name="NoResults" Visibility="Collapsed" Margin="2,24,0,0" VerticalAlignment="Top">
+                        <TextBlock x:Name="NoResultsText" Foreground="{StaticResource MutedBrush}" FontSize="14" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="NoResultsSuggest" Foreground="{StaticResource OrangeBrush}" FontSize="14" FontWeight="SemiBold"
+                                   Cursor="Hand" Margin="0,6,0,0" MouseLeftButtonUp="Suggest_Click"/>
+                    </StackPanel>
+
                     <ListBox Grid.Row="3" x:Name="TweakList" Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextBrush}"
                              ItemTemplate="{StaticResource TweakTemplate}" ItemContainerStyle="{StaticResource PlainItem}"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="False"
@@ -308,12 +315,24 @@
                                 <StackPanel>
                                     <TextBlock Text="Úklid systému" Style="{StaticResource SectionTitle}"/>
                                     <TextBlock Style="{StaticResource SectionText}"
-                                               Text="Jednorázové akce. Na rozdíl od optimalizací se nedají vrátit zpět (mažou se dočasné soubory, výpisy pádů, protokoly Windows, mezipaměť Windows Update, koš a mezipaměť DNS)."/>
+                                               Text="Jednorázové akce. Na rozdíl od optimalizací se nedají vrátit zpět (mažou se dočasné soubory, výpisy pádů, protokoly Windows, soubory Windows Update, dočasné soubory Defenderu a internetu, shadery DirectX, soubory Optimalizace doručování, miniatury, koš a mezipaměť DNS)."/>
                                     <StackPanel Orientation="Horizontal">
                                         <Button Style="{StaticResource GhostButton}" Content="Vyčistit dočasné a systémové soubory" Click="CleanTemp_Click" Margin="0,0,8,0"/>
                                         <Button Style="{StaticResource GhostButton}" Content="Vyprázdnit DNS cache" Click="FlushDns_Click"/>
                                     </StackPanel>
                                     <TextBlock x:Name="MaintenanceResult" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="Hloubkové čištění disku" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Style="{StaticResource SectionText}"
+                                               Text="Totéž co „Vyčištění disku“ ve Windows pro položky, které nejsou jen smazání dočasných souborů. Tlačítko výše navíc maže soubory Windows Update, dočasné soubory Microsoft Defenderu, dočasné internetové soubory, mezipaměť shaderů DirectX, soubory Optimalizace doručování a miniatury."/>
+                                    <CheckBox x:Name="DeepComponents" Content="Soubory Windows Update (úklid součástí systému, může trvat několik minut)" IsChecked="True" Foreground="{StaticResource TextBrush}" Margin="0,0,0,6"/>
+                                    <CheckBox x:Name="DeepDrivers" Content="Balíčky ovladačů zařízení (jen starší verze ovladačů, které se nepoužívají)" IsChecked="True" Foreground="{StaticResource TextBrush}" Margin="0,0,0,6"/>
+                                    <CheckBox x:Name="DeepLanguages" Content="Soubory jazykových prostředků (jazyky, které nepoužíváš)" Foreground="{StaticResource TextBrush}" Margin="0,0,0,12"/>
+                                    <Button Style="{StaticResource GhostButton}" Content="Vyčistit vybrané" HorizontalAlignment="Left" Click="DeepClean_Click"/>
+                                    <TextBlock x:Name="DeepResult" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
                             <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,12">
@@ -502,12 +521,13 @@
             <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource OrangeBrush}" BorderThickness="1"
                     CornerRadius="12" Padding="28,22" HorizontalAlignment="Center" VerticalAlignment="Center" Width="420">
                 <StackPanel>
-                    <Path x:Name="BusySpinner" Width="34" Height="34" Stretch="Uniform" Fill="{StaticResource OrangeBrush}"
-                          HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                    <Ellipse x:Name="BusySpinner" Width="34" Height="34" Stroke="{StaticResource OrangeBrush}" StrokeThickness="3.5"
+                             StrokeDashArray="9 18" StrokeDashCap="Round" HorizontalAlignment="Center" Margin="0,0,0,12"/>
                     <TextBlock x:Name="BusyText" Text="Čekejte…" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"
                                HorizontalAlignment="Center" TextAlignment="Center" Margin="0,0,0,16"/>
-                    <ProgressBar IsIndeterminate="True" Height="6" BorderThickness="0"
-                                 Foreground="{StaticResource OrangeBrush}" Background="{StaticResource Panel2Brush}"/>
+                    <Border x:Name="BusyTrack" Height="6" CornerRadius="3" Background="{StaticResource Panel2Brush}" ClipToBounds="True">
+                        <Border x:Name="BusyFill" CornerRadius="3" Background="{StaticResource OrangeBrush}" HorizontalAlignment="Left" Width="60"/>
+                    </Border>
                 </StackPanel>
             </Border>
         </Grid>

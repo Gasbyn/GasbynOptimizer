@@ -9,13 +9,15 @@
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="340">
             <Image Source="/Logo.png" Height="84" Margin="0,0,0,14" RenderOptions.BitmapScalingMode="HighQuality"/>
             <TextBlock Text="GASBYN OPTIMIZER" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
-            <Path x:Name="Spinner" Width="22" Height="22" Stretch="Uniform" Fill="{StaticResource OrangeBrush}"
-                  HorizontalAlignment="Center" Margin="0,10,0,0"/>
+            <Ellipse x:Name="Spinner" Width="24" Height="24" Stroke="{StaticResource OrangeBrush}" StrokeThickness="3"
+                     StrokeDashArray="6 13" StrokeDashCap="Round" HorizontalAlignment="Center" Margin="0,10,0,0"/>
             <TextBlock x:Name="Status" Text="Kontroluji aktualizace…" Foreground="{StaticResource MutedBrush}"
                        FontSize="13" HorizontalAlignment="Center" Margin="0,8,0,14"/>
-            <ProgressBar x:Name="Bar" Height="6" Minimum="0" Maximum="1" Value="0"
-                         Foreground="{StaticResource OrangeBrush}" Background="{StaticResource Panel2Brush}"
-                         BorderThickness="0"/>
+            <Border Height="6" CornerRadius="3" Background="{StaticResource Panel2Brush}" ClipToBounds="True">
+                <Border x:Name="Bar" RenderTransformOrigin="0,0.5" CornerRadius="3" Background="{StaticResource OrangeBrush}" HorizontalAlignment="Stretch">
+                    <Border.RenderTransform><ScaleTransform ScaleX="0"/></Border.RenderTransform>
+                </Border>
+            </Border>
             <TextBlock x:Name="Counter" Text="" Foreground="{StaticResource MutedBrush}" FontSize="12"
                        HorizontalAlignment="Center" Margin="0,8,0,0"/>
         </StackPanel>

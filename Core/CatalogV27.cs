@@ -9,7 +9,7 @@ internal static class CatalogV27
         {
             new()
             {
-                Id = "printing-features", Category = CatalogHardware.CatHardware, IsNew = true,
+                Id = "printing-features", Category = CatalogHardware.CatHardware,
                 Name = "Vypnout některé funkce tiskáren (tisk přes web, stahování ovladačů)",
                 Description = "Vypne tisk přes internet (HTTP), automatické stahování ovladačů tiskáren z webu, vzdálený přístup ke sdílené tiskové frontě a instalaci ovladačů bez práv správce. Tisk na lokální tiskárnu dál funguje.",
                 Note = "Zavírá známé cesty útoků na tisk a šetří provoz na pozadí. Úplné vypnutí tisku je v Pokročilých.",
@@ -24,7 +24,7 @@ internal static class CatalogV27
             },
             new()
             {
-                Id = "offline-maps", Category = Catalog.CatPrivacy, IsNew = true,
+                Id = "offline-maps", Category = Catalog.CatPrivacy,
                 Name = "Vypnout offline mapy (automatické stahování a aktualizace map)",
                 Description = "Windows nebude na pozadí stahovat a aktualizovat offline mapy a nebude kvůli nim komunikovat přes síť.",
                 Note = "Už stažené mapy zůstanou, jen se neaktualizují. Aplikace Mapy lze odinstalovat v kategorii Debloat.",
@@ -36,7 +36,7 @@ internal static class CatalogV27
             },
             new()
             {
-                Id = "touch-off", Category = CatalogHardware.CatHardware, Experimental = true, IsNew = true,
+                Id = "touch-off", Category = CatalogHardware.CatHardware, Experimental = true,
                 Name = "Vypnout dotykové funkce (dotyková klávesnice, rukopis)",
                 Description = "Zakáže službu Dotykové klávesnice a panelu rukopisu a dotykové gesto. Na počítači bez dotykové obrazovky ušetří paměť a procesor.",
                 Note = "Nepoužívej na dotykovém zařízení nebo tabletu. Vypnutí vrátí původní stav.",
@@ -48,7 +48,7 @@ internal static class CatalogV27
             },
             new()
             {
-                Id = "pen-ink-off", Category = CatalogHardware.CatHardware, Experimental = true, IsNew = true,
+                Id = "pen-ink-off", Category = CatalogHardware.CatHardware, Experimental = true,
                 Name = "Vypnout pero a kreslení (Windows Ink)",
                 Description = "Vypne Windows Ink Workspace (kreslení perem, náčrty na obrazovce) a návrhy aplikací pro pero.",
                 Note = "Vhodné, pokud pero ani kreslicí tablet nepoužíváš.",
@@ -63,7 +63,7 @@ internal static class CatalogV27
 
         void App(string id, string name, string packages, string desc, bool recommended) => list.Add(new Tweak
         {
-            Id = "app-" + id, Category = CatalogDebloat.CatDebloat, ApplyOnly = true, Recommended = recommended, IsNew = true,
+            Id = "app-" + id, Category = CatalogDebloat.CatDebloat, ApplyOnly = true, Recommended = recommended,
             DoneText = "Odinstalováno", TodoText = "Nainstalováno",
             Name = name + (recommended ? ": doporučeno odinstalovat" : ": odinstalovat"),
             Description = desc + " Odinstaluje aplikaci pro všechny uživatele.",

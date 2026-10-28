@@ -69,6 +69,11 @@ public partial class App : System.Windows.Application
             await Task.WhenAll(profileTask, scan, Task.Delay(300));
             var profile = profileTask.Result;
 
+            // Ukazatel nechej dojet na konec a vykreslit dřív, než se na vlákně rozhraní začne stavět hlavní okno.
+            splash.SetFraction(1);
+            await Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Render);
+            await Task.Delay(180);
+
             var window = new OptimizerWindow(service, tweaks, scan.Result, profile);
             MainWindow = window;
             ShutdownMode = ShutdownMode.OnMainWindowClose;

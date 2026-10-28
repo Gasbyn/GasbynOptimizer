@@ -128,7 +128,7 @@ internal static class CatalogExtra
             // ===== Soukromí =====
             new()
             {
-                Id = "location", Category = Catalog.CatPrivacy, IsNew = true,
+                Id = "location", Category = Catalog.CatPrivacy,
                 Name = "Vypnout polohu a polohové služby (lokace, GPS)",
                 Description = "Windows a aplikace nezjišťují polohu počítače: vypne službu určování polohy, poskytovatele polohy, skripty s polohou a přístup aplikací k poloze.",
                 Note = "Přestanou fungovat funkce vyžadující polohu (mapy, počasí podle místa, Najít moje zařízení).",

@@ -23,6 +23,12 @@ public partial class OptimizerWindow : Window
 
     private bool _restorePointDone;
     private string _filter = "all";
+    private SearchIndex.Query _query = new("");
+    private bool _grouped = true;
+
+    // Animace vjezdu karet: po změně seznamu (hledání, filtr, kategorie) karty naběhnou jedna po druhé.
+    private bool _animateNext;
+    private int _enterIndex;
 
     public OptimizerWindow(TweakService service, IReadOnlyList<Tweak> tweaks, Dictionary<string, TweakState> states, SystemProfile profile)
     {
@@ -48,6 +54,8 @@ public partial class OptimizerWindow : Window
         _view = CollectionViewSource.GetDefaultView(_items);
         _view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TweakItem.Category)));
         _view.Filter = FilterItem;
+        _animateNext = true;
+        Loaded += (_, _) => Dispatcher.BeginInvoke(new Action(() => _animateNext = false), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         TweakList.ItemsSource = _view;
 
         var version = Assembly.GetExecutingAssembly().GetName().Version;
@@ -179,11 +187,14 @@ public partial class OptimizerWindow : Window
         PageTweaks.Visibility = tag.StartsWith('#') ? Visibility.Collapsed : Visibility.Visible;
         PageMaintenance.Visibility = tag == "#maint" ? Visibility.Visible : Visibility.Collapsed;
         PageSettings.Visibility = tag == "#settings" ? Visibility.Visible : Visibility.Collapsed;
+        if (tag == "#maint") Motion.Page(PageMaintenance);
+        if (tag == "#settings") Motion.Page(PageSettings);
         if (tag.StartsWith('#')) return;
 
         _categories = NavGroups.FirstOrDefault(g => g.Name == tag).Categories ?? Array.Empty<string>();
         PageTitle.Text = tag.Length == 0 ? "Všechny optimalizace" : tag;
-        _view.Refresh();
+        RefreshList();
+        Motion.Blink(PageTitle);
     }
 
     private static string BuildSystemDetails(SystemProfile p)
@@ -207,7 +218,7 @@ public partial class OptimizerWindow : Window
         if (sender is RadioButton { Tag: string tag })
         {
             _filter = tag;
-            _view.Refresh();
+            RefreshList();
         }
     }
 
@@ -215,7 +226,81 @@ public partial class OptimizerWindow : Window
     {
         if (SearchPlaceholder == null) return;
         SearchPlaceholder.Visibility = string.IsNullOrEmpty(SearchBox.Text) ? Visibility.Visible : Visibility.Collapsed;
+        _query = new SearchIndex.Query(SearchBox.Text);
+        RefreshList();
+    }
+
+    /// <summary>Znovu sestaví seznam (filtr, hledání, kategorie) a spustí plynulý vjezd karet.</summary>
+    private void RefreshList()
+    {
+        var searching = !_query.IsEmpty;
+        using (_view.DeferRefresh())
+        {
+            // Při hledání se výsledky řadí podle relevance (bez rozdělení do kategorií), jinak jsou seskupené.
+            if (searching == _grouped)
+            {
+                _view.GroupDescriptions.Clear();
+                _view.SortDescriptions.Clear();
+                if (searching)
+                    _view.SortDescriptions.Add(new System.ComponentModel.SortDescription(nameof(TweakItem.SearchScore), System.ComponentModel.ListSortDirection.Descending));
+                else
+                    _view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TweakItem.Category)));
+                _grouped = !searching;
+            }
+        }
+
+        _animateNext = true;
+        _enterIndex = 0;
         _view.Refresh();
+        UpdateNoResults();
+        Dispatcher.BeginInvoke(new Action(() => _animateNext = false), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+    }
+
+    private string? _suggestion;
+
+    private void UpdateNoResults()
+    {
+        var empty = _view.IsEmpty;
+        NoResults.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
+        TweakList.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
+        if (!empty) return;
+
+        var text = SearchBox.Text.Trim();
+        if (text.Length == 0)
+        {
+            NoResultsText.Text = "V této kategorii a filtru nic není.";
+            NoResultsSuggest.Text = "";
+            _suggestion = null;
+            return;
+        }
+
+        NoResultsText.Text = "Nic jsem nenašel pro „" + text + "“.";
+        _suggestion = SearchIndex.Suggest(_items.Select(i => i.SearchDoc), text);
+        NoResultsSuggest.Text = _suggestion == null ? "Zkus jiné slovo, třeba název kategorie nebo anglický výraz." : "Mysleli jste „" + _suggestion + "“?";
+        NoResultsSuggest.Cursor = _suggestion == null ? System.Windows.Input.Cursors.Arrow : System.Windows.Input.Cursors.Hand;
+    }
+
+    private void Suggest_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (_suggestion == null) return;
+        SearchBox.Text = _suggestion;
+        SearchBox.CaretIndex = SearchBox.Text.Length;
+    }
+
+    /// <summary>Krátké „cuknutí“ karty při kliknutí a po změně stavu.</summary>
+    private void PopCard(TweakItem item)
+    {
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (TweakList.ItemContainerGenerator.ContainerFromItem(item) is FrameworkElement card) Motion.Pop(card);
+        }), System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+
+    private void Card_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (!_animateNext || sender is not FrameworkElement element) return;
+        if (_enterIndex >= 16) return;
+        Motion.Enter(element, _enterIndex++);
     }
 
     private bool FilterItem(object obj)
@@ -234,10 +319,10 @@ public partial class OptimizerWindow : Window
             case "unsup" when item.IsSupported: return false;
         }
 
-        var text = SearchBox.Text?.Trim() ?? "";
-        if (text.Length == 0) return true;
+        if (_query.IsEmpty) { item.SearchScore = 0; return true; }
 
-        return SearchIndex.Matches(item.SearchWords, text);
+        item.SearchScore = SearchIndex.Score(item.SearchDoc, _query);
+        return item.SearchScore > 0;
     }
 
     private void UpdateCounts()
@@ -255,14 +340,20 @@ public partial class OptimizerWindow : Window
     private void ShowBusy(string text)
     {
         BusyText.Text = text;
-        BusySpinner.Data = Icons.Get("Sync");
         Icons.Spin(BusySpinner, true);
+        BusyOverlay.Opacity = 0;
         BusyOverlay.Visibility = Visibility.Visible;
+        BusyOverlay.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)));
+        Motion.Indeterminate(BusyTrack, BusyFill, true);
+        // Okno se musí stihnout vykreslit dřív, než začne těžká práce, jinak animace začne se zpožděním.
+        Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Render);
     }
 
     private void HideBusy()
     {
         Icons.Spin(BusySpinner, false);
+        Motion.Indeterminate(BusyTrack, BusyFill, false);
+        BusyOverlay.BeginAnimation(OpacityProperty, null);
         BusyOverlay.Visibility = Visibility.Collapsed;
     }
 
@@ -333,6 +424,7 @@ public partial class OptimizerWindow : Window
 
         _view.Refresh();
         UpdateCounts();
+        PopCard(item);
         return outcome.Result.Success;
     }
 
@@ -341,6 +433,7 @@ public partial class OptimizerWindow : Window
         if (sender is not FrameworkElement { DataContext: TweakItem item } || !item.CanToggle) return;
 
         var enable = !item.IsOn;
+        PopCard(item);
 
         // Pokročilý režim dovolí kliknout i na optimalizaci, která na tomto PC nemá co měnit. Není co provést.
         if (!item.IsAvailable)
@@ -495,6 +588,33 @@ public partial class OptimizerWindow : Window
         HideBusy();
 
         MaintenanceResult.Text = "Smazáno " + files + " souborů, uvolněno " + (bytes / 1024 / 1024) + " MB.";
+    }
+
+    private async void DeepClean_Click(object sender, RoutedEventArgs e)
+    {
+        var components = DeepComponents.IsChecked == true;
+        var drivers = DeepDrivers.IsChecked == true;
+        var languages = DeepLanguages.IsChecked == true;
+        if (!components && !drivers && !languages)
+        {
+            DeepResult.Text = "Vyber aspoň jednu položku.";
+            return;
+        }
+
+        if (languages)
+        {
+            var answer = MessageBox.Show(this,
+                "Odebrat jazykové balíčky, které nepoužíváš?\n\nOdeberou se jen jazyky mimo tvůj seznam jazyků a jazyka systému. Vrátit je jde jen znovu přidáním v nastavení Windows.",
+                "Jazykové prostředky", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+            if (answer != MessageBoxResult.Yes) return;
+        }
+
+        ShowBusy("Čistím disk… úklid součástí Windows může trvat i několik minut.");
+        var result = await Task.Run(() => Maintenance.DeepClean(components, drivers, languages));
+        HideBusy();
+
+        DeepResult.Text = "Hotovo (" + result.Summary + "). Uvolněno přibližně " + (result.Bytes / 1024 / 1024) + " MB.";
+        Motion.Pop(DeepResult);
     }
 
     private async void FlushDns_Click(object sender, RoutedEventArgs e)

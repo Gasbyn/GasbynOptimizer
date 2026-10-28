@@ -119,6 +119,35 @@ public static class Maintenance
         DeleteContents(Path.Combine(windows, "SoftwareDistribution", "Download"), ref bytes, ref files);
         DeleteContents(Path.Combine(windows, "ServiceProfiles", "NetworkService", "AppData", "Local", "Microsoft", "Windows", "DeliveryOptimization", "Cache"), ref bytes, ref files);
 
+        // Windows Update: protokoly, zbytky instalací a dávky odinstalace.
+        DeleteContents(Path.Combine(windows, "Logs", "CBS"), ref bytes, ref files);
+        DeleteContents(Path.Combine(windows, "Logs", "WindowsUpdate"), ref bytes, ref files);
+        DeleteContents(Path.Combine(windows, "SoftwareDistribution", "DeliveryOptimization"), ref bytes, ref files);
+        DeleteContents(Path.Combine(windows, "SoftwareDistribution", "DataStore", "Logs"), ref bytes, ref files);
+        DeleteContents(Path.Combine(windows, "Temp", "CBS"), ref bytes, ref files);
+        DeleteContents(Path.Combine(windows, "$WINDOWS.~BT", "Sources", "Panther"), ref bytes, ref files);
+
+        // Optimalizace doručování (Delivery Optimization).
+        DeleteContents(Path.Combine(programData, "Microsoft", "Windows", "DeliveryOptimization", "Cache"), ref bytes, ref files);
+        DeleteContents(Path.Combine(programData, "Microsoft", "Windows", "DeliveryOptimization", "Logs"), ref bytes, ref files);
+
+        // Microsoft Defender Antivirus: dočasné soubory kontrol, protokoly a místní kopie.
+        var defender = Path.Combine(programData, "Microsoft", "Windows Defender");
+        DeleteContents(Path.Combine(defender, "Scans", "History", "Results"), ref bytes, ref files);
+        DeleteContents(Path.Combine(defender, "Scans", "History", "CacheManager"), ref bytes, ref files);
+        DeleteContents(Path.Combine(defender, "Scans", "History", "ReportLatency"), ref bytes, ref files);
+        DeleteContents(Path.Combine(defender, "Support"), ref bytes, ref files);
+        DeleteContents(Path.Combine(defender, "LocalCopy"), ref bytes, ref files);
+
+        // Dočasné internetové soubory.
+        DeleteContents(Path.Combine(local, "Microsoft", "Windows", "INetCache"), ref bytes, ref files);
+        DeleteContents(Path.Combine(local, "Microsoft", "Windows", "Temporary Internet Files"), ref bytes, ref files);
+        DeleteContents(Path.Combine(windows, "ServiceProfiles", "LocalService", "AppData", "Local", "Microsoft", "Windows", "INetCache"), ref bytes, ref files);
+
+        // Mezipaměť shaderů DirectX (hry ji znovu vytvoří, první spuštění může chvíli trvat).
+        DeleteContents(Path.Combine(local, "D3DSCache"), ref bytes, ref files);
+        DeleteContents(Path.Combine(local, "Microsoft", "DirectX Shader Cache"), ref bytes, ref files);
+
         // Koš na všech discích.
         EmptyRecycleBin(ref bytes, ref files);
 
@@ -127,13 +156,92 @@ public static class Maintenance
         try
         {
             if (Directory.Exists(explorer))
-                foreach (var file in Directory.EnumerateFiles(explorer, "thumbcache_*.db"))
+                foreach (var file in Directory.EnumerateFiles(explorer, "thumbcache_*.db").Concat(Directory.EnumerateFiles(explorer, "iconcache_*.db")))
                     DeleteFile(file, ref bytes, ref files);
         }
         catch { /* bez přístupu přeskočíme */ }
 
         Log.Write("Vyčištěno dočasných souborů: " + files + " (" + bytes / 1024 / 1024 + " MB)");
         return new CleanResult(bytes, files);
+    }
+
+    public sealed record DeepCleanResult(long Bytes, string Summary);
+
+    private static long SystemFreeBytes()
+    {
+        try { return new DriveInfo(Path.GetPathRoot(Environment.SystemDirectory)!).AvailableFreeSpace; }
+        catch { return 0; }
+    }
+
+    private static string Encode(string script) => Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script));
+
+    /// <summary>
+    /// Hloubkové čištění jako ve Vyčištění disku: staré soubory Windows Update (úklid součástí systému), staré balíčky ovladačů a nepoužívané jazykové balíčky.
+    /// Uvolněné místo se zjišťuje z volného místa na systémovém disku.
+    /// </summary>
+    public static DeepCleanResult DeepClean(bool components, bool drivers, bool languages)
+    {
+        var start = SystemFreeBytes();
+        var notes = new List<string>();
+
+        if (components)
+        {
+            // Úklid úložiště součástí (WinSxS): nahrazené aktualizace Windows Update. Bez ResetBase, aby šlo aktualizace dál odinstalovat.
+            var r = Shell.Run(Shell.System32("dism.exe"), "/Online /Cleanup-Image /StartComponentCleanup", 1800000);
+            notes.Add(r.ExitCode == 0 ? "úklid Windows Update hotov" : "úklid Windows Update skončil s kódem " + r.ExitCode);
+        }
+
+        if (drivers)
+        {
+            // Smaže jen starší verze stejného ovladače. Ovladač, který se používá, odinstalace odmítne (bez přepínače force).
+            const string script = @"
+$ErrorActionPreference = 'SilentlyContinue'
+$all = Get-WindowsDriver -Online -All | Where-Object { $_.OriginalFileName }
+$removed = 0
+foreach ($g in ($all | Group-Object { (Split-Path $_.OriginalFileName -Leaf).ToLower() + '|' + $_.ProviderName + '|' + $_.ClassName })) {
+  if ($g.Count -lt 2) { continue }
+  $sorted = $g.Group | Sort-Object @{ Expression = { [version]$_.Version }; Descending = $true }, Date -Descending
+  foreach ($old in ($sorted | Select-Object -Skip 1)) {
+    pnputil.exe /delete-driver $old.Driver | Out-Null
+    if ($LASTEXITCODE -eq 0) { $removed++ }
+  }
+}
+Write-Output $removed
+";
+            var r = Shell.Run(Shell.PowerShellExe, "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + Encode(script), 900000);
+            var last = r.Output.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries).LastOrDefault()?.Trim();
+            notes.Add(int.TryParse(last, out var n) ? "odstraněno starých ovladačů: " + n : "ovladače se nepodařilo zkontrolovat");
+        }
+
+        if (languages)
+        {
+            // Odebere jen jazyky, které nejsou v seznamu jazyků uživatele, ani jazykem systému a rozhraní.
+            const string script = @"
+$ErrorActionPreference = 'SilentlyContinue'
+$keep = @()
+$keep += (Get-WinUserLanguageList).LanguageTag
+$keep += (Get-WinSystemLocale).Name
+$keep += (Get-UICulture).Name
+$keep += 'en-US'
+$keep = $keep | ForEach-Object { $_.ToLower() }
+$removed = 0
+foreach ($l in (Get-InstalledLanguage)) {
+  $id = $l.LanguageId.ToLower()
+  $base = $id.Split('-')[0]
+  if ($keep -contains $id -or ($keep | Where-Object { $_.Split('-')[0] -eq $base })) { continue }
+  Uninstall-Language -Language $l.LanguageId | Out-Null
+  $removed++
+}
+Write-Output $removed
+";
+            var r = Shell.Run(Shell.PowerShellExe, "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + Encode(script), 900000);
+            var last = r.Output.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries).LastOrDefault()?.Trim();
+            notes.Add(int.TryParse(last, out var n) ? "odebráno nepoužívaných jazyků: " + n : "jazyky se nepodařilo zkontrolovat");
+        }
+
+        var freed = Math.Max(0, SystemFreeBytes() - start);
+        Log.Write("Hloubkové čištění: " + string.Join(", ", notes) + " (" + freed / 1024 / 1024 + " MB)");
+        return new DeepCleanResult(freed, string.Join(", ", notes));
     }
 
     public static bool FlushDns()
