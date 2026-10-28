@@ -86,7 +86,6 @@
                             <Ellipse x:Name="Thumb" Width="18" Height="18" Fill="White" HorizontalAlignment="Left" Margin="3,0,0,0" RenderTransformOrigin="0.5,0.5">
                                 <Ellipse.RenderTransform>
                                     <TransformGroup>
-                                        <ScaleTransform x:Name="ThumbScale" ScaleX="1" ScaleY="1"/>
                                         <TranslateTransform x:Name="ThumbMove" X="0"/>
                                     </TransformGroup>
                                 </Ellipse.RenderTransform>
@@ -130,8 +129,7 @@
                                 <Setter TargetName="Thumb" Property="Fill" Value="#F2F2F2"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ThumbScale" Property="ScaleX" Value="0.88"/>
-                                <Setter TargetName="ThumbScale" Property="ScaleY" Value="0.88"/>
+                                <Setter TargetName="Thumb" Property="Width" Value="22"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.4"/>
