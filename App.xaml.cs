@@ -71,7 +71,7 @@ public partial class App : System.Windows.Application
 
             // Ukazatel nechej dojet na konec a vykreslit dřív, než se na vlákně rozhraní začne stavět hlavní okno.
             splash.SetFraction(1);
-            await Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Render);
+            await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Render);
             await Task.Delay(180);
 
             var window = new OptimizerWindow(service, tweaks, scan.Result, profile);

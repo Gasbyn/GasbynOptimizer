@@ -122,9 +122,11 @@ public sealed class TweakItem : INotifyPropertyChanged
         {
             if (ShowLock) return "🔒 Nepodporováno";
             if (IsApplyOnly)
+            {
                 if (Tweak.DoneText != null)
                     return State == TweakState.On ? Tweak.DoneText : State == TweakState.NotApplicable ? "Nedostupné" : Tweak.TodoText ?? "Vypnuto";
                 return State == TweakState.On ? "Zapnuto" : State == TweakState.NotApplicable ? "Nedostupné" : "Vypnuto";
+            }
 
             return State switch
             {
