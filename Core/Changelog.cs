@@ -16,6 +16,10 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.85", new DateTime(2026, 11, 1, 20, 40, 0), new[]
+        {
+            Chg("Spánek a hibernace jsou dvě samostatné optimalizace", "Spánek (Sleep) a hibernaci jde zapnout či vypnout každou zvlášť, třeba hibernaci vypnout a spánek nechat. Upraveny názvy a popisy, ať je jasné, že se neovlivňují.")
+        }),
         new("2.0.0.84", new DateTime(2026, 11, 1, 17, 20, 0), new[]
         {
             Add("Update log po aktualizaci", "Při prvním spuštění po stažení a po každé aktualizaci se ukáže, co je nového: datum a čas vydání a co bylo přidáno, upraveno nebo odebráno. Ukazování jde v okně vypnout."),

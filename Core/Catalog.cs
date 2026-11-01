@@ -428,7 +428,7 @@ public static class Catalog
             {
                 Id = "sleep-off", Category = CatSystem, IsNew = true,
                 Name = "Vypnout režim spánku (Sleep)",
-                Description = "Počítač přestane usínat sám a nepůjde ani uspat ručně. Zakáže stavy spánku (S1–S3) a skryje „Spánek“ v nabídce vypnutí. Hibernace je samostatná optimalizace níže.",
+                Description = "Počítač přestane usínat sám a nepůjde ani uspat ručně. Zakáže stavy spánku (S1–S3), časovač usnutí a skryje „Spánek“ v nabídce vypnutí. Hibernace se nemění, má vlastní přepínač.",
                 Note = "Hodí se pro stream, stahování a servery, kdy PC nesmí usnout. Na notebooku se nešetří baterie. Vypnutí vrátí původní stav.",
                 Ops = new TweakOp[]
                 {
@@ -441,10 +441,10 @@ public static class Catalog
             },
             new()
             {
-                Id = "hibernation", Category = CatSystem,
-                Name = "Vypnout hibernaci",
-                Description = "Smaže soubor hiberfil.sys a uvolní několik GB místa na systémovém disku.",
-                Note = "Přestane fungovat hibernace a rychlé spuštění.",
+                Id = "hibernation", Category = CatSystem, IsNew = true,
+                Name = "Vypnout hibernaci (samostatně, spánek zůstane)",
+                Description = "Smaže soubor hiberfil.sys a uvolní několik GB místa na systémovém disku. Týká se jen hibernace, běžný spánek (Sleep) se nemění.",
+                Note = "Přestane fungovat hibernace a Windows nemůže použít rychlé spuštění (to se dá vypnout i zvlášť).",
                 Ops = new TweakOp[]
                 {
                     new CommandOp("hibernate", HibernationState,
