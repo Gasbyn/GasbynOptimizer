@@ -113,6 +113,15 @@ public sealed class AppSettings
     /// <summary>Verze podmínek použití, kterou uživatel odsouhlasil (0 = zatím žádnou).</summary>
     public int AcceptedTermsVersion { get; set; }
 
+    /// <summary>Verze, jejíž Update log už uživatel viděl (prázdné = ještě žádný).</summary>
+    public string LastSeenVersion { get; set; } = "";
+
+    /// <summary>Ukázat Update log při prvním spuštění po stažení a po každé aktualizaci.</summary>
+    public bool ShowUpdateLog { get; set; } = true;
+
+    /// <summary>Podrobný Update log: popisy změn a starší verze (výchozí vypnuto, jen stručné shrnutí).</summary>
+    public bool DetailedUpdateLog { get; set; }
+
     public static AppSettings Load()
     {
         try

@@ -31,6 +31,8 @@ public static class Catalog
     internal static RegistryOp Hklm(string subKey, string name, uint on, uint? off) =>
         new(true, subKey, name, RegistryValueKind.DWord, on, off);
 
+    private static RegistryOp HklmUint(string subKey, string name, uint on) => Hklm(subKey, name, on, null);
+
     internal static RegistryOp Hkcu(string subKey, string name, uint on, uint? off) =>
         new(false, subKey, name, RegistryValueKind.DWord, on, off);
 
@@ -420,6 +422,21 @@ public static class Catalog
                     HklmStr(@"SYSTEM\CurrentControlSet\Control", "WaitToKillServiceTimeout", "2000", "5000"),
                     HkcuStr(@"Control Panel\Desktop", "WaitToKillAppTimeout", "2000", "20000"),
                     HkcuStr(@"Control Panel\Desktop", "HungAppTimeout", "2000", "5000")
+                }
+            },
+            new()
+            {
+                Id = "sleep-off", Category = CatSystem, IsNew = true,
+                Name = "Vypnout režim spánku (Sleep)",
+                Description = "Počítač přestane usínat sám a nepůjde ani uspat ručně. Zakáže stavy spánku (S1–S3) a skryje „Spánek“ v nabídce vypnutí. Hibernace je samostatná optimalizace níže.",
+                Note = "Hodí se pro stream, stahování a servery, kdy PC nesmí usnout. Na notebooku se nešetří baterie. Vypnutí vrátí původní stav.",
+                Ops = new TweakOp[]
+                {
+                    HklmUint(@"SOFTWARE\Policies\Microsoft\Power\PowerSettings\abfc2519-3608-4c2a-94ea-171b0ed546ab", "ACSettingIndex", 0),
+                    HklmUint(@"SOFTWARE\Policies\Microsoft\Power\PowerSettings\abfc2519-3608-4c2a-94ea-171b0ed546ab", "DCSettingIndex", 0),
+                    HklmUint(@"SOFTWARE\Policies\Microsoft\Power\PowerSettings\29f6c1db-86da-48c5-9fdb-f2b67b1f44da", "ACSettingIndex", 0),
+                    HklmUint(@"SOFTWARE\Policies\Microsoft\Power\PowerSettings\29f6c1db-86da-48c5-9fdb-f2b67b1f44da", "DCSettingIndex", 0),
+                    HklmUint(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings", "ShowSleepOption", 0)
                 }
             },
             new()

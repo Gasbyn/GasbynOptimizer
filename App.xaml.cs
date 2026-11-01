@@ -79,6 +79,7 @@ public partial class App : System.Windows.Application
             ShutdownMode = ShutdownMode.OnMainWindowClose;
             window.Show();
             splash.Close();
+            UpdateLogWindow.ShowIfNeeded(window);
         }
         catch (Exception ex)
         {

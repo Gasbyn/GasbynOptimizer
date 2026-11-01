@@ -19,6 +19,9 @@ public partial class OptimizerWindow : Window
     private readonly ObservableCollection<TweakItem> _items = new();
     private readonly ICollectionView _view;
     private readonly AppSettings _settings = AppSettings.Load();
+
+    /// <summary>Sdílené nastavení (aby okna nepřepisovala změny jedno druhému).</summary>
+    internal AppSettings Settings => _settings;
     private readonly SystemProfile _profile;
 
     private bool _restorePointDone;
@@ -67,6 +70,8 @@ public partial class OptimizerWindow : Window
         BuildNav();
         AutoRestoreCheck.IsChecked = _settings.AutoRestorePoint;
         AdvancedCheck.IsChecked = _settings.AdvancedMode;
+        ShowUpdateLogCheck.IsChecked = _settings.ShowUpdateLog;
+        DetailedLogCheck.IsChecked = _settings.DetailedUpdateLog;
         SystemText.Text = profile.Summary;
         SystemDetails.Text = BuildSystemDetails(profile);
 
@@ -556,6 +561,26 @@ public partial class OptimizerWindow : Window
         _view.Refresh();
         UpdateCounts();
     }
+
+    private void ShowUpdateLog_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.ShowUpdateLog = ShowUpdateLogCheck.IsChecked == true;
+        _settings.Save();
+    }
+
+    private void DetailedLog_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.DetailedUpdateLog = DetailedLogCheck.IsChecked == true;
+        _settings.Save();
+    }
+
+    private void OpenUpdateLog_Click(object sender, RoutedEventArgs e)
+    {
+        new UpdateLogWindow(_settings, UpdateLogWindow.CurrentVersion()) { Owner = this }.ShowDialog();
+        ShowUpdateLogCheck.IsChecked = _settings.ShowUpdateLog;
+    }
+
+    internal void SyncUpdateLogSettings() => ShowUpdateLogCheck.IsChecked = _settings.ShowUpdateLog;
 
     private void AutoRestore_Click(object sender, RoutedEventArgs e)
     {

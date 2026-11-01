@@ -501,6 +501,17 @@
 
                         <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,12,0,0">
                             <StackPanel>
+                                <TextBlock Text="Update log" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Style="{StaticResource SectionText}"
+                                           Text="Při prvním spuštění po stažení a po každé aktualizaci se ukáže, co je nového. Podrobný výpis přidá popisy změn a starší verze."/>
+                                <CheckBox x:Name="ShowUpdateLogCheck" Content="Ukazovat Update log po aktualizaci" Foreground="{StaticResource TextBrush}" Margin="0,0,0,8" Click="ShowUpdateLog_Click"/>
+                                <CheckBox x:Name="DetailedLogCheck" Content="Podrobný Update log (popisy změn a starší verze)" Foreground="{StaticResource TextBrush}" Margin="0,0,0,12" Click="DetailedLog_Click"/>
+                                <Button Style="{StaticResource GhostButton}" Content="Zobrazit Update log" HorizontalAlignment="Left" Click="OpenUpdateLog_Click"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,12,0,0">
+                            <StackPanel>
                                 <TextBlock Text="Podmínky a podpora" Style="{StaticResource SectionTitle}"/>
                                 <TextBlock Style="{StaticResource SectionText}"
                                            Text="Máš problém nebo nápad? Napiš nám na Discord server. Podmínky použití si můžeš znovu přečíst."/>
