@@ -94,7 +94,7 @@ jobs:
       - name: Ověřit metadata EXE
         shell: pwsh
         run: |
-          $info = (Get-Item publish\\GasbynOptimizer.exe).VersionInfo
+          $info = (Get-Item publish\GasbynOptimizer.exe).VersionInfo
           $checks = @{
             CompanyName = 'Gasbyn'
             ProductName = 'Gasbyn Optimizer'
