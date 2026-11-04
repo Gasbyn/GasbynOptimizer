@@ -144,11 +144,15 @@ public partial class MainWindow
                 BuildTweaksWorkspace();
                 break;
             case "Cleanup":
-                AddInfoCard("User TEMP", "Zkontroluje a nabídne odstranění dočasných souborů aktuálního uživatele.", "User TEMP");
-                AddInfoCard("Windows + User TEMP", "Zkontroluje dostupné TEMP složky a nabídne bezpečný úklid.", "Windows + User TEMP");
-                AddInfoCard("Shader Cache", "Zobrazí velikost dostupných shader cache; po odstranění se mohou znovu vytvořit.", "Shader Cache");
-                AddInfoCard("Browser Cache", "Zkontroluje běžné cache prohlížečů.", "Browser Cache");
-                AddInfoCard("Recycle Bin", "Zobrazí informace o Koši; vysypání vyžaduje další potvrzení.", "Recycle Bin");
+                AddInfoCard("User TEMP", "Vyčistí pouze dočasné soubory starší než 7 dní; používané soubory přeskočí.", "User TEMP");
+                AddInfoCard("Windows + User TEMP", "Vyčistí starší dočasné soubory uživatele i Windows.", "Windows + User TEMP");
+                AddInfoCard("Browser Cache", "Vyčistí starší cache Chrome, Edge, Firefox, Brave, Vivaldi a Opery. Historie, cookies a hesla zůstávají.", "Browser Cache");
+                AddInfoCard("Shader Cache", "Odstraní starší grafické cache; hry si je znovu vytvoří.", "Shader Cache");
+                AddInfoCard("Windows Update Cache", "Volitelně odstraní starší stažené aktualizační soubory, které Windows může znovu stáhnout.", "Windows Update Cache");
+                AddInfoCard("Delivery Optimization Cache", "Volitelně odstraní starší cache doručování aktualizací.", "Delivery Optimization Cache");
+                AddInfoCard("Crash Dumps & Logs", "Zkontroluje starší výpisy pádů a diagnostické reporty Windows.", "Crash Dumps & Logs");
+                AddInfoCard("Advanced Deep Clean", "Podrobný výběr TEMP/cache/log souborů a bezpečné systémové čištění Windows.", "Open Deep Clean");
+                AddInfoCard("Recycle Bin", "Koš se nemaže automaticky; jeho obsah může být osobní soubor.", "Recycle Bin");
                 break;
             case "Deep Clean":
                 AddInfoCard("Deep Scan Summary", "Provede kontrolu dostupných míst na disku a zobrazí souhrn.", "Deep Scan Summary");
