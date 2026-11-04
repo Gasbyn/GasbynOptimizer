@@ -1,6 +1,6 @@
 ; Instalátor Gasbyn Optimizer (Inno Setup 6).
-; Sestavení: iscc /DAppVersion=3.0.0 installer\\GasbynOptimizer.iss
-; Očekává publikovanou aplikaci ve složce ..\\publish (viz .github\\workflows\\build.yml).
+; Sestavení: iscc /DAppVersion=3.0.0 installer\GasbynOptimizer.iss
+; Očekává publikovanou aplikaci ve složce ..\publish (viz .github\workflows\build.yml).
 
 #ifndef AppVersion
   #define AppVersion "3.0.0"
@@ -14,18 +14,19 @@ AppPublisher=Gasbyn
 VersionInfoCompany=Gasbyn
 VersionInfoDescription=Gasbyn Optimizer Setup
 VersionInfoProductName=Gasbyn Optimizer
+VersionInfoVersion={#AppVersion}
+VersionInfoTextVersion={#AppVersion}
 VersionInfoProductVersion={#AppVersion}
 VersionInfoProductTextVersion={#AppVersion}
 VersionInfoCopyright=Copyright (C) 2026 Gasbyn
 VersionInfoOriginalFileName=GasbynOptimizer-Setup-{#AppVersion}.exe
-VersionInfoInternalName=GasbynOptimizerSetup
-DefaultDirName={autopf}\\Gasbyn Optimizer
+DefaultDirName={autopf}\Gasbyn Optimizer
 DefaultGroupName=Gasbyn Optimizer
 DisableProgramGroupPage=yes
-OutputDir=..\\dist
+OutputDir=..\dist
 OutputBaseFilename=GasbynOptimizer-Setup-{#AppVersion}
-SetupIconFile=..\\GasbynOptimizer.ico
-UninstallDisplayIcon={app}\\GasbynOptimizer.exe
+SetupIconFile=..\GasbynOptimizer.ico
+UninstallDisplayIcon={app}\GasbynOptimizer.exe
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -35,8 +36,8 @@ ArchitecturesInstallIn64BitMode=x64compatible
 CloseApplications=yes
 
 [Languages]
-#if FileExists(CompilerPath + "Languages\\Czech.isl")
-Name: "czech"; MessagesFile: "compiler:Languages\\Czech.isl"
+#if FileExists(CompilerPath + "Languages\Czech.isl")
+Name: "czech"; MessagesFile: "compiler:Languages\Czech.isl"
 #endif
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
@@ -44,14 +45,14 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
-Source: "..\\publish\\GasbynOptimizer.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\publish\GasbynOptimizer.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{autoprograms}\\Gasbyn Optimizer"; Filename: "{app}\\GasbynOptimizer.exe"
-Name: "{autodesktop}\\Gasbyn Optimizer"; Filename: "{app}\\GasbynOptimizer.exe"; Tasks: desktopicon
+Name: "{autoprograms}\Gasbyn Optimizer"; Filename: "{app}\GasbynOptimizer.exe"
+Name: "{autodesktop}\Gasbyn Optimizer"; Filename: "{app}\GasbynOptimizer.exe"; Tasks: desktopicon
 
 [Run]
 ; Běžná instalace: nabídka spuštění na konci průvodce.
-Filename: "{app}\\GasbynOptimizer.exe"; Description: "{cm:LaunchProgram,Gasbyn Optimizer}"; Flags: nowait postinstall skipifsilent shellexec
+Filename: "{app}\GasbynOptimizer.exe"; Description: "{cm:LaunchProgram,Gasbyn Optimizer}"; Flags: nowait postinstall skipifsilent shellexec
 ; Tichá aktualizace z aplikace: po dokončení se aplikace sama znovu spustí.
-Filename: "{app}\\GasbynOptimizer.exe"; Flags: nowait shellexec; Check: WizardSilent
+Filename: "{app}\GasbynOptimizer.exe"; Flags: nowait shellexec; Check: WizardSilent
