@@ -141,6 +141,13 @@ public partial class MainWindow
         if (!Directory.Exists(parent)) return;
         try
         {
+            // Some browsers (notably Opera) keep their active profile directly in the parent folder.
+            foreach (var cacheName in cacheNames)
+            {
+                var direct = Path.Combine(parent, cacheName);
+                if (Directory.Exists(direct)) list.Add(direct);
+            }
+
             foreach (var profile in Directory.EnumerateDirectories(parent, "*", SearchOption.TopDirectoryOnly))
             {
                 foreach (var cacheName in cacheNames)
