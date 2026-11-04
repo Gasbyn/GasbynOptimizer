@@ -44,6 +44,7 @@ public partial class MainWindow
             switch (title)
             {
                 case "User TEMP": ScanAndOfferCleanup("User TEMP", new[] { Path.GetTempPath() }); break;
+                case "Open Deep Clean": OpenDeepClean(); break;
                 case "Windows Update Cache": ScanAndOfferCleanup("Windows Update Cache", new[] { Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download") }); break;
                 case "Delivery Optimization Cache": ScanAndOfferCleanup("Delivery Optimization Cache", new[] { Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "DeliveryOptimization", "Cache") }); break;
                 case "Shader Cache": ScanAndOfferCleanup("Shader Cache", GetShaderCachePaths()); break;
@@ -122,32 +123,58 @@ public partial class MainWindow
     private string[] GetBrowserCachePaths()
     {
         var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var roaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         var paths = new List<string>();
-        AddExistingParent(paths, Path.Combine(local, "Google", "Chrome", "User Data"), "Cache");
-        AddExistingParent(paths, Path.Combine(local, "Microsoft", "Edge", "User Data"), "Cache");
-        AddExistingParent(paths, Path.Combine(local, "Mozilla", "Firefox", "Profiles"), "cache2");
-        return paths.ToArray();
+
+        AddBrowserProfileCaches(paths, Path.Combine(local, "Google", "Chrome", "User Data"), "Cache", "Code Cache", "GPUCache");
+        AddBrowserProfileCaches(paths, Path.Combine(local, "Microsoft", "Edge", "User Data"), "Cache", "Code Cache", "GPUCache");
+        AddBrowserProfileCaches(paths, Path.Combine(local, "BraveSoftware", "Brave-Browser", "User Data"), "Cache", "Code Cache", "GPUCache");
+        AddBrowserProfileCaches(paths, Path.Combine(local, "Vivaldi", "User Data"), "Cache", "Code Cache", "GPUCache");
+        AddBrowserProfileCaches(paths, Path.Combine(local, "Opera Software", "Opera Stable"), "Cache", "Code Cache", "GPUCache");
+        AddBrowserProfileCaches(paths, Path.Combine(roaming, "Mozilla", "Firefox", "Profiles"), "cache2");
+
+        return paths.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
-    private static void AddExistingParent(List<string> list, string parent, string childName)
+    private static void AddBrowserProfileCaches(List<string> list, string parent, params string[] cacheNames)
     {
         if (!Directory.Exists(parent)) return;
         try
         {
-            foreach (var directory in Directory.EnumerateDirectories(parent, "*", SearchOption.TopDirectoryOnly))
+            // Some browsers (notably Opera) keep their active profile directly in the parent folder.
+            foreach (var cacheName in cacheNames)
             {
-                var candidate = Path.Combine(directory, childName);
-                if (Directory.Exists(candidate)) list.Add(candidate);
+                var direct = Path.Combine(parent, cacheName);
+                if (Directory.Exists(direct)) list.Add(direct);
+            }
+
+            foreach (var profile in Directory.EnumerateDirectories(parent, "*", SearchOption.TopDirectoryOnly))
+            {
+                foreach (var cacheName in cacheNames)
+                {
+                    var candidate = Path.Combine(profile, cacheName);
+                    if (Directory.Exists(candidate)) list.Add(candidate);
+                }
             }
         }
         catch { }
     }
 
-    private string[] GetCrashDumpPaths() => new[]
+    private string[] GetCrashDumpPaths()
     {
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CrashDumps"),
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Minidump")
-    };
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var common = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+        var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        return new[]
+        {
+            Path.Combine(local, "CrashDumps"),
+            Path.Combine(windows, "Minidump"),
+            Path.Combine(local, "Microsoft", "Windows", "WER", "ReportQueue"),
+            Path.Combine(local, "Microsoft", "Windows", "WER", "ReportArchive"),
+            Path.Combine(common, "Microsoft", "Windows", "WER", "ReportQueue"),
+            Path.Combine(common, "Microsoft", "Windows", "WER", "ReportArchive")
+        };
+    }
 
     private string[] GetShaderCachePaths() => new[]
     {
@@ -176,7 +203,7 @@ public partial class MainWindow
             return;
         }
 
-        var question = $"{name}\n\nNalezeno přibližně {FormatBytes(total)}.\n\n{details}\nChceš odstranit pouze soubory, které lze bezpečně odstranit? Zamčené položky budou přeskočeny.";
+        var question = $"{name}\n\nNalezeno přibližně {FormatBytes(total)} ve starších souborech (minimálně 7 dní).\n\n{details}\nBudou přeskočeny novější a právě používané soubory, systémové soubory a odkazy na jiné složky. Historie, cookies, hesla, stažené soubory a osobní dokumenty se nemažou. Pokračovat?";
         if (MessageBox.Show(question, "Potvrdit cleanup", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
         var deleted = 0L;
         foreach (var path in unique) deleted += CleanDirectoryContents(path);
@@ -186,33 +213,75 @@ public partial class MainWindow
     private static long GetDirectorySize(string path)
     {
         long total = 0;
-        try
+        foreach (var file in GetSafeOldFiles(path, 7))
         {
-            foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
-            {
-                try { total += new FileInfo(file).Length; } catch { }
-            }
+            try { total += new FileInfo(file).Length; } catch { }
         }
-        catch { }
         return total;
     }
 
     private static long CleanDirectoryContents(string path)
     {
         long deleted = 0;
-        try
+        foreach (var file in GetSafeOldFiles(path, 7))
         {
-            foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+            try
             {
-                try { var len = new FileInfo(file).Length; File.Delete(file); deleted += len; } catch { }
+                var length = new FileInfo(file).Length;
+                File.Delete(file);
+                if (!File.Exists(file)) deleted += length;
             }
-            foreach (var directory in Directory.EnumerateDirectories(path, "*", SearchOption.AllDirectories).OrderByDescending(x => x.Length))
+            catch { }
+        }
+        return deleted;
+    }
+
+    private static List<string> GetSafeOldFiles(string root, int minAgeDays)
+    {
+        var files = new List<string>();
+        if (!Directory.Exists(root)) return files;
+
+        var cutoffUtc = DateTime.UtcNow.AddDays(-minAgeDays);
+        var pending = new Stack<string>();
+        pending.Push(root);
+
+        while (pending.Count > 0)
+        {
+            var current = pending.Pop();
+            string[] entries;
+            try
             {
-                try { Directory.Delete(directory, false); } catch { }
+                var currentAttributes = File.GetAttributes(current);
+                if ((currentAttributes & FileAttributes.ReparsePoint) != 0 ||
+                    (currentAttributes & FileAttributes.Directory) == 0) continue;
+                entries = Directory.GetFileSystemEntries(current);
+            }
+            catch { continue; }
+
+            foreach (var entry in entries)
+            {
+                FileAttributes attributes;
+                try { attributes = File.GetAttributes(entry); }
+                catch { continue; }
+
+                if ((attributes & FileAttributes.ReparsePoint) != 0) continue;
+                if ((attributes & FileAttributes.Directory) != 0)
+                {
+                    pending.Push(entry);
+                    continue;
+                }
+                if ((attributes & FileAttributes.System) != 0) continue;
+
+                try
+                {
+                    if (File.GetLastWriteTimeUtc(entry) <= cutoffUtc)
+                        files.Add(entry);
+                }
+                catch { }
             }
         }
-        catch { }
-        return deleted;
+
+        return files;
     }
 
     private static string FormatBytes(long bytes)
@@ -236,7 +305,8 @@ public partial class MainWindow
             ["Browser cache"] = GetBrowserCachePaths(),
             ["Crash dumps"] = GetCrashDumpPaths(),
             ["GPU cache"] = GetShaderCachePaths(),
-            ["Windows Update"] = new[] { Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download") }
+            ["Windows Update"] = new[] { Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download") },
+            ["Delivery Optimization"] = new[] { Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "DeliveryOptimization", "Cache") }
         };
         var sb = new StringBuilder("GASBYN DEEP SCAN\n\n");
         long total = 0;
