@@ -2,7 +2,10 @@ using System.Diagnostics;
 
 namespace GasbynOptimizer.Core;
 
-public sealed record CleanResult(long Bytes, int Files, int SkippedApps = 0);
+public sealed record CleanResult(long Bytes, int Files)
+{
+    public int SkippedApps { get; init; }
+}
 
 public static class Maintenance
 {
@@ -466,7 +469,7 @@ Write-Output $removed
 
         Log.Write("Vyčištěna cache/TEMP/logy aplikací: " + files + " souborů (" + bytes / 1024 / 1024 +
                   " MB); přeskočeno běžících aplikací: " + skippedApps.Count);
-        return new CleanResult(bytes, files, skippedApps.Count);
+        return new CleanResult(bytes, files) { SkippedApps = skippedApps.Count };
     }
 
     private static HashSet<string> GetRunningProcessNames()
