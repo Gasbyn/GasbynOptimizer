@@ -8,7 +8,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>GasbynOptimizer</AssemblyName>
     <RootNamespace>GasbynOptimizer</RootNamespace>
-    <Version>2.0.0.85</Version>
+    <Version>2.0.0.86</Version>
+
+    <!-- Windows EXE version information. This identifies the project; it is not a digital signature. -->
+    <Company>Gasbyn</Company>
+    <Product>Gasbyn Optimizer</Product>
+    <AssemblyTitle>Gasbyn Optimizer</AssemblyTitle>
+    <Description>Windows Optimization Tool</Description>
+    <Copyright>Copyright © 2026 Gasbyn</Copyright>
+    <Authors>Gasbyn</Authors>
+    <RepositoryUrl>https://github.com/Gasbyn/GasbynOptimizer</RepositoryUrl>
+
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>GasbynOptimizer.ico</ApplicationIcon>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
