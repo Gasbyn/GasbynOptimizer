@@ -91,6 +91,26 @@ jobs:
           -p:Version=${{ steps.ver.outputs.version }}
           --output publish
 
+      - name: Ověřit metadata EXE
+        shell: pwsh
+        run: |
+          $info = (Get-Item publish\\GasbynOptimizer.exe).VersionInfo
+          $checks = @{
+            CompanyName = 'Gasbyn'
+            ProductName = 'Gasbyn Optimizer'
+            FileDescription = 'Gasbyn Optimizer'
+            LegalCopyright = 'Copyright © 2026 Gasbyn'
+          }
+          foreach ($entry in $checks.GetEnumerator()) {
+            $actual = [string]$info.($entry.Key)
+            if ($actual -ne $entry.Value) {
+              throw "Metadata $($entry.Key) nesouhlasí. Očekáváno '$($entry.Value)', nalezeno '$actual'."
+            }
+            Write-Host "$($entry.Key): $actual"
+          }
+          Write-Host "FileVersion: $($info.FileVersion)"
+          Write-Host "ProductVersion: $($info.ProductVersion)"
+
       - name: Nainstalovat Inno Setup
         shell: pwsh
         run: choco install innosetup -y --no-progress
