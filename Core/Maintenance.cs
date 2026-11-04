@@ -1,6 +1,8 @@
+using System.Diagnostics;
+
 namespace GasbynOptimizer.Core;
 
-public sealed record CleanResult(long Bytes, int Files);
+public sealed record CleanResult(long Bytes, int Files, int SkippedApps = 0);
 
 public static class Maintenance
 {
@@ -254,73 +256,272 @@ Write-Output $removed
     /// Smaže mezipaměť (cache) oblíbených aplikací a her: Discord, Steam, Slack, Teams, Epic Games, Fortnite, Ubisoft, Battle.net, EA, GOG, Spotify, VS Code, OBS a shadery grafických karet.
     /// Mažou se jen složky s mezipamětí. Přihlášení, nastavení a stažené hry ani hudba se nemění.
     /// </summary>
+    private sealed record AppCleanupTarget(string App, string Path, int MinAgeDays, string[] ProcessNames);
+
+    /// <summary>
+    /// Čistí znovu vytvořitelné cache a starší TEMP/log soubory známých aplikací.
+    /// Cache: 7 dní, TEMP: 3 dny, běžné logy: 14 dní, crash reporty: 30 dní.
+    /// Pokud aplikace běží, její cíle se přeskočí. Nastavení, účty, cookies, projekty a stažené soubory se nemažou.
+    /// </summary>
     public static CleanResult CleanAppCaches()
     {
         var roaming = Env(Environment.SpecialFolder.ApplicationData);
         var local = Env(Environment.SpecialFolder.LocalApplicationData);
+        var common = Env(Environment.SpecialFolder.CommonApplicationData);
+        var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+        var targets = new List<AppCleanupTarget>();
 
-        var folders = new List<string>();
-
-        void Electron(string root)
+        void Add(string app, string path, int minAgeDays, params string[] processNames)
         {
-            foreach (var name in new[] { "Cache", "Code Cache", "GPUCache", "DawnCache" })
-                folders.Add(Path.Combine(root, name));
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path)) return;
+            string fullPath;
+            try { fullPath = Path.GetFullPath(path); }
+            catch { return; }
+
+            if (targets.Any(x => string.Equals(x.Path, fullPath, StringComparison.OrdinalIgnoreCase)))
+                return;
+
+            targets.Add(new AppCleanupTarget(app, fullPath, minAgeDays, processNames));
         }
 
-        Electron(Path.Combine(roaming, "discord"));
-        Electron(Path.Combine(roaming, "Slack"));
-        Electron(Path.Combine(roaming, "Code"));
-        folders.Add(Path.Combine(roaming, "Code", "CachedData"));
+        void AddElectronCaches(string app, string root, params string[] processNames)
+        {
+            foreach (var name in new[] { "Cache", "Code Cache", "GPUCache", "DawnCache" })
+                Add(app, Path.Combine(root, name), 7, processNames);
+        }
 
+        void AddChromiumCaches(string app, string userData, params string[] processNames)
+        {
+            if (!Directory.Exists(userData)) return;
+            try
+            {
+                foreach (var profile in Directory.EnumerateDirectories(userData, "*", SearchOption.TopDirectoryOnly))
+                {
+                    try
+                    {
+                        if ((File.GetAttributes(profile) & FileAttributes.ReparsePoint) != 0) continue;
+                    }
+                    catch { continue; }
+
+                    foreach (var name in new[] { "Cache", "Code Cache", "GPUCache", "DawnCache" })
+                        Add(app, Path.Combine(profile, name), 7, processNames);
+                }
+            }
+            catch { }
+
+            Add(app, Path.Combine(userData, "Crashpad", "reports"), 30, processNames);
+        }
+
+        // Discord, Slack a Visual Studio Code — pouze znovu vytvořitelné cache a staré logy.
+        var discord = Path.Combine(roaming, "discord");
+        AddElectronCaches("Discord", discord, "Discord");
+        Add("Discord", Path.Combine(discord, "logs"), 14, "Discord");
+        Add("Discord", Path.Combine(discord, "Crashpad", "reports"), 30, "Discord");
+
+        var slack = Path.Combine(roaming, "Slack");
+        AddElectronCaches("Slack", slack, "slack");
+        Add("Slack", Path.Combine(slack, "logs"), 14, "slack");
+
+        var code = Path.Combine(roaming, "Code");
+        AddElectronCaches("Visual Studio Code", code, "Code");
+        Add("Visual Studio Code", Path.Combine(code, "CachedData"), 7, "Code");
+        Add("Visual Studio Code", Path.Combine(code, "logs"), 14, "Code");
+
+        var codeInsiders = Path.Combine(roaming, "Code - Insiders");
+        AddElectronCaches("Visual Studio Code Insiders", codeInsiders, "Code - Insiders");
+        Add("Visual Studio Code Insiders", Path.Combine(codeInsiders, "logs"), 14, "Code - Insiders");
+
+        // Microsoft Teams.
         foreach (var name in new[] { "Cache", "blob_storage", "Code Cache", "GPUCache", "tmp" })
-            folders.Add(Path.Combine(roaming, "Microsoft", "Teams", name));
+            Add("Microsoft Teams", Path.Combine(roaming, "Microsoft", "Teams", name), 7, "Teams", "ms-teams");
 
-        folders.Add(Path.Combine(local, "Steam", "htmlcache"));
-        folders.Add(Path.Combine(local, "Spotify", "Browser"));
+        // Google Chrome: cache a crash reporty; historie, cookies, hesla ani profily se nemažou.
+        AddChromiumCaches("Google Chrome", Path.Combine(local, "Google", "Chrome", "User Data"), "chrome");
+        Add("Google Update", Path.Combine(local, "Google", "Update", "Log"), 14, "GoogleUpdater", "GoogleUpdate");
 
-        // Mezipaměť shaderů grafických karet a DirectX (hry ji při dalším spuštění znovu vytvoří, první start může být chvíli pomalejší).
-        folders.Add(Path.Combine(local, "D3DSCache"));
-        folders.Add(Path.Combine(local, "NVIDIA", "DXCache"));
-        folders.Add(Path.Combine(local, "NVIDIA", "GLCache"));
-        folders.Add(Path.Combine(local, "NVIDIA Corporation", "NV_Cache"));
-        folders.Add(Path.Combine(local, "AMD", "DxCache"));
-        folders.Add(Path.Combine(local, "AMD", "GLCache"));
-        folders.Add(Path.Combine(local, "Intel", "ShaderCache"));
+        // Steam.
+        Add("Steam", Path.Combine(local, "Steam", "htmlcache"), 7, "steam", "steamwebhelper");
+        Add("Steam", Path.Combine(programFilesX86, "Steam", "logs"), 14, "steam", "steamwebhelper");
+        Add("Steam", Path.Combine(programFiles, "Steam", "logs"), 14, "steam", "steamwebhelper");
 
-        // Hry a herní launchery.
-        folders.Add(Path.Combine(local, "FortniteGame", "Saved", "ShaderCache"));
-        folders.Add(Path.Combine(local, "FortniteGame", "Saved", "Logs"));
-        folders.Add(Path.Combine(local, "EpicGamesLauncher", "Saved", "Logs"));
-        folders.Add(Path.Combine(local, "Ubisoft Game Launcher", "cache"));
-        folders.Add(Path.Combine(local, "Battle.net", "Cache"));
-        folders.Add(Path.Combine(local, "Electronic Arts", "EA Desktop", "Cache"));
-        folders.Add(Path.Combine(local, "GOG.com", "Galaxy", "webcache"));
-        folders.Add(Path.Combine(local, "Riot Games", "Riot Client", "Logs"));
-        folders.Add(Path.Combine(roaming, ".minecraft", "logs"));
+        // Spotify a další herní launchery.
+        Add("Spotify", Path.Combine(local, "Spotify", "Browser"), 7, "Spotify");
+        Add("Ubisoft Connect", Path.Combine(local, "Ubisoft Game Launcher", "cache"), 7, "UbisoftConnect", "upc");
+        Add("Battle.net", Path.Combine(local, "Battle.net", "Cache"), 7, "Battle.net", "Agent");
+        Add("EA app", Path.Combine(local, "Electronic Arts", "EA Desktop", "Cache"), 7, "EADesktop", "EALauncher");
+        Add("GOG Galaxy", Path.Combine(local, "GOG.com", "Galaxy", "webcache"), 7, "GalaxyClient");
+        Add("Riot Client", Path.Combine(local, "Riot Games", "Riot Client", "Logs"), 14, "RiotClientServices");
 
-        // OBS Studio: protokoly, hlášení o pádech a stažené aktualizace.
-        folders.Add(Path.Combine(roaming, "obs-studio", "logs"));
-        folders.Add(Path.Combine(roaming, "obs-studio", "crashes"));
-        folders.Add(Path.Combine(roaming, "obs-studio", "updates"));
-
+        // Epic Games Launcher a Fortnite.
         var epicSaved = Path.Combine(local, "EpicGamesLauncher", "Saved");
+        Add("Epic Games Launcher", Path.Combine(epicSaved, "Logs"), 14, "EpicGamesLauncher", "EpicWebHelper");
         try
         {
             if (Directory.Exists(epicSaved))
-                folders.AddRange(Directory.EnumerateDirectories(epicSaved, "webcache*"));
+            {
+                foreach (var directory in Directory.EnumerateDirectories(epicSaved, "webcache*", SearchOption.TopDirectoryOnly))
+                    Add("Epic Games Launcher", directory, 7, "EpicGamesLauncher", "EpicWebHelper");
+            }
         }
-        catch
+        catch { }
+
+        var fortniteSaved = Path.Combine(local, "FortniteGame", "Saved");
+        Add("Fortnite", Path.Combine(fortniteSaved, "ShaderCache"), 7, "FortniteClient-Win64-Shipping");
+        Add("Fortnite", Path.Combine(fortniteSaved, "Logs"), 14, "FortniteClient-Win64-Shipping", "EpicGamesLauncher");
+        Add("Fortnite", Path.Combine(fortniteSaved, "Crashes"), 30, "FortniteClient-Win64-Shipping");
+
+        // Minecraft: pouze staré textové logy, nikoli světy nebo nastavení.
+        Add("Minecraft", Path.Combine(roaming, ".minecraft", "logs"), 30, "java", "javaw");
+
+        // OBS Studio — logy a crash reporty. Aktualizační složku záměrně nemažeme.
+        var obs = Path.Combine(roaming, "obs-studio");
+        Add("OBS Studio", Path.Combine(obs, "logs"), 14, "obs64", "obs32", "obs");
+        Add("OBS Studio", Path.Combine(obs, "crashes"), 30, "obs64", "obs32", "obs");
+
+        // Streamlabs Desktop — jen logy, crash reporty a dočasné soubory.
+        foreach (var root in new[]
         {
-            // Bez přístupu přeskočíme.
+            Path.Combine(roaming, "slobs-client"),
+            Path.Combine(local, "slobs-client"),
+            Path.Combine(roaming, "Streamlabs Desktop"),
+            Path.Combine(local, "Streamlabs Desktop")
+        })
+        {
+            Add("Streamlabs Desktop", Path.Combine(root, "logs"), 14, "Streamlabs Desktop", "slobs-client", "Streamlabs");
+            Add("Streamlabs Desktop", Path.Combine(root, "crashes"), 30, "Streamlabs Desktop", "slobs-client", "Streamlabs");
+            Add("Streamlabs Desktop", Path.Combine(root, "temp"), 3, "Streamlabs Desktop", "slobs-client", "Streamlabs");
         }
 
+        // CapCut — pouze jasně pojmenované Logs a Temp složky; projekty a media cache se nedotýkáme.
+        foreach (var basePath in new[] { local, roaming })
+        {
+            var capcut = Path.Combine(basePath, "CapCut");
+            Add("CapCut", Path.Combine(capcut, "Logs"), 14, "CapCut");
+            Add("CapCut", Path.Combine(capcut, "Temp"), 3, "CapCut");
+            Add("CapCut", Path.Combine(capcut, "User Data", "Logs"), 14, "CapCut");
+            Add("CapCut", Path.Combine(capcut, "User Data", "Temp"), 3, "CapCut");
+        }
+
+        // Streamer.bot — jen staré logy a dočasné soubory.
+        foreach (var basePath in new[] { local, roaming })
+        {
+            var streamerBot = Path.Combine(basePath, "Streamer.bot");
+            Add("Streamer.bot", Path.Combine(streamerBot, "Logs"), 14, "Streamer.bot", "Streamerbot");
+            Add("Streamer.bot", Path.Combine(streamerBot, "Temp"), 3, "Streamer.bot", "Streamerbot");
+        }
+
+        // Macro Deck — jen staré logy a dočasné soubory.
+        foreach (var basePath in new[] { local, roaming })
+        {
+            foreach (var folderName in new[] { "Macro Deck", "MacroDeck" })
+            {
+                var macroDeck = Path.Combine(basePath, folderName);
+                Add("Macro Deck", Path.Combine(macroDeck, "Logs"), 14, "Macro Deck", "MacroDeck");
+                Add("Macro Deck", Path.Combine(macroDeck, "Temp"), 3, "Macro Deck", "MacroDeck");
+            }
+        }
+
+        // Process Lasso — pouze diagnostické logy.
+        foreach (var root in new[]
+        {
+            Path.Combine(common, "Process Lasso"),
+            Path.Combine(common, "ProcessLasso"),
+            Path.Combine(local, "Process Lasso"),
+            Path.Combine(local, "ProcessLasso"),
+            Path.Combine(roaming, "Process Lasso"),
+            Path.Combine(roaming, "ProcessLasso")
+        })
+            Add("Process Lasso", Path.Combine(root, "Logs"), 14, "ProcessLasso", "ProcessGovernor", "ProcessLassoService");
+
+        // Mezipaměť shaderů grafických karet a DirectX. Hry a streamovací aplikace se při běhu přeskočí.
+        var gpuProcesses = new[]
+        {
+            "FortniteClient-Win64-Shipping", "steam", "EpicGamesLauncher", "obs64",
+            "CapCut", "Streamlabs Desktop", "chrome", "msedge"
+        };
+        Add("GPU shader cache", Path.Combine(local, "D3DSCache"), 7, gpuProcesses);
+        Add("GPU shader cache", Path.Combine(local, "NVIDIA", "DXCache"), 7, gpuProcesses);
+        Add("GPU shader cache", Path.Combine(local, "NVIDIA", "GLCache"), 7, gpuProcesses);
+        Add("GPU shader cache", Path.Combine(local, "NVIDIA Corporation", "NV_Cache"), 7, gpuProcesses);
+        Add("GPU shader cache", Path.Combine(local, "AMD", "DxCache"), 7, gpuProcesses);
+        Add("GPU shader cache", Path.Combine(local, "AMD", "GLCache"), 7, gpuProcesses);
+        Add("GPU shader cache", Path.Combine(local, "Intel", "ShaderCache"), 7, gpuProcesses);
+
+        var running = GetRunningProcessNames();
+        var skippedApps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         long bytes = 0;
         var files = 0;
-        foreach (var folder in folders)
-            DeleteContents(folder, ref bytes, ref files);
 
-        Log.Write("Vyčištěna mezipaměť aplikací: " + files + " souborů (" + bytes / 1024 / 1024 + " MB)");
-        return new CleanResult(bytes, files);
+        foreach (var target in targets)
+        {
+            if (target.ProcessNames.Any(running.Contains))
+            {
+                skippedApps.Add(target.App);
+                continue;
+            }
+
+            DeleteOlderContents(target.Path, target.MinAgeDays, ref bytes, ref files);
+        }
+
+        Log.Write("Vyčištěna cache/TEMP/logy aplikací: " + files + " souborů (" + bytes / 1024 / 1024 +
+                  " MB); přeskočeno běžících aplikací: " + skippedApps.Count);
+        return new CleanResult(bytes, files, skippedApps.Count);
+    }
+
+    private static HashSet<string> GetRunningProcessNames()
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        Process[] processes;
+        try { processes = Process.GetProcesses(); }
+        catch { return names; }
+
+        foreach (var process in processes)
+        {
+            try { names.Add(process.ProcessName); }
+            catch { }
+            finally { process.Dispose(); }
+        }
+
+        return names;
+    }
+
+    private static void DeleteOlderContents(string folder, int minAgeDays, ref long bytes, ref int files)
+    {
+        if (!Directory.Exists(folder)) return;
+        var cutoffUtc = DateTime.UtcNow.AddDays(-Math.Max(0, minAgeDays));
+
+        foreach (var path in Directory.EnumerateFiles(folder, "*", Recursive))
+        {
+            try
+            {
+                var info = new FileInfo(path);
+                if ((info.Attributes & FileAttributes.System) != 0) continue;
+                if (info.LastWriteTimeUtc > cutoffUtc) continue;
+
+                var length = info.Length;
+                info.Delete();
+                if (!File.Exists(path))
+                {
+                    bytes += length;
+                    files++;
+                }
+            }
+            catch
+            {
+                // Zamčené, chráněné nebo nedostupné soubory se přeskočí.
+            }
+        }
+
+        foreach (var dir in Directory.EnumerateDirectories(folder, "*", Recursive).OrderByDescending(d => d.Length))
+        {
+            try
+            {
+                if ((File.GetAttributes(dir) & FileAttributes.ReparsePoint) != 0) continue;
+                Directory.Delete(dir, false);
+            }
+            catch { }
+        }
     }
 
     public sealed record LeftoverResult(int UninstallEntries, int PackageFolders, long Bytes, string? BackupFile);

@@ -339,8 +339,8 @@
                                 <StackPanel>
                                     <TextBlock Text="Mezipaměť aplikací" Style="{StaticResource SectionTitle}"/>
                                     <TextBlock Style="{StaticResource SectionText}"
-                                               Text="Smaže mezipaměť (cache) a protokoly aplikací a her: Discord, Steam, Slack, Teams, Epic Games a Fortnite, Ubisoft, Battle.net, EA, GOG, Spotify, VS Code, OBS a shadery grafických karet (NVIDIA, AMD, Intel, DirectX). Přihlášení, nastavení, hry ani stažená hudba se nemění. Po vyčištění shaderů může první spuštění hry chvíli trvat. Aplikace si mezipaměť časem vytvoří znovu."/>
-                                    <Button Style="{StaticResource GhostButton}" Content="Vyčistit mezipaměť aplikací" HorizontalAlignment="Left" Click="CleanAppCaches_Click"/>
+                                               Text="Vyčistí znovu vytvořitelné cache a starší TEMP/log soubory: Discord, Steam, Google Chrome, Epic Games, Fortnite, CapCut, Streamer.bot, Macro Deck, OBS, Streamlabs Desktop, Process Lasso, VS Code a další podporované aplikace. Cache se čistí až po 7 dnech, TEMP po 3 dnech, běžné logy po 14 dnech a crash reporty po 30 dnech. Běžící aplikace se přeskočí. Účty, cookies, nastavení, projekty, světy, hry, stažené soubory a zdrojová média zůstávají."/>
+                                    <Button Style="{StaticResource GhostButton}" Content="Vyčistit cache, TEMP a logy aplikací" HorizontalAlignment="Left" Click="CleanAppCaches_Click"/>
                                     <TextBlock x:Name="AppCacheResult" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>

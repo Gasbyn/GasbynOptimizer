@@ -16,6 +16,10 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.86", new DateTime(2026, 11, 4, 9, 0, 0), new[]
+        {
+            Add("Rozšířené čištění cache, TEMP a logů aplikací", "Stávající tlačítko v Údržbě čistí starší cache, dočasné soubory a diagnostické logy dalších podporovaných aplikací včetně CapCut, Streamer.bot, Macro Deck, Streamlabs Desktop, Process Lasso a VS Code. Cache se čistí až po 7 dnech, TEMP po 3 dnech, logy po 14 dnech a crash reporty po 30 dnech. Běžící aplikace se přeskočí; nastavení, účty, cookies, projekty, světy, hry, stažené soubory a zdrojová média zůstávají.")
+        }),
         new("2.0.0.85", new DateTime(2026, 11, 1, 20, 40, 0), new[]
         {
             Chg("Spánek a hibernace jsou dvě samostatné optimalizace", "Spánek (Sleep) a hibernaci jde zapnout či vypnout každou zvlášť, třeba hibernaci vypnout a spánek nechat. Upraveny názvy a popisy, ať je jasné, že se neovlivňují.")

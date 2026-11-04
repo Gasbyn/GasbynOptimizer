@@ -45,13 +45,33 @@ public partial class OptimizerWindow
 
     private async void CleanAppCaches_Click(object sender, RoutedEventArgs e)
     {
-        ShowBusy("Čistím mezipaměť aplikací…");
-        var result = await Task.Run(() => Maintenance.CleanAppCaches());
+        var answer = MessageBox.Show(this,
+            "Vyčistit znovu vytvořitelné cache a starší TEMP/log soubory podporovaných aplikací?\n\n" +
+            "Cache starší než 7 dní, dočasné soubory starší než 3 dny, běžné logy starší než 14 dní a crash reporty starší než 30 dní.\n\n" +
+            "Pokud aplikace právě běží, její soubory se přeskočí. Nastavení, účty, cookies, hesla, projekty, světy, hry, stažené soubory a zdrojová média se nemažou.\n\nPokračovat?",
+            "Vyčistit cache, TEMP a logy", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+        if (answer != MessageBoxResult.Yes) return;
+
+        ShowBusy("Čistím starší cache, TEMP a logy aplikací…");
+        CleanResult result;
+        try
+        {
+            result = await Task.Run(() => Maintenance.CleanAppCaches());
+        }
+        catch (Exception ex)
+        {
+            HideBusy();
+            AppCacheResult.Text = "Čištění se nepodařilo: " + ex.Message;
+            return;
+        }
         HideBusy();
 
-        AppCacheResult.Text = result.Files == 0
-            ? "Nebylo co mazat, mezipaměť aplikací je prázdná."
+        var summary = result.Files == 0
+            ? "Nebyly nalezeny žádné starší soubory k vyčištění."
             : "Smazáno " + result.Files + " souborů, uvolněno " + Megabytes(result.Bytes) + " MB.";
+        if (result.SkippedApps > 0)
+            summary += " Přeskočeno " + result.SkippedApps + " aplikací, které právě běžely.";
+        AppCacheResult.Text = summary;
     }
 
     private async void CleanLeftovers_Click(object sender, RoutedEventArgs e)
