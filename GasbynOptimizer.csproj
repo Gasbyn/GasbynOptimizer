@@ -13,7 +13,7 @@
     <!-- Windows EXE version information. This identifies the project; it is not a digital signature. -->
     <Company>Gasbyn</Company>
     <Product>Gasbyn Optimizer</Product>
-    <AssemblyTitle>Gasbyn Optimizer</AssemblyTitle>
+    <AssemblyTitle>Windows Optimization Tool</AssemblyTitle>
     <Description>Windows Optimization Tool</Description>
     <Copyright>Copyright © 2026 Gasbyn</Copyright>
     <Authors>Gasbyn</Authors>
