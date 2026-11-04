@@ -98,7 +98,7 @@ jobs:
           $checks = @{
             CompanyName = 'Gasbyn'
             ProductName = 'Gasbyn Optimizer'
-            FileDescription = 'Gasbyn Optimizer'
+            FileDescription = 'Windows Optimization Tool'
             LegalCopyright = 'Copyright © 2026 Gasbyn'
           }
           foreach ($entry in $checks.GetEnumerator()) {
