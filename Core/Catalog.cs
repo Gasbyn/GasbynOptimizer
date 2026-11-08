@@ -306,7 +306,7 @@ public static class Catalog
                 Note = "Doporučeno pro GeForce RTX 20xx a novější, Radeon RX 5000 a novější. Vyžaduje aktuální ovladač.",
                 Ops = new TweakOp[]
                 {
-                    Hklm(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, 1)
+                    Hklm(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, null)
                 }
             },
             new()
@@ -426,7 +426,7 @@ public static class Catalog
             },
             new()
             {
-                Id = "sleep-off", Category = CatSystem, IsNew = true,
+                Id = "sleep-off", Category = CatSystem,
                 Name = "Vypnout režim spánku (Sleep)",
                 Description = "Počítač přestane usínat sám a nepůjde ani uspat ručně. Zakáže stavy spánku (S1–S3), časovač usnutí a skryje „Spánek“ v nabídce vypnutí. Hibernace se nemění, má vlastní přepínač.",
                 Note = "Hodí se pro stream, stahování a servery, kdy PC nesmí usnout. Na notebooku se nešetří baterie. Vypnutí vrátí původní stav.",
@@ -441,7 +441,7 @@ public static class Catalog
             },
             new()
             {
-                Id = "hibernation", Category = CatSystem, IsNew = true,
+                Id = "hibernation", Category = CatSystem,
                 Name = "Vypnout hibernaci (samostatně, spánek zůstane)",
                 Description = "Smaže soubor hiberfil.sys a uvolní několik GB místa na systémovém disku. Týká se jen hibernace, běžný spánek (Sleep) se nemění.",
                 Note = "Přestane fungovat hibernace a Windows nemůže použít rychlé spuštění (to se dá vypnout i zvlášť).",
@@ -464,8 +464,8 @@ public static class Catalog
                     Service("Fax", "demand"),
                     Service("RetailDemo", "demand"),
                     Service("WMPNetworkSvc", "demand"),
-                    Service("MapsBroker", "auto"),
-                    Service("RemoteRegistry", "demand")
+                    Service("MapsBroker", "delayed-auto"),
+                    Service("RemoteRegistry", "disabled")
                 }
             },
             new()

@@ -16,6 +16,11 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.88", new DateTime(2026, 11, 8, 20, 50, 0), new[]
+        {
+            Chg("Vypnuto vrací výchozí nastavení Windows", "Když optimalizaci vypneš, nastaví se výchozí hodnota podle Windows (registr, typ spouštění služeb, plán napájení Vyvážený), ne jen uložená záloha. Výjimkou jsou služby a nastavení ovladačů výrobců (NVIDIA, ASUS, MSI, AMD, síťové karty), kde Windows žádný výchozí stav neurčují a vrací se původní hodnota."),
+            Chg("Opravené výchozí hodnoty", "Plánování GPU s hardwarovým urychlením se při vypnutí vrací na výchozí volbu Windows, Vzdálená plocha a Vzdálená pomoc na výchozí hodnoty a služby Mapy, Windows Search, Update Orchestrator, Centrum zabezpečení, Edge Update a Hyper-V (vmms) na správný typ spouštění.")
+        }),
         new("2.0.0.86", new DateTime(2026, 11, 4, 9, 0, 0), new[]
         {
             Add("Rozšířené čištění cache, TEMP a logů aplikací", "Stávající tlačítko v Údržbě čistí starší cache, dočasné soubory a diagnostické logy dalších podporovaných aplikací včetně CapCut, Streamer.bot, Macro Deck, Streamlabs Desktop, Process Lasso a VS Code. Cache se čistí až po 7 dnech, TEMP po 3 dnech, logy po 14 dnech a crash reporty po 30 dnech. Běžící aplikace se přeskočí; nastavení, účty, cookies, projekty, světy, hry, stažené soubory a zdrojová média zůstávají."),

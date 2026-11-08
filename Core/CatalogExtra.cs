@@ -311,7 +311,7 @@ internal static class CatalogExtra
                 Name = "Vypnout indexování souborů (Windows Search)",
                 Description = "Zastaví službu indexování, která na pozadí zatěžuje disk a procesor.",
                 Note = "Hledání souborů v Průzkumníku a ve Startu bude pomalejší.",
-                Ops = new TweakOp[] { Catalog.Service("WSearch", "auto") }
+                Ops = new TweakOp[] { Catalog.Service("WSearch", "delayed-auto") }
             },
 
             // ===== Vzhled a animace =====

@@ -103,13 +103,7 @@ public sealed class RegistryOp : TweakOp
             return;
         }
 
-        if (backup.Entries.TryGetValue(Key, out var saved))
-        {
-            if (!saved.Existed) DeleteValue();
-            else WriteBackup(saved);
-            return;
-        }
-
+        // Vypnuto = výchozí nastavení Windows (hodnota _off; null = hodnota ve Windows ve výchozím stavu neexistuje).
         if (_off == null) DeleteValue();
         else WriteRaw(_kind, ToRaw(_off));
     }
@@ -140,30 +134,6 @@ public sealed class RegistryOp : TweakOp
                 throw new NotSupportedException("Nepodporovaný typ hodnoty v registru, nic jsem neměnil: " + kind);
         }
         return backup;
-    }
-
-    private void WriteBackup(OpBackup saved)
-    {
-        switch (saved.Kind)
-        {
-            case "DWord":
-                WriteRaw(RegistryValueKind.DWord, int.Parse(saved.Data, CultureInfo.InvariantCulture));
-                break;
-            case "QWord":
-                WriteRaw(RegistryValueKind.QWord, long.Parse(saved.Data, CultureInfo.InvariantCulture));
-                break;
-            case "String":
-                WriteRaw(RegistryValueKind.String, saved.Data);
-                break;
-            case "ExpandString":
-                WriteRaw(RegistryValueKind.ExpandString, saved.Data);
-                break;
-            case "Binary":
-                WriteRaw(RegistryValueKind.Binary, Convert.FromBase64String(saved.Data));
-                break;
-            default:
-                throw new NotSupportedException("Neznámý typ zálohy: " + saved.Kind);
-        }
     }
 
     private void WriteRaw(RegistryValueKind kind, object value)
@@ -235,9 +205,16 @@ public sealed class ServiceOp : TweakOp
     {
         if (ReadStart(out _) == null) return;
 
-        var word = backup.Entries.TryGetValue(Key, out var saved) ? saved.Data : _defaultWord;
+        // Služby Windows se vrací na výchozí typ spouštění z Windows. U služeb ovladačů a výrobců
+        // (NVIDIA, ASUS, MSI, AMD, Apple...) žádný výchozí typ Windows neurčuje, tam se vrací původní stav.
+        var word = PreferBackup(_name) && backup.Entries.TryGetValue(Key, out var saved) ? saved.Data : _defaultWord;
         SetStart(word);
     }
+
+    private static readonly string[] VendorPrefixes =
+        { "ASUS", "Asus", "Armoury", "MSI", "Nv", "GfExperience", "AMD", "Apple", "Bonjour", "iPod", "asCom", "SystemUsageReportSvc", "PcaSvc" };
+
+    private static bool PreferBackup(string name) => VendorPrefixes.Any(p => name.StartsWith(p, StringComparison.Ordinal));
 
     private void SetStart(string word)
     {
@@ -436,8 +413,8 @@ public sealed class PowerPlanImportOp : TweakOp
 
     public override void Revert(TweakBackup backup)
     {
-        var target = backup.Entries.TryGetValue(Key, out var saved) ? saved.Data : Balanced;
-        if (!PlanExists(target)) target = Balanced;
+        // Vypnuto = výchozí plán Windows „Vyvážený“.
+        var target = Balanced;
 
         var set = Shell.Run(PowerCfg, "/setactive " + target, 20000);
         if (set.ExitCode != 0)

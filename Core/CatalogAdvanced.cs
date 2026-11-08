@@ -90,7 +90,7 @@ internal static class CatalogAdvanced
                 {
                     Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU", "NoAutoUpdate", 1, null),
                     Catalog.Service("wuauserv", "demand"),
-                    Catalog.Service("UsoSvc", "auto")
+                    Catalog.Service("UsoSvc", "delayed-auto")
                 }
             },
             new()
@@ -233,7 +233,7 @@ internal static class CatalogAdvanced
                 Note = "Experimentální: Windows nebude hlásit stav antiviru a firewallu. Nenalezené služby se přeskočí.",
                 Ops = new TweakOp[]
                 {
-                    Catalog.Service("wscsvc", "auto"),
+                    Catalog.Service("wscsvc", "delayed-auto"),
                     Catalog.Service("SecurityHealthService", "demand"),
                     Catalog.Service("webthreatdefsvc", "demand"),
                     Catalog.Service("Sense", "demand")
@@ -285,7 +285,7 @@ internal static class CatalogAdvanced
                     new CommandOp("hypervisor", CatalogAdvanced.HypervisorState, Shell.System32("bcdedit.exe"), "/set hypervisorlaunchtype off", Shell.System32("bcdedit.exe"), "/set hypervisorlaunchtype auto"),
                     Catalog.Service("HvHost", "demand"),
                     Catalog.Service("vmcompute", "demand"),
-                    Catalog.Service("vmms", "demand"),
+                    Catalog.Service("vmms", "auto"),
                     Catalog.Service("vmicguestinterface", "demand"),
                     Catalog.Service("vmicheartbeat", "demand"),
                     Catalog.Service("vmickvpexchange", "demand"),
@@ -304,10 +304,10 @@ internal static class CatalogAdvanced
                 Note = "Nepůjde se k PC připojit odjinud (ani přes nástroje pro vzdálenou správu). Router může přestat automaticky otevírat porty pro hry.",
                 Ops = new TweakOp[]
                 {
-                    Catalog.Hklm(@"SYSTEM\CurrentControlSet\Control\Terminal Server", "fDenyTSConnections", 1, null),
-                    Catalog.Hklm(@"SYSTEM\CurrentControlSet\Control\Remote Assistance", "fAllowToGetHelp", 0, null),
+                    Catalog.Hklm(@"SYSTEM\CurrentControlSet\Control\Terminal Server", "fDenyTSConnections", 1, 1),
+                    Catalog.Hklm(@"SYSTEM\CurrentControlSet\Control\Remote Assistance", "fAllowToGetHelp", 0, 1),
                     Catalog.Service("WinRM", "demand"),
-                    Catalog.Service("RemoteAccess", "demand"),
+                    Catalog.Service("RemoteAccess", "disabled"),
                     Catalog.Service("SSDPSRV", "demand"),
                     Catalog.Service("upnphost", "demand")
                 }

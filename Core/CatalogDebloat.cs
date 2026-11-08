@@ -92,7 +92,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
                 {
                     Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\Edge", "BackgroundModeEnabled", 0, null),
                     Catalog.Hklm(@"SOFTWARE\Policies\Microsoft\EdgeUpdate", "Update{56EB18F8-B008-4CBD-B6D2-8C97FE7E9062}", 0, null),
-                    Catalog.Service("edgeupdate", "auto"),
+                    Catalog.Service("edgeupdate", "delayed-auto"),
                     Catalog.Service("edgeupdatem", "demand"),
                     Catalog.Service("MicrosoftEdgeElevationService", "demand")
                 }
