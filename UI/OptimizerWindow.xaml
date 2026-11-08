@@ -490,6 +490,15 @@
                             </StackPanel>
                         </Border>
 
+                        <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Antivirus a falešné poplachy" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Style="{StaticResource SectionText}"
+                                           Text="Optimalizátor mění nastavení systému, a proto na něj některé antiviry (např. AVG) mohou chybně upozornit. Aplikace neobsahuje škodlivý kód, neskrývá se a PowerShellu předává jen čitelné příkazy. Když antivirus něco zablokuje, přidej složku aplikace do výjimek, případně soubor nahlas jako falešný poplach u výrobce antiviru. Napiš nám taky na Discord, pomůžeme."/>
+                                <Button Style="{StaticResource GhostButton}" Content="Discord (hlášení problémů)" HorizontalAlignment="Left" Click="DiscordChat_Click"/>
+                            </StackPanel>
+                        </Border>
+
                         <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="20">
                             <StackPanel>
                                 <TextBlock Text="O aplikaci" Style="{StaticResource SectionTitle}"/>

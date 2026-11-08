@@ -26,7 +26,7 @@ if (-not (Test-Path (Join-Path $base 'msedge.exe'))) { exit 0 }
 throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
 ";
 
-    internal static string EdgeUninstallScript => Convert.ToBase64String(Encoding.Unicode.GetBytes(UninstallScript));
+    internal static string EdgeUninstallScript => UninstallScript;
 
     public static IReadOnlyList<Tweak> Create()
     {
@@ -106,7 +106,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
                 Confirm = "Odinstalovat Microsoft Edge?\n\nTuto akci nejde vrátit zpět tlačítkem. Edge půjde nainstalovat jen znovu z webu Microsoftu. Ujisti se, že máš jiný prohlížeč (Chrome, Brave, Firefox).",
                 Ops = new TweakOp[]
                 {
-                    new CommandOp("edge-uninstall", CatalogDebloat.EdgeUninstalledState, Shell.PowerShellExe, "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + CatalogDebloat.EdgeUninstallScript, Shell.System32("cmd.exe"), "/c exit 0")
+                    new CommandOp("edge-uninstall", CatalogDebloat.EdgeUninstalledState, Shell.PowerShellExe, Shell.PowerShellScript(CatalogDebloat.EdgeUninstallScript), Shell.System32("cmd.exe"), "/c exit 0")
                 }
             },
             new()

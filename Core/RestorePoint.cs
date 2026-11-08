@@ -27,11 +27,7 @@ finally {
     {
         try
         {
-            var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(Script));
-            var result = Shell.Run(
-                Shell.PowerShellExe,
-                "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + encoded,
-                240000);
+            var result = Shell.RunPowerShell(Script, 240000);
 
             if (result.ExitCode == 0)
             {

@@ -817,8 +817,7 @@ public sealed class StoreAppOp : TweakOp
         var script = "$ErrorActionPreference='SilentlyContinue'; foreach($n in @(" + names + ")){ " +
                      "Get-AppxPackage -AllUsers -Name $n | Remove-AppxPackage -AllUsers; " +
                      "Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -eq $n } | Remove-AppxProvisionedPackage -Online | Out-Null }";
-        var encoded = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script));
-        var result = Shell.Run(Shell.PowerShellExe, "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + encoded, 180000);
+        var result = Shell.RunPowerShell(script, 180000);
         if (Detect() != OpState.On)
             throw new InvalidOperationException("Aplikaci se nepodařilo odinstalovat (kód " + result.ExitCode + "): " + result.Output);
     }

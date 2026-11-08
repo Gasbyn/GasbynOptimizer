@@ -178,7 +178,6 @@ public static class Maintenance
         catch { return 0; }
     }
 
-    private static string Encode(string script) => Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script));
 
     /// <summary>
     /// Hloubkové čištění jako ve Vyčištění disku: staré soubory Windows Update (úklid součástí systému), staré balíčky ovladačů a nepoužívané jazykové balíčky.
@@ -213,7 +212,7 @@ foreach ($g in ($all | Group-Object { (Split-Path $_.OriginalFileName -Leaf).ToL
 }
 Write-Output $removed
 ";
-            var r = Shell.Run(Shell.PowerShellExe, "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + Encode(script), 900000);
+            var r = Shell.RunPowerShell(script, 900000);
             var last = r.Output.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries).LastOrDefault()?.Trim();
             notes.Add(int.TryParse(last, out var n) ? "odstraněno starých ovladačů: " + n : "ovladače se nepodařilo zkontrolovat");
         }
@@ -239,7 +238,7 @@ foreach ($l in (Get-InstalledLanguage)) {
 }
 Write-Output $removed
 ";
-            var r = Shell.Run(Shell.PowerShellExe, "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + Encode(script), 900000);
+            var r = Shell.RunPowerShell(script, 900000);
             var last = r.Output.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries).LastOrDefault()?.Trim();
             notes.Add(int.TryParse(last, out var n) ? "odebráno nepoužívaných jazyků: " + n : "jazyky se nepodařilo zkontrolovat");
         }
@@ -651,8 +650,8 @@ Write-Output $removed
         var packages = Path.Combine(Env(Environment.SpecialFolder.LocalApplicationData), "Packages");
         if (!Directory.Exists(packages)) return 0;
 
-        var result = Shell.Run(Shell.PowerShellExe,
-            "-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"Get-AppxPackage -AllUsers | ForEach-Object { $_.PackageFamilyName }\"", 90000);
+        var result = Shell.RunPowerShell(
+            "Get-AppxPackage -AllUsers | ForEach-Object { $_.PackageFamilyName }", 90000);
         if (result.ExitCode != 0) return 0;
 
         var known = result.Output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)

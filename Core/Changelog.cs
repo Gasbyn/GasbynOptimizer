@@ -16,6 +16,11 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.89", new DateTime(2026, 11, 8, 21, 10, 0), new[]
+        {
+            Chg("Méně falešných poplachů antiviru", "Aplikace už nespouští PowerShell s kódovaným příkazem a parametrem „-ExecutionPolicy Bypass“, podle kterého antiviry (např. AVG, hláška „IDP.HELU.PSE96 – Command line detection“) poznávají škodlivé skripty. Skripty se předávají čitelně přes standardní vstup a příkazový řádek je čistý."),
+            Add("Nápověda k antiviru v Nastavení", "Nová karta s postupem, co dělat, když antivirus aplikaci zablokuje (výjimka, nahlášení falešného poplachu, Discord).")
+        }),
         new("2.0.0.88", new DateTime(2026, 11, 8, 20, 50, 0), new[]
         {
             Chg("Vypnuto vrací výchozí nastavení Windows", "Když optimalizaci vypneš, nastaví se výchozí hodnota podle Windows (registr, typ spouštění služeb, plán napájení Vyvážený), ne jen uložená záloha. Výjimkou jsou služby a nastavení ovladačů výrobců (NVIDIA, ASUS, MSI, AMD, síťové karty), kde Windows žádný výchozí stav neurčují a vrací se původní hodnota."),
