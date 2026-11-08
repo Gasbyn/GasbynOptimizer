@@ -27,6 +27,7 @@ public sealed class TweakItem : INotifyPropertyChanged
         SearchDoc.Add(tweak.Description, 3);
         SearchDoc.Add(tweak.Note, 2);
         if (recommended) SearchDoc.Add("doporučeno doporučené recommended", 6);
+        SearchDoc.Add(tweak.Detail, 1);
         if (tweak.IsNew) SearchDoc.Add("nové nový nová new", 6);
         if (tweak.Experimental) SearchDoc.Add("experimentální experimental", 6);
     }
@@ -43,6 +44,16 @@ public sealed class TweakItem : INotifyPropertyChanged
     public string Description => Tweak.Description;
     public string Category => Tweak.Category;
     public string Note => Tweak.Note;
+    public string Detail => Tweak.Detail;
+    public bool HasDetail => !string.IsNullOrEmpty(Tweak.Detail);
+
+    private bool _detailOpen;
+    public bool IsDetailOpen
+    {
+        get => _detailOpen;
+        set { if (_detailOpen == value) return; _detailOpen = value; Raise(); Raise(nameof(DetailLinkText)); }
+    }
+    public string DetailLinkText => _detailOpen ? "Skrýt podrobnosti ▴" : "Podrobněji ▾";
     public bool HasNote => !string.IsNullOrEmpty(Tweak.Note);
     public bool IsExperimental => Tweak.Experimental;
     public bool IsApplyOnly => Tweak.ApplyOnly;

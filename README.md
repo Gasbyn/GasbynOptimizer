@@ -22,7 +22,7 @@ Záměrně chybí věci, které snižují zabezpečení (vypnutí Defenderu, mit
 
 ## Co zatím chybí
 
-- **FPS tester** (posledních 15 testů) přijde v dalším vydání.
+- **Performance Tester** (FPS, později třeba ping a další měření) přijde v dalším vydání.
 
 ## Automatické aktualizace a vydání
 

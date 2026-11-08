@@ -16,6 +16,13 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.112", new DateTime(2026, 11, 8, 22, 0, 0), new[]
+        {
+            Chg("Sjednocené duplicitní optimalizace", "Přepínače, které dělaly totéž, jsou teď jeden. Telemetrie (základní), reklamy a doporučení, webové hledání a Cortana, synchronizace mezi zařízeními, SysMain a Prefetch, úspora energie síťových karet, efekty a animace, vzdálená připojení, hloubková telemetrie a Edge. Všechny kroky zůstaly, jen jsou pohromadě."),
+            Add("Podrobný popisek u každé optimalizace", "Pod každou optimalizací je odkaz „Podrobněji“: co přepínač dělá, proč ho chceš a na co si dát pozor, napsáno lidskou řečí."),
+            Chg("Barevné štítky", "Doporučeno je zelené, Nové modré, Experimentální fialové a Nepodporované červené, ať se dají rozlišit na první pohled."),
+            Chg("FPS tester je Performance Tester", "Přejmenováno, protože v testeru časem přibude i ping a další měření.")
+        }),
         new("2.0.0.89", new DateTime(2026, 11, 8, 21, 10, 0), new[]
         {
             Chg("Méně falešných poplachů antiviru", "Aplikace už nespouští PowerShell s kódovaným příkazem a parametrem „-ExecutionPolicy Bypass“, podle kterého antiviry (např. AVG, hláška „IDP.HELU.PSE96 – Command line detection“) poznávají škodlivé skripty. Skripty se předávají čitelně přes standardní vstup a příkazový řádek je čistý."),

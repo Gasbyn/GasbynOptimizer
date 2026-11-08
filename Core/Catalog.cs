@@ -54,7 +54,9 @@ public static class Catalog
 
     // --- katalog -----------------------------------------------------------------------------
 
-    public static IReadOnlyList<Tweak> All() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).Concat(CatalogPower.Create()).Concat(CatalogAdvanced.Create()).Concat(CatalogMore.Create()).Concat(CatalogDebloat.Create()).Concat(CatalogNetwork.Create()).Concat(CatalogGpu.Create()).Concat(CatalogV27.Create()).ToList();
+    public static IReadOnlyList<Tweak> All() => Details.Apply(CatalogMerge.Apply(AllRaw()));
+
+    private static IReadOnlyList<Tweak> AllRaw() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).Concat(CatalogPower.Create()).Concat(CatalogAdvanced.Create()).Concat(CatalogMore.Create()).Concat(CatalogDebloat.Create()).Concat(CatalogNetwork.Create()).Concat(CatalogGpu.Create()).Concat(CatalogV27.Create()).ToList();
 
     private static IReadOnlyList<Tweak> Base()
     {

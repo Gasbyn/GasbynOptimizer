@@ -28,17 +28,17 @@
                     <StackPanel Grid.Column="0" Margin="0,0,20,0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
-                            <Border x:Name="RecommendedBadge" Visibility="Collapsed" Background="{StaticResource OrangeSoftBrush}"
+                            <Border x:Name="RecommendedBadge" Visibility="Collapsed" Background="#10281E"
                                     CornerRadius="4" Padding="6,1" Margin="10,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="DOPORUČENO" FontSize="10" FontWeight="Bold" Foreground="{StaticResource OrangeBrush}"/>
+                                <TextBlock Text="DOPORUČENO" FontSize="10" FontWeight="Bold" Foreground="{StaticResource GreenBrush}"/>
                             </Border>
-                            <Border x:Name="NewBadge" Visibility="Collapsed" Background="#10281E"
+                            <Border x:Name="NewBadge" Visibility="Collapsed" Background="#0F2236"
                                     CornerRadius="4" Padding="6,1" Margin="6,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="NOVÉ" FontSize="10" FontWeight="Bold" Foreground="{StaticResource GreenBrush}"/>
+                                <TextBlock Text="NOVÉ" FontSize="10" FontWeight="Bold" Foreground="#5AB0FF"/>
                             </Border>
-                            <Border x:Name="ExperimentalBadge" Visibility="Collapsed" Background="#2B2210"
+                            <Border x:Name="ExperimentalBadge" Visibility="Collapsed" Background="#231A33"
                                     CornerRadius="4" Padding="6,1" Margin="6,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="EXPERIMENTÁLNÍ" FontSize="10" FontWeight="Bold" Foreground="{StaticResource AmberBrush}"/>
+                                <TextBlock Text="EXPERIMENTÁLNÍ" FontSize="10" FontWeight="Bold" Foreground="#B88CFF"/>
                             </Border>
                             <Border x:Name="UnsupportedBadge" Visibility="Collapsed" Background="#2A1414"
                                     CornerRadius="4" Padding="6,1" Margin="6,0,0,0" VerticalAlignment="Center">
@@ -47,6 +47,11 @@
                         </StackPanel>
                         <TextBlock Text="{Binding Description}" Foreground="{StaticResource MutedBrush}"
                                    TextWrapping="Wrap" FontSize="12.5" Margin="0,4,0,0"/>
+                        <TextBlock x:Name="DetailLink" Text="{Binding DetailLinkText}" Foreground="{StaticResource OrangeBrush}" FontSize="12"
+                                   Cursor="Hand" Margin="0,5,0,0" HorizontalAlignment="Left" MouseLeftButtonUp="Detail_Click"/>
+                        <Border x:Name="DetailBox" Visibility="Collapsed" Background="{StaticResource Panel2Brush}" CornerRadius="8" Padding="12,10" Margin="0,6,0,0">
+                            <TextBlock Text="{Binding Detail}" Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" FontSize="12.5" LineHeight="19"/>
+                        </Border>
                         <TextBlock x:Name="UnsupportedText" Text="{Binding UnsupportedText}" Visibility="Collapsed"
                                    Foreground="{StaticResource RedBrush}" TextWrapping="Wrap" FontSize="12" Margin="0,4,0,0"/>
                         <TextBlock x:Name="UnavailableLabel" Text="{Binding UnavailableText}" Visibility="Collapsed"
@@ -70,6 +75,12 @@
                 </Grid>
             </Border>
             <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsDetailOpen}" Value="True">
+                    <Setter TargetName="DetailBox" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasDetail}" Value="False">
+                    <Setter TargetName="DetailLink" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
                 <DataTrigger Binding="{Binding IsRecommended}" Value="True">
                     <Setter TargetName="RecommendedBadge" Property="Visibility" Value="Visible"/>
                 </DataTrigger>
@@ -503,7 +514,7 @@
                             <StackPanel>
                                 <TextBlock Text="O aplikaci" Style="{StaticResource SectionTitle}"/>
                                 <TextBlock Style="{StaticResource SectionText}"
-                                           Text="Gasbyn Optimizer upravuje jen nastavení, která jdou vždy vrátit. Záloha původních hodnot a záznam změn jsou v datové složce aplikace. FPS tester přibude v dalším vydání."/>
+                                           Text="Gasbyn Optimizer upravuje jen nastavení, která jdou vždy vrátit. Vypnuto vrací výchozí nastavení Windows. Záznam změn je v datové složce aplikace. Performance Tester přibude v dalším vydání."/>
                                 <Button Style="{StaticResource GhostButton}" Content="Otevřít datovou složku" HorizontalAlignment="Left" Click="OpenData_Click"/>
                             </StackPanel>
                         </Border>

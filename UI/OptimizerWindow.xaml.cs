@@ -179,7 +179,7 @@ public partial class OptimizerWindow : Window
 
         NavPanel.Children.Add(new Border { Height = 1, Background = (System.Windows.Media.Brush)FindResource("BorderBrush"), Margin = new Thickness(8, 10, 8, 10) });
 
-        var fps = AddNav("FPS tester (brzy)", "#fps", false);
+        var fps = AddNav("Performance Tester (brzy)", "#fps", false);
         fps.IsEnabled = false;
         AddNav("Údržba", "#maint", false);
         AddNav("Nastavení", "#settings", false);
@@ -283,6 +283,11 @@ public partial class OptimizerWindow : Window
         _suggestion = SearchIndex.Suggest(_items.Select(i => i.SearchDoc), text);
         NoResultsSuggest.Text = _suggestion == null ? "Zkus jiné slovo, třeba název kategorie nebo anglický výraz." : "Mysleli jste „" + _suggestion + "“?";
         NoResultsSuggest.Cursor = _suggestion == null ? System.Windows.Input.Cursors.Arrow : System.Windows.Input.Cursors.Hand;
+    }
+
+    private void Detail_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: TweakItem item }) item.IsDetailOpen = !item.IsDetailOpen;
     }
 
     private void Suggest_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
