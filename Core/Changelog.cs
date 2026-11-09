@@ -16,6 +16,10 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.146", new DateTime(2026, 11, 9, 10, 10, 0), new[]
+        {
+            Chg("Výchozí jazyk je čeština", "Aplikace i instalátor se vždy spustí česky, bez ohledu na jazyk Windows. Angličtinu si vybereš v Nastavení nebo v průvodci instalací.")
+        }),
         new("2.0.0.145", new DateTime(2026, 11, 9, 9, 55, 0), new[]
         {
             Add("Samokontrola při každém spuštění", "Aplikace po startu zkontroluje, jestli Windows nebo jiný program nevrátil optimalizace, které jsi zapnul(a). Když ano, nabídne jejich opětovné zapnutí. Jde vypnout nebo spustit ručně v Nastavení."),

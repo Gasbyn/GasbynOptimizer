@@ -39,8 +39,8 @@ public static class L
 
         if (settings.Language is not ("cs" or "en"))
         {
-            var ui = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-            settings.Language = ui is "cs" or "sk" ? "cs" : "en";
+            // Výchozí je vždy čeština, angličtinu si uživatel vybere sám.
+            settings.Language = "cs";
             settings.Save();
         }
 

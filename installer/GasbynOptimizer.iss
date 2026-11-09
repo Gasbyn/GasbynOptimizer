@@ -34,6 +34,8 @@ PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 CloseApplications=yes
+; Výchozí je čeština (první jazyk), bez ohledu na jazyk Windows. Angličtinu jde vybrat v průvodci.
+LanguageDetectionMethod=none
 
 [Languages]
 #if FileExists(CompilerPath + "Languages\Czech.isl")
