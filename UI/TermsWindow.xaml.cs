@@ -7,7 +7,11 @@ namespace GasbynOptimizer.UI;
 public static class SupportLinks
 {
     public const string Server = "https://discord.gg/VC4xf9DQ7A";
-    public const string Chat = "https://discord.gg/N4TM66Ybgq";
+    /// <summary>Hlášení problémů.</summary>
+    public const string Chat = "https://discord.gg/HUwmbSTNGu";
+    public const string Ratings = "https://discord.gg/8kvmtbSaTy";
+    /// <summary>Podpora změn (návrhy a podpora vývoje).</summary>
+    public const string Changes = "https://discord.gg/N4TM66Ybgq";
 
     public static void Open(string url)
     {

@@ -91,6 +91,9 @@ public sealed class BackupStore
 
     public void Remove(string tweakId) => _data.Remove(tweakId);
 
+    /// <summary>Id optimalizací, které aplikace zapnula (mají uloženou zálohu).</summary>
+    public IReadOnlyCollection<string> Ids => _data.Keys;
+
     public void Save()
     {
         AppPaths.EnsureDataDir();
@@ -121,6 +124,18 @@ public sealed class AppSettings
 
     /// <summary>Podrobný Update log: popisy změn a starší verze (výchozí vypnuto, jen stručné shrnutí).</summary>
     public bool DetailedUpdateLog { get; set; }
+
+    /// <summary>Jazyk rozhraní: cs nebo en. Prázdné = ještě nevybráno (vezme se z instalátoru nebo z jazyka Windows).</summary>
+    public string Language { get; set; } = "";
+
+    /// <summary>Poslední jazyk vybraný v instalátoru, který aplikace už převzala.</summary>
+    public string InstallerLanguage { get; set; } = "";
+
+    /// <summary>Vzhled: dark (výchozí) nebo light.</summary>
+    public string Theme { get; set; } = "dark";
+
+    /// <summary>Samokontrola optimalizací při každém spuštění.</summary>
+    public bool AutoSelfCheck { get; set; } = true;
 
     public static AppSettings Load()
     {

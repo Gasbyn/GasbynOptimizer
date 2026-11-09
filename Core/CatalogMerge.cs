@@ -98,8 +98,7 @@ internal static class CatalogMerge
                 Recommended = g.Recommended,
                 Experimental = g.Experimental,
                 RequiresRestart = members.Any(m => m.RequiresRestart),
-                MinBuild = members.Max(m => m.MinBuild),
-                IsNew = true
+                MinBuild = members.Max(m => m.MinBuild)
             };
 
             var index = list.IndexOf(first);

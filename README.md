@@ -15,6 +15,12 @@ Optimalizace Windows 10/11 s přepínači **ZAPNUTO / VYPNUTO**. Každá změna 
 - **Zapnout doporučené** a **Vrátit vše** jedním tlačítkem, vyhledávání a filtry.
 - **Plány napájení:** dva vlastní plány (Gasbyn PC a Gasbyn Notebook) se použijí tlačítkem, ne přepínačem. Aplikace při startu pozná, jestli jde o stolní PC nebo notebook, a doporučí ten správný. Původní plán ve Windows zůstane.
 - **Údržba** (samostatná stránka se záložkami): úklid dočasných souborů a DNS, vyčištění mezipaměti aplikací, aktualizace aplikací (winget), odinstalace aplikací a čištění prohlížečů (označeno jako nedoporučené, protože smaže cookies a je potřeba se znovu přihlásit).
+- **Samokontrola** při každém spuštění: pozná, když Windows nebo jiný program vrátil zapnuté optimalizace, a nabídne jejich znovuzapnutí.
+- **Chytrý detektor:** doporučí optimalizace podle hardwaru, disku, paměti, notebooku/PC a nainstalovaných programů (vše lokálně).
+- **Spouštěné aplikace:** zapnutí a vypnutí programů spouštěných s Windows, stejně jako ve Správci úloh.
+- **Export a import nastavení** do souboru, jehož umístění si vybereš.
+- **Jazyk a vzhled:** čeština a tmavý vzhled jsou výchozí, v Nastavení jde přepnout na angličtinu a světlý vzhled (jazyk i v instalátoru).
+- **Antivirus:** postup a podpis kódu viz `docs/antivirus.md` a `docs/code-signing.md`. Ke každému vydání je `SHA256SUMS.txt`.
 - Tmavý herní vzhled s logem.
 
 Zdroje nápadů: ChrisTitusTool, Winhance, EXM, GTweaks. Zařazené jsou jen bezpečné a vratné úpravy.

@@ -107,6 +107,7 @@ public static class Icons
         "#fps" => "Speed",
         "#maint" => "Build",
         "#settings" => "Settings",
+        "#startup" => "Speed",
         _ => "Bolt"
     };
 }

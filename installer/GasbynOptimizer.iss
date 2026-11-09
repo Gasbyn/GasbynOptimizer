@@ -51,6 +51,10 @@ Source: "..\publish\GasbynOptimizer.exe"; DestDir: "{app}"; Flags: ignoreversion
 Name: "{autoprograms}\Gasbyn Optimizer"; Filename: "{app}\GasbynOptimizer.exe"
 Name: "{autodesktop}\Gasbyn Optimizer"; Filename: "{app}\GasbynOptimizer.exe"; Tasks: desktopicon
 
+[Registry]
+; Jazyk vybraný v průvodci si převezme aplikace při prvním spuštění (běžná instalace, ne tichá aktualizace).
+Root: HKLM; Subkey: "Software\GasbynOptimizer"; ValueType: string; ValueName: "Language"; ValueData: "{language}"; Flags: uninsdeletevalue; Check: not WizardSilent
+
 [Run]
 ; Běžná instalace: nabídka spuštění na konci průvodce.
 Filename: "{app}\GasbynOptimizer.exe"; Description: "{cm:LaunchProgram,Gasbyn Optimizer}"; Flags: nowait postinstall skipifsilent shellexec

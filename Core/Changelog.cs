@@ -16,6 +16,17 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.145", new DateTime(2026, 11, 9, 9, 55, 0), new[]
+        {
+            Add("Samokontrola při každém spuštění", "Aplikace po startu zkontroluje, jestli Windows nebo jiný program nevrátil optimalizace, které jsi zapnul(a). Když ano, nabídne jejich opětovné zapnutí. Jde vypnout nebo spustit ručně v Nastavení."),
+            Add("Chytrý detektor", "Nová stránka, která podle tvého hardwaru (notebook nebo PC, SSD nebo HDD, paměť, grafika) a nainstalovaných programů doporučí optimalizace i s vysvětlením proč. Všechno se vyhodnocuje lokálně, nic se neodesílá."),
+            Add("Správce spouštěných aplikací", "Nová stránka se seznamem programů, které se spouští s Windows. Jde je vypnout a zapnout stejným způsobem jako ve Správci úloh, nic se nemaže."),
+            Add("Export a import nastavení", "V Nastavení si vybereš, kam se zapnuté optimalizace uloží do souboru, a odkud se zase načtou."),
+            Add("Jazyk a vzhled", "Výchozí je čeština a tmavý vzhled. V Nastavení jde přepnout na angličtinu a světlý vzhled, jazyk jde vybrat i při instalaci. Texty u jednotlivých optimalizací zatím zůstávají česky."),
+            Add("Odkazy na Discord", "V Nastavení jsou odkazy na hlášení problémů, hodnocení a podporu změn."),
+            Chg("Méně falešných poplachů antiviru", "K vydání se přikládá soubor SHA256SUMS.txt s kontrolním součtem instalátoru. Postup, jak se podpisem kódu zbavit varování úplně, je v dokumentaci."),
+            Chg("Označení NOVÉ", "U sloučených optimalizací z minulé verze štítek NOVÉ zmizel. V této verzi se žádná optimalizace nepřidává ani neupravuje.")
+        }),
         new("2.0.0.112", new DateTime(2026, 11, 8, 22, 0, 0), new[]
         {
             Chg("Sjednocené duplicitní optimalizace", "Přepínače, které dělaly totéž, jsou teď jeden. Telemetrie (základní), reklamy a doporučení, webové hledání a Cortana, synchronizace mezi zařízeními, SysMain a Prefetch, úspora energie síťových karet, efekty a animace, vzdálená připojení, hloubková telemetrie a Edge. Všechny kroky zůstaly, jen jsou pohromadě."),

@@ -76,6 +76,8 @@ public partial class OptimizerWindow : Window
         SystemDetails.Text = BuildSystemDetails(profile);
 
         UpdateCounts();
+        BuildExtras();
+        L.Apply(this);
         SourceInitialized += (_, _) => EnableDarkTitleBar();
         StateChanged += (_, _) => UpdateWindowState();
         WindowRoot.SizeChanged += (_, _) => ClipRoot();
@@ -181,6 +183,8 @@ public partial class OptimizerWindow : Window
 
         var fps = AddNav("Performance Tester (brzy)", "#fps", false);
         fps.IsEnabled = false;
+        AddNav("Chytrý detektor", "#advisor", false);
+        AddNav("Spouštěné aplikace", "#startup", false);
         AddNav("Údržba", "#maint", false);
         AddNav("Nastavení", "#settings", false);
     }
@@ -193,6 +197,7 @@ public partial class OptimizerWindow : Window
         PageMaintenance.Visibility = tag == "#maint" ? Visibility.Visible : Visibility.Collapsed;
         PageSettings.Visibility = tag == "#settings" ? Visibility.Visible : Visibility.Collapsed;
         if (tag == "#maint") Motion.Page(PageMaintenance);
+        ShowExtraPage(tag);
         if (tag == "#settings") Motion.Page(PageSettings);
         if (tag.StartsWith('#')) return;
 
@@ -610,6 +615,10 @@ public partial class OptimizerWindow : Window
     private void DiscordServer_Click(object sender, RoutedEventArgs e) => SupportLinks.Open(SupportLinks.Server);
 
     private void DiscordChat_Click(object sender, RoutedEventArgs e) => SupportLinks.Open(SupportLinks.Chat);
+
+    private void DiscordRatings_Click(object sender, RoutedEventArgs e) => SupportLinks.Open(SupportLinks.Ratings);
+
+    private void DiscordChanges_Click(object sender, RoutedEventArgs e) => SupportLinks.Open(SupportLinks.Changes);
 
     private async void CleanTemp_Click(object sender, RoutedEventArgs e)
     {

@@ -29,6 +29,11 @@ public partial class App : System.Windows.Application
             args.Handled = true;
         };
 
+        // Jazyk a motiv se nastaví dřív, než vznikne první okno.
+        var startupSettings = AppSettings.Load();
+        L.Init(startupSettings);
+        GasbynOptimizer.Core.Theme.Apply(startupSettings.Theme);
+
         var splash = new SplashWindow();
         splash.Show();
 
