@@ -21,9 +21,6 @@ public sealed class SettingsExport
 /// <summary>Nové stránky a karty: chytrý detektor, spouštěné aplikace, samokontrola, export/import, jazyk a motiv.</summary>
 public partial class OptimizerWindow
 {
-    private ScrollViewer _pageAdvisor = null!;
-    private StackPanel _advisorList = null!;
-    private TextBlock _advisorInfo = null!;
     private ScrollViewer _pageStartup = null!;
     private StackPanel _startupList = null!;
     private TextBlock _startupInfo = null!;
@@ -94,23 +91,6 @@ public partial class OptimizerWindow
     {
         L.Add(ExtraEn);
         var host = (Panel)PageSettings.Parent;
-
-        // --- Chytrý detektor
-        _pageAdvisor = MakePage("Chytrý detektor", out var advisorRoot);
-        advisorRoot.Children.Add(new TextBlock
-        {
-            Text = "Chytrý detektor doporučí optimalizace podle tvého počítače: hardwaru, disku, paměti, notebooku nebo stolního PC a nainstalovaných programů. Všechno se vyhodnocuje přímo v tomto počítači, nic se neodesílá.",
-            Style = (Style)FindResource("SectionText")
-        });
-        _advisorInfo = new TextBlock { Style = (Style)FindResource("SectionText"), Foreground = (Brush)FindResource("TextBrush") };
-        advisorRoot.Children.Add(_advisorInfo);
-        var advisorButtons = new WrapPanel();
-        advisorButtons.Children.Add(GhostButton("Analyzovat znovu", (_, _) => RefreshAdvisor()));
-        advisorButtons.Children.Add(GhostButton("Zapnout všechna doporučení", AdvisorApplyAll_Click));
-        advisorRoot.Children.Add(advisorButtons);
-        _advisorList = new StackPanel();
-        advisorRoot.Children.Add(_advisorList);
-        host.Children.Add(_pageAdvisor);
 
         // --- Spouštěné aplikace
         _pageStartup = MakePage("Spouštěné aplikace", out var startupRoot);
@@ -212,9 +192,7 @@ public partial class OptimizerWindow
 
     private void ShowExtraPage(string tag)
     {
-        _pageAdvisor.Visibility = tag == "#advisor" ? Visibility.Visible : Visibility.Collapsed;
         _pageStartup.Visibility = tag == "#startup" ? Visibility.Visible : Visibility.Collapsed;
-        if (tag == "#advisor") { RefreshAdvisor(); Motion.Page(_pageAdvisor); }
         if (tag == "#startup") { LoadStartup(); Motion.Page(_pageStartup); }
     }
 
@@ -298,91 +276,6 @@ public partial class OptimizerWindow
             _selfCheckRunning = false;
             _settings.Save();
         }
-    }
-
-    // --- chytrý detektor ------------------------------------------------------------------------
-
-    private List<Advice> _advice = new();
-
-    private void RefreshAdvisor()
-    {
-        try
-        {
-            _advice = Advisor.Recommend(
-                _items.Select(i => new AdvisorInput(i.Tweak, i.State, i.IsSupported, i.IsRecommended)),
-                _profile, _settings.AdvancedMode);
-        }
-        catch (Exception ex)
-        {
-            Log.Write("Detektor selhal: " + ex);
-            _advice = new List<Advice>();
-        }
-
-        _advisorList.Children.Clear();
-        _advisorInfo.Text = (L.English ? "Detected: " : "Zjištěno: ") + _profile.Summary;
-
-        if (_advice.Count == 0)
-        {
-            _advisorList.Children.Add(new TextBlock
-            {
-                Text = L.T("Detektor nenašel nic, co by dávalo smysl zapnout. Tvůj počítač je v pořádku nastavený."),
-                Style = (Style)FindResource("SectionText"),
-                Margin = new Thickness(0, 12, 0, 0)
-            });
-            return;
-        }
-
-        foreach (var advice in _advice)
-        {
-            var card = MakeCard(advice.Tweak.Name, advice.ReasonText, out var body, 8);
-            var line = new TextBlock
-            {
-                Text = (L.English ? "Match " : "Shoda ") + advice.Score + " %  ·  " + (L.English ? "risk " : "riziko ") + advice.Risk,
-                FontSize = 11.5,
-                Foreground = (Brush)FindResource("MutedBrush"),
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-            body.Children.Add(line);
-            var captured = advice;
-            body.Children.Add(GhostButton("Zapnout", async (_, _) => await ApplyAdviceAsync(captured)));
-            _advisorList.Children.Add(card);
-        }
-        L.Apply(_advisorList);
-    }
-
-    private async Task ApplyAdviceAsync(Advice advice)
-    {
-        var item = _items.FirstOrDefault(i => ReferenceEquals(i.Tweak, advice.Tweak));
-        if (item == null) return;
-        if (item.Tweak.Confirm is { } confirm &&
-            MessageBox.Show(this, confirm, item.Name, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
-            return;
-        await RunToggleAsync(item, true);
-        RefreshAdvisor();
-    }
-
-    private async void AdvisorApplyAll_Click(object sender, RoutedEventArgs e)
-    {
-        var targets = _advice
-            .Where(a => a.Tweak.Confirm == null)
-            .Select(a => _items.FirstOrDefault(i => ReferenceEquals(i.Tweak, a.Tweak)))
-            .Where(i => i != null).Select(i => i!).ToList();
-        if (targets.Count == 0) return;
-
-        var ok = MessageBox.Show(this,
-            "Zapnout " + targets.Count + " doporučení detektoru?\nKaždé z nich můžeš později vypnout a vrátit původní stav.",
-            "Chytrý detektor", MessageBoxButton.YesNo, MessageBoxImage.Question);
-        if (ok != MessageBoxResult.Yes) return;
-        if (!await EnsureRestorePointAsync()) return;
-
-        ShowBusy("Zapínám doporučení detektoru…");
-        for (var i = 0; i < targets.Count; i++)
-        {
-            BusyText.Text = "Zapínám doporučení detektoru… (" + (i + 1) + "/" + targets.Count + ")";
-            await RunToggleAsync(targets[i], true);
-        }
-        HideBusy();
-        RefreshAdvisor();
     }
 
     // --- spouštěné aplikace ---------------------------------------------------------------------

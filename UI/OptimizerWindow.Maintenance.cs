@@ -185,7 +185,8 @@ public partial class OptimizerWindow
 
         _appsView.Refresh();
         _appsLoaded = true;
-        UninstallStatus.Text = "Nainstalováno " + _apps.Count + " aplikací.";
+        var unused = _apps.Count(a => a.IsUnused);
+        UninstallStatus.Text = "Nainstalováno " + _apps.Count + " aplikací" + (unused > 0 ? ", z toho " + unused + " nepoužívaných 31 dní a déle." : ".");
     }
 
     private bool AppFilter(object obj)
@@ -206,23 +207,38 @@ public partial class OptimizerWindow
 
     private async void RefreshApps_Click(object sender, RoutedEventArgs e) => await LoadAppsAsync();
 
+    private bool _uninstalling;
+
     private async void Uninstall_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement { DataContext: InstalledApp app }) return;
+        // Dvě odinstalace naráz si překáží (Windows Installer dovolí jen jednu), proto se další klik ignoruje.
+        if (_uninstalling) return;
 
         var answer = MessageBox.Show(this,
             "Odinstalovat „" + app.Name + "“?\n\nSpustí se odinstalátor této aplikace. Odinstalaci nejde vrátit zpět.",
             "Odinstalace aplikace", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
         if (answer != MessageBoxResult.Yes) return;
 
-        ShowBusy("Odinstalovávám „" + app.Name + "“… dokonči případné okno odinstalátoru.");
-        var (ok, message) = await Task.Run(() => InstalledApps.Uninstall(app));
-        HideBusy();
+        _uninstalling = true;
+        bool ok;
+        string message;
+        try
+        {
+            ShowBusy("Odinstalovávám „" + app.Name + "“… dokonči případné okno odinstalátoru.");
+            (ok, message) = await Task.Run(() => InstalledApps.Uninstall(app));
+        }
+        finally
+        {
+            HideBusy();
+            _uninstalling = false;
+        }
 
         await LoadAppsAsync();
+        UninstallStatus.Foreground = (System.Windows.Media.Brush)FindResource(ok ? "GreenBrush" : "AmberBrush");
         UninstallStatus.Text = ok
             ? "„" + app.Name + "“: " + message
-            : "Odinstalace „" + app.Name + "“ selhala: " + message;
+            : "„" + app.Name + "“: " + message;
     }
 
     // --- prohlížeče -----------------------------------------------------------------------------

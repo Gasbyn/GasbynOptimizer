@@ -407,7 +407,7 @@
                                 <StackPanel>
                                     <TextBlock Text="Odinstalace aplikací" Style="{StaticResource SectionTitle}"/>
                                     <TextBlock Style="{StaticResource SectionText}"
-                                               Text="Seznam nainstalovaných programů. Odinstalace spustí odinstalátor dané aplikace a může zobrazit vlastní okno. Nedá se vrátit zpět."/>
+                                               Text="Seznam nainstalovaných programů. Programy, které jsi 31 dní a déle nespustil, mají štítek Doporučeno a jsou nahoře (zjišťuje se ze záznamu Windows, hry spuštěné přes launcher se nezapočítávají). Odinstalace spustí odinstalátor dané aplikace a může zobrazit vlastní okno. Nedá se vrátit zpět."/>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -436,8 +436,14 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <StackPanel Margin="0,0,16,0">
-                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
+                                                        <Border Visibility="{Binding UnusedVisibility}" Background="#10281E" CornerRadius="4" Padding="6,1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                                            <TextBlock Text="DOPORUČENO" FontSize="10" FontWeight="Bold" Foreground="{StaticResource GreenBrush}"/>
+                                                        </Border>
+                                                    </StackPanel>
                                                     <TextBlock Text="{Binding Details}" FontSize="12" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding UsageText}" FontSize="12" Foreground="{StaticResource AmberBrush}" TextTrimming="CharacterEllipsis"/>
                                                 </StackPanel>
                                                 <Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="Odinstalovat" Padding="14,6" VerticalAlignment="Center" Click="Uninstall_Click"/>
                                             </Grid>

@@ -46,11 +46,30 @@ public partial class OptimizerWindow : Window
             return index < 0 ? int.MaxValue : index;
         });
 
-        foreach (var tweak in ordered)
+        var orderedList = ordered.ToList();
+
+        // Chytrý detektor: k ručně doporučeným optimalizacím přidá ty, které se hodí právě na tento počítač.
+        var smart = new Dictionary<string, Advice>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            var inputs = orderedList.Select(t => new AdvisorInput(
+                t, states.TryGetValue(t.Id, out var st) ? st : TweakState.Off,
+                service.UnsupportedReason(t, profile) == null, service.IsRecommended(t, profile)));
+            foreach (var advice in Advisor.Recommend(inputs, profile, _settings.AdvancedMode, 60))
+                smart[advice.Tweak.Id] = advice;
+        }
+        catch (Exception ex) { Log.Write("Chytrý detektor selhal: " + ex.Message); }
+
+        foreach (var tweak in orderedList)
         {
             var state = states.TryGetValue(tweak.Id, out var known) ? known : TweakState.Off;
             var reason = service.UnsupportedReason(tweak, profile);
             var recommended = service.IsRecommended(tweak, profile);
+            if (!recommended && smart.TryGetValue(tweak.Id, out var smartAdvice))
+            {
+                recommended = true;
+                tweak.Detail = (tweak.Detail.Length > 0 ? tweak.Detail + "\n\n" : "") + "Doporučeno pro tento počítač: " + smartAdvice.ReasonText;
+            }
             _items.Add(new TweakItem(tweak, state, reason, recommended, _settings.AdvancedMode));
         }
 
@@ -183,7 +202,6 @@ public partial class OptimizerWindow : Window
 
         var fps = AddNav("Performance Tester (brzy)", "#fps", false);
         fps.IsEnabled = false;
-        AddNav("Chytrý detektor", "#advisor", false);
         AddNav("Spouštěné aplikace", "#startup", false);
         AddNav("Údržba", "#maint", false);
         AddNav("Nastavení", "#settings", false);
@@ -323,6 +341,9 @@ public partial class OptimizerWindow : Window
         if (obj is not TweakItem item) return false;
 
         if (_categories.Length > 0 && Array.IndexOf(_categories, item.Category) < 0) return false;
+
+        // Aplikace, které na tomto PC nejsou nebo nejdou odinstalovat, se ukazují jen v pokročilém režimu.
+        if (!_settings.AdvancedMode && !item.IsAvailable && item.Category == CatalogDebloat.CatDebloat) return false;
 
         switch (_filter)
         {

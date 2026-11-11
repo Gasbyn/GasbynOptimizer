@@ -16,6 +16,13 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.155", new DateTime(2026, 11, 11, 10, 30, 0), new[]
+        {
+            Chg("Chytrý detektor je přímo v optimalizacích", "Zvláštní stránka zmizela. Optimalizace, které se hodí právě na tvůj počítač, teď mají štítek Doporučeno stejně jako ty ručně doporučené, a v Podrobněji je napsáno proč. Zapnout doporučené zapne i je."),
+            Add("Doporučení odinstalovat nepoužívané programy", "V Údržbě, Odinstalace aplikací, mají programy, které jsi 31 dní a déle nespustil, štítek Doporučeno a jsou nahoře. Údaj je ze záznamu Windows o spuštěných programech, hry spuštěné přes launcher se nezapočítávají."),
+            Chg("Debloat ukazuje jen odstranitelné aplikace", "Aplikace, které na počítači nejsou nebo nejdou odinstalovat, se ukážou jen v pokročilém režimu."),
+            Chg("Oprava odinstalace „error 0“", "Další odinstalace se při běžící odinstalaci ignoruje. Výsledek se určuje podle toho, jestli aplikace opravdu zmizela ze seznamu, a hláška říká, co se stalo, místo holého kódu.")
+        }),
         new("2.0.0.146", new DateTime(2026, 11, 9, 10, 10, 0), new[]
         {
             Chg("Výchozí jazyk je čeština", "Aplikace i instalátor se vždy spustí česky, bez ohledu na jazyk Windows. Angličtinu si vybereš v Nastavení nebo v průvodci instalací.")

@@ -9,6 +9,22 @@ namespace GasbynOptimizer.Core;
 /// <summary>Nainstalovaná klasická aplikace (z registru Windows).</summary>
 public sealed record InstalledApp(string Name, string Publisher, string Version, long SizeKb, string UninstallString)
 {
+    /// <summary>Složka s programem (z registru), podle ní se hledá, kdy byl naposledy spuštěn.</summary>
+    public string InstallLocation { get; init; } = "";
+
+    /// <summary>Počet dní od posledního spuštění, nebo null, když se to nepodařilo zjistit.</summary>
+    public int? UnusedDays { get; set; }
+
+    public const int UnusedThresholdDays = 31;
+
+    public bool IsUnused => UnusedDays >= UnusedThresholdDays;
+
+    public System.Windows.Visibility UnusedVisibility => IsUnused ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+
+    public string UsageText => UnusedDays is { } d
+        ? (d >= UnusedThresholdDays ? "Nepoužito " + d + " dní, doporučeno odinstalovat" : "Naposledy spuštěno před " + d + " dny")
+        : "";
+
     public string Details
     {
         get
@@ -73,7 +89,15 @@ public static class InstalledApps
                         if (!seen.Add(uniq)) continue;
 
                         var size = key.GetValue("EstimatedSize") is int kb && kb > 0 ? kb : 0;
-                        result.Add(new InstalledApp(display, Str(key, "Publisher"), version, size, command));
+                        var location = Str(key, "InstallLocation").Trim('"');
+                        if (location.Length == 0)
+                        {
+                            var icon = Str(key, "DisplayIcon").Trim('"');
+                            var comma = icon.LastIndexOf(',');
+                            if (comma > 3) icon = icon[..comma].Trim('"');
+                            try { if (icon.Length > 3 && icon.Contains('\\')) location = Path.GetDirectoryName(icon) ?? ""; } catch { }
+                        }
+                        result.Add(new InstalledApp(display, Str(key, "Publisher"), version, size, command) { InstallLocation = location });
                     }
                     catch
                     {
@@ -87,7 +111,10 @@ public static class InstalledApps
             }
         }
 
-        return result.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+        try { AppUsage.Apply(result); }
+        catch (Exception ex) { Log.Write("Zjištění používání aplikací selhalo: " + ex.Message); }
+
+        return result.OrderByDescending(a => a.IsUnused).ThenBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
     }
 
     /// <summary>Spustí odinstalátor aplikace a počká na jeho dokončení. Odinstalátor zobrazí vlastní okno.</summary>
@@ -115,8 +142,19 @@ public static class InstalledApps
             using var process = Process.Start(psi);
             if (process == null) return (false, "Odinstalátor se nepodařilo spustit.");
             process.WaitForExit();
+            var code = process.ExitCode;
 
-            return (true, "Odinstalátor skončil (kód " + process.ExitCode + ").");
+            // Spolehlivější než kód odinstalátoru je podívat se, jestli aplikace ze seznamu opravdu zmizela.
+            var stillThere = List().Any(a => a.Name == app.Name && a.Version == app.Version);
+            if (!stillThere) return (true, code == 3010 || code == 1641 ? "Odinstalováno. Dokonči to restartem počítače." : "Odinstalováno.");
+
+            return code switch
+            {
+                1618 => (false, "Právě běží jiná instalace nebo odinstalace. Počkej, až skončí, a zkus to znovu."),
+                1602 or 1223 => (false, "Odinstalace byla zrušena."),
+                0 => (false, "Odinstalátor skončil, ale aplikace je stále v seznamu. Odinstalace se nejspíš nedokončila."),
+                _ => (false, "Odinstalátor skončil s kódem " + code + " a aplikace je stále v seznamu.")
+            };
         }
         catch (Exception ex)
         {
@@ -380,5 +418,81 @@ public static class BrowserCleaner
 
         Log.Write("Vyčištěny prohlížeče (" + string.Join(", ", cleaned) + "): " + files + " souborů, " + bytes / 1024 / 1024 + " MB");
         return new BrowserCleanResult(true, bytes, files, running, cleaned);
+    }
+}
+
+
+/// <summary>
+/// Zjišťuje, kdy se programy naposledy spustily. Zdrojem je záznam UserAssist, který Windows vede pro programy
+/// spuštěné uživatelem. Co v záznamu není (třeba hry spuštěné přes Steam), se nepovažuje za nepoužívané.
+/// </summary>
+internal static class AppUsage
+{
+    private static readonly (string Guid, string Folder)[] KnownFolders =
+    {
+        ("{6D809377-6AF0-444B-8957-A3773F02200E}", "%ProgramFiles%"),
+        ("{7C5A40EF-A0FB-4BFC-874A-C0F2E0B9FA8E}", "%ProgramFiles(x86)%"),
+        ("{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}", "%SystemRoot%\\System32"),
+        ("{F38BF404-1D43-42F2-9305-67DE0B28FC23}", "%SystemRoot%"),
+        ("{905E63B6-C1BF-494E-B29C-65B732D3D21A}", "%ProgramFiles%"),
+        ("{F1B32785-6FBA-4FCF-9D55-7B8E7F157091}", "%LocalAppData%"),
+        ("{3EB685DB-65F9-4CF6-A03A-E3EF65729F3D}", "%AppData%")
+    };
+
+    private static string Rot13(string text) => new(text.Select(c =>
+        c is >= 'a' and <= 'z' ? (char)('a' + (c - 'a' + 13) % 26) :
+        c is >= 'A' and <= 'Z' ? (char)('A' + (c - 'A' + 13) % 26) : c).ToArray());
+
+    private static Dictionary<string, DateTime> LastRuns()
+    {
+        var result = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+        using var root = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\UserAssist", false);
+        if (root == null) return result;
+
+        foreach (var guid in root.GetSubKeyNames())
+        {
+            using var count = root.OpenSubKey(guid + "\\Count", false);
+            if (count == null) continue;
+            foreach (var encoded in count.GetValueNames())
+            {
+                try
+                {
+                    if (count.GetValue(encoded) is not byte[] { Length: >= 68 } data) continue;
+                    var ticks = BitConverter.ToInt64(data, 60);
+                    if (ticks <= 0) continue;
+
+                    var path = Rot13(encoded);
+                    foreach (var (g, folder) in KnownFolders)
+                        if (path.StartsWith(g, StringComparison.OrdinalIgnoreCase))
+                            path = Environment.ExpandEnvironmentVariables(folder) + path[g.Length..];
+
+                    var when = DateTime.FromFileTimeUtc(ticks).ToLocalTime();
+                    if (!result.TryGetValue(path, out var old) || when > old) result[path] = when;
+                }
+                catch { /* neplatný záznam se přeskočí */ }
+            }
+        }
+        return result;
+    }
+
+    public static void Apply(List<InstalledApp> apps)
+    {
+        var runs = LastRuns();
+        if (runs.Count == 0) return;
+
+        foreach (var app in apps)
+        {
+            var location = app.InstallLocation.TrimEnd('\\');
+            // Příliš obecná složka (celý Program Files, disk) by přiřadila cizí programy.
+            if (location.Length < 8 || location.Count(c => c == '\\') < 2) continue;
+
+            DateTime? latest = null;
+            foreach (var (path, when) in runs)
+                if (path.StartsWith(location + "\\", StringComparison.OrdinalIgnoreCase) && (latest == null || when > latest))
+                    latest = when;
+
+            if (latest != null)
+                app.UnusedDays = Math.Max(0, (int)(DateTime.Now - latest.Value).TotalDays);
+        }
     }
 }
