@@ -1,0 +1,101 @@
+namespace GasbynOptimizer.Core;
+
+public enum ChangeKind { Added, Changed, Removed }
+
+/// <summary>Jedna změna: stručný titulek a podrobnější popis (zobrazí se v podrobném Update logu).</summary>
+public sealed record ChangeItem(ChangeKind Kind, string Title, string Detail = "");
+
+/// <summary>Vydání s datem a časem (místní čas ČR) a seznamem změn.</summary>
+public sealed record ChangeEntry(string Version, DateTime Released, IReadOnlyList<ChangeItem> Items);
+
+/// <summary>Seznam změn po verzích, nejnovější nahoře. Při každém vydání se sem přidá nový záznam.</summary>
+public static class Changelog
+{
+    private static ChangeItem Add(string title, string detail = "") => new(ChangeKind.Added, title, detail);
+    private static ChangeItem Chg(string title, string detail = "") => new(ChangeKind.Changed, title, detail);
+
+    public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
+    {
+        new("2.0.0.155", new DateTime(2026, 11, 11, 10, 30, 0), new[]
+        {
+            Chg("Chytrý detektor je přímo v optimalizacích", "Zvláštní stránka zmizela. Optimalizace, které se hodí právě na tvůj počítač, teď mají štítek Doporučeno stejně jako ty ručně doporučené, a v Podrobněji je napsáno proč. Zapnout doporučené zapne i je."),
+            Add("Doporučení odinstalovat nepoužívané programy", "V Údržbě, Odinstalace aplikací, mají programy, které jsi 31 dní a déle nespustil, štítek Doporučeno a jsou nahoře. Údaj je ze záznamu Windows o spuštěných programech, hry spuštěné přes launcher se nezapočítávají."),
+            Chg("Debloat ukazuje jen odstranitelné aplikace", "Aplikace, které na počítači nejsou nebo nejdou odinstalovat, se ukážou jen v pokročilém režimu."),
+            Chg("Oprava odinstalace „error 0“", "Další odinstalace se při běžící odinstalaci ignoruje. Výsledek se určuje podle toho, jestli aplikace opravdu zmizela ze seznamu, a hláška říká, co se stalo, místo holého kódu.")
+        }),
+        new("2.0.0.146", new DateTime(2026, 11, 9, 10, 10, 0), new[]
+        {
+            Chg("Výchozí jazyk je čeština", "Aplikace i instalátor se vždy spustí česky, bez ohledu na jazyk Windows. Angličtinu si vybereš v Nastavení nebo v průvodci instalací.")
+        }),
+        new("2.0.0.145", new DateTime(2026, 11, 9, 9, 55, 0), new[]
+        {
+            Add("Samokontrola při každém spuštění", "Aplikace po startu zkontroluje, jestli Windows nebo jiný program nevrátil optimalizace, které jsi zapnul(a). Když ano, nabídne jejich opětovné zapnutí. Jde vypnout nebo spustit ručně v Nastavení."),
+            Add("Chytrý detektor", "Nová stránka, která podle tvého hardwaru (notebook nebo PC, SSD nebo HDD, paměť, grafika) a nainstalovaných programů doporučí optimalizace i s vysvětlením proč. Všechno se vyhodnocuje lokálně, nic se neodesílá."),
+            Add("Správce spouštěných aplikací", "Nová stránka se seznamem programů, které se spouští s Windows. Jde je vypnout a zapnout stejným způsobem jako ve Správci úloh, nic se nemaže."),
+            Add("Export a import nastavení", "V Nastavení si vybereš, kam se zapnuté optimalizace uloží do souboru, a odkud se zase načtou."),
+            Add("Jazyk a vzhled", "Výchozí je čeština a tmavý vzhled. V Nastavení jde přepnout na angličtinu a světlý vzhled, jazyk jde vybrat i při instalaci. Texty u jednotlivých optimalizací zatím zůstávají česky."),
+            Add("Odkazy na Discord", "V Nastavení jsou odkazy na hlášení problémů, hodnocení a podporu změn."),
+            Chg("Méně falešných poplachů antiviru", "K vydání se přikládá soubor SHA256SUMS.txt s kontrolním součtem instalátoru. Postup, jak se podpisem kódu zbavit varování úplně, je v dokumentaci."),
+            Chg("Označení NOVÉ", "U sloučených optimalizací z minulé verze štítek NOVÉ zmizel. V této verzi se žádná optimalizace nepřidává ani neupravuje.")
+        }),
+        new("2.0.0.112", new DateTime(2026, 11, 8, 22, 0, 0), new[]
+        {
+            Chg("Sjednocené duplicitní optimalizace", "Přepínače, které dělaly totéž, jsou teď jeden. Telemetrie (základní), reklamy a doporučení, webové hledání a Cortana, synchronizace mezi zařízeními, SysMain a Prefetch, úspora energie síťových karet, efekty a animace, vzdálená připojení, hloubková telemetrie a Edge. Všechny kroky zůstaly, jen jsou pohromadě."),
+            Add("Podrobný popisek u každé optimalizace", "Pod každou optimalizací je odkaz „Podrobněji“: co přepínač dělá, proč ho chceš a na co si dát pozor, napsáno lidskou řečí."),
+            Chg("Barevné štítky", "Doporučeno je zelené, Nové modré, Experimentální fialové a Nepodporované červené, ať se dají rozlišit na první pohled."),
+            Chg("FPS tester je Performance Tester", "Přejmenováno, protože v testeru časem přibude i ping a další měření.")
+        }),
+        new("2.0.0.89", new DateTime(2026, 11, 8, 21, 10, 0), new[]
+        {
+            Chg("Méně falešných poplachů antiviru", "Aplikace už nespouští PowerShell s kódovaným příkazem a parametrem „-ExecutionPolicy Bypass“, podle kterého antiviry (např. AVG, hláška „IDP.HELU.PSE96 – Command line detection“) poznávají škodlivé skripty. Skripty se předávají čitelně přes standardní vstup a příkazový řádek je čistý."),
+            Add("Nápověda k antiviru v Nastavení", "Nová karta s postupem, co dělat, když antivirus aplikaci zablokuje (výjimka, nahlášení falešného poplachu, Discord).")
+        }),
+        new("2.0.0.88", new DateTime(2026, 11, 8, 20, 50, 0), new[]
+        {
+            Chg("Vypnuto vrací výchozí nastavení Windows", "Když optimalizaci vypneš, nastaví se výchozí hodnota podle Windows (registr, typ spouštění služeb, plán napájení Vyvážený), ne jen uložená záloha. Výjimkou jsou služby a nastavení ovladačů výrobců (NVIDIA, ASUS, MSI, AMD, síťové karty), kde Windows žádný výchozí stav neurčují a vrací se původní hodnota."),
+            Chg("Opravené výchozí hodnoty", "Plánování GPU s hardwarovým urychlením se při vypnutí vrací na výchozí volbu Windows, Vzdálená plocha a Vzdálená pomoc na výchozí hodnoty a služby Mapy, Windows Search, Update Orchestrator, Centrum zabezpečení, Edge Update a Hyper-V (vmms) na správný typ spouštění.")
+        }),
+        new("2.0.0.86", new DateTime(2026, 11, 4, 9, 0, 0), new[]
+        {
+            Add("Rozšířené čištění cache, TEMP a logů aplikací", "Stávající tlačítko v Údržbě čistí starší cache, dočasné soubory a diagnostické logy dalších podporovaných aplikací včetně CapCut, Streamer.bot, Macro Deck, Streamlabs Desktop, Process Lasso a VS Code. Cache se čistí až po 7 dnech, TEMP po 3 dnech, logy po 14 dnech a crash reporty po 30 dnech. Běžící aplikace se přeskočí; nastavení, účty, cookies, projekty, světy, hry, stažené soubory a zdrojová média zůstávají."),
+            Chg("Metadata vydavatele v EXE a instalátoru", "Windows nyní u souboru zobrazuje výrobce Gasbyn, produkt Gasbyn Optimizer, popis Windows Optimization Tool, copyright a verzi sestavení. Metadata jsou ověřena během CI buildu. Nejde o kryptografický podpis a samo o sobě to neodstraní SmartScreen ani antivirová varování.")
+        }),
+        new("2.0.0.85", new DateTime(2026, 11, 1, 20, 40, 0), new[]
+        {
+            Chg("Spánek a hibernace jsou dvě samostatné optimalizace", "Spánek (Sleep) a hibernaci jde zapnout či vypnout každou zvlášť, třeba hibernaci vypnout a spánek nechat. Upraveny názvy a popisy, ať je jasné, že se neovlivňují.")
+        }),
+        new("2.0.0.84", new DateTime(2026, 11, 1, 17, 20, 0), new[]
+        {
+            Add("Update log po aktualizaci", "Při prvním spuštění po stažení a po každé aktualizaci se ukáže, co je nového: datum a čas vydání a co bylo přidáno, upraveno nebo odebráno. Ukazování jde v okně vypnout."),
+            Add("Podrobný Update log v Nastavení", "Nová karta v Nastavení: přepínač podrobného výpisu (výchozí vypnuto) a tlačítko, které Update log otevře kdykoli."),
+            Add("Vypnout režim spánku (Sleep)", "Nová optimalizace v kategorii Systém a napájení. Zakáže stavy spánku, časovač usnutí a skryje „Spánek“ v nabídce vypnutí. Hibernace zůstává samostatná optimalizace.")
+        }),
+        new("2.0.0.67", new DateTime(2026, 10, 28, 20, 19, 0), new[]
+        {
+            Add("Hloubkové čištění disku", "V Údržbě: úklid souborů Windows Update, starých balíčků ovladačů a nepoužívaných jazyků jako ve Vyčištění disku."),
+            Add("Plynulé animace", "Karty optimalizací naběhnou při hledání, filtrování i přepnutí kategorie, přepínače se plynule posouvají a stránky se plynule objeví."),
+            Chg("Mnohem chytřejší hledání", "Výsledky se řadí podle relevance, nevadí překlepy, diakritika ani koncovky, hledá se i v kategoriích, anglicky a podle příbuzných slov. Když nic nenajde, nabídne „Mysleli jste…?“."),
+            Chg("Stavy Zapnuto / Vypnuto", "U tlačítkových optimalizací se místo „Aktivní plán“ píše Zapnuto a Vypnuto, u aplikací Odinstalováno a Nainstalováno."),
+            Chg("Oprava načítací animace", "Točící se ikona a posuvný pruh už nejsou pozadu ani mimo střed."),
+            Chg("Rozšířený úklid dočasných souborů", "Přibyly miniatury ikon a protokoly Windows Update.")
+        }),
+        new("2.0.0.27", new DateTime(2026, 10, 24, 13, 6, 0), new[]
+        {
+            Add("Částečné vypnutí funkcí tiskáren", "Vypne tisk přes web, stahování ovladačů a vzdálený přístup k tiskové frontě. Lokální tiskárna dál funguje."),
+            Add("Vypnutí offline map", "Windows přestanou na pozadí stahovat a aktualizovat mapy."),
+            Add("Vypnutí dotyku a pera", "Dotyková klávesnice, rukopis a Windows Ink (kreslení perem)."),
+            Add("Odinstalace aplikací v Debloatu", "25 aplikací Windows s tlačítkem Odinstalovat; Copilot, Hodiny, Fotoaparát, Edge a další jsou označené jako doporučené."),
+            Chg("Vypnutí polohy a polohových služeb", "Rozšířeno o poskytovatele polohy, skripty s polohou a přístup aplikací k poloze."),
+            Chg("Úplné vypnutí tisku", "Přejmenováno a rozlišeno od částečného vypnutí funkcí tiskáren."),
+            Chg("Virtualizace částečně a plně", "VBS (částečně) a hypervizor včetně všech služeb Hyper-V (plně)."),
+            Chg("Chytřejší vyhledávání", "Hledání bez diakritiky a koncovek, anglické a příbuzné výrazy.")
+        }),
+        new("2.0.0.6", new DateTime(2026, 10, 21, 22, 41, 0), new[]
+        {
+            Add("Optimalizace grafiky", "11 nových optimalizací pro NVIDIA, AMD a obecné nastavení grafiky."),
+            Chg("Celé číslo verze v aplikaci", "Aplikace ukazuje celou verzi, ne jen 2.0.")
+        })
+    };
+
+    public static ChangeEntry? For(string version) => Entries.FirstOrDefault(e => e.Version == version);
+}
