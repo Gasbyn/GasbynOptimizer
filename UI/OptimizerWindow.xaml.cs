@@ -183,6 +183,7 @@ public partial class OptimizerWindow : Window
     private static readonly (string Name, string[] Categories)[] NavGroups =
     {
         ("Hraní a výkon", new[] { Catalog.CatGaming, CatalogPower.CatPower, Catalog.CatSystem, CatalogHardware.CatHardware }),
+        ("Disk", new[] { CatalogDisk.CatDisk }),
         ("Vzhled", new[] { Catalog.CatVisual, CatalogFonts.CatFonts, Catalog.CatUi }),
         ("Služby", new[] { Catalog.CatServices }),
         ("Debloat", new[] { CatalogDebloat.CatDebloat }),
@@ -190,6 +191,13 @@ public partial class OptimizerWindow : Window
     };
 
     private string[] _categories = Array.Empty<string>();
+    private bool _showUnsupported;
+
+    private void ShowUnsupported_Click(object sender, RoutedEventArgs e)
+    {
+        _showUnsupported = ShowUnsupportedCheck.IsChecked == true;
+        RefreshList();
+    }
 
     private void BuildNav()
     {
@@ -342,6 +350,9 @@ public partial class OptimizerWindow : Window
 
         if (_categories.Length > 0 && Array.IndexOf(_categories, item.Category) < 0) return false;
 
+        // Nepodporované optimalizace se ukážou, jen když to uživatel zapne (a použít jdou jen v pokročilém režimu).
+        if (!item.IsSupported && !_showUnsupported) return false;
+
         // Aplikace, které na tomto PC nejsou nebo nejdou odinstalovat, se ukazují jen v pokročilém režimu.
         if (!_settings.AdvancedMode && !item.IsAvailable && item.Category == CatalogDebloat.CatDebloat) return false;
 
@@ -352,7 +363,6 @@ public partial class OptimizerWindow : Window
             case "rec" when !item.IsRecommended: return false;
             case "new" when !item.IsNew: return false;
             case "exp" when !item.IsExperimental: return false;
-            case "unsup" when item.IsSupported: return false;
         }
 
         if (_query.IsEmpty) { item.SearchScore = 0; return true; }

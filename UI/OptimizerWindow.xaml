@@ -266,7 +266,8 @@
                             <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Doporučené" Tag="rec" GroupName="filter" Click="Filter_Click"/>
                             <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Nové" Tag="new" GroupName="filter" Click="Filter_Click"/>
                             <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Experimentální" Tag="exp" GroupName="filter" Click="Filter_Click"/>
-                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Nepodporované" Tag="unsup" GroupName="filter" Click="Filter_Click"/>
+                            <CheckBox x:Name="ShowUnsupportedCheck" Content="Zobrazit nepodporované" Foreground="{StaticResource MutedBrush}" Margin="10,4,6,6" VerticalAlignment="Center"
+                                      ToolTip="Zobrazí optimalizace, které tento počítač nepodporuje. Použít jdou jen s pokročilým režimem v Nastavení." Click="ShowUnsupported_Click"/>
                         </WrapPanel>
                     </StackPanel>
 
@@ -359,7 +360,7 @@
                                 <StackPanel>
                                     <TextBlock Text="Zbytky odinstalovaných aplikací" Style="{StaticResource SectionTitle}"/>
                                     <TextBlock Style="{StaticResource SectionText}"
-                                               Text="Odstraní záznamy v seznamu programů, jejichž program už neexistuje, a složky s daty odinstalovaných aplikací z Microsoft Store. Seznam programů se předtím zálohuje do souboru .reg v datové složce aplikace. Nejde vrátit zpět tlačítkem."/>
+                                               Text="Odstraní záznamy v seznamu programů, jejichž program už neexistuje, a složky s daty odinstalovaných aplikací z Microsoft Store. Seznam programů se předtím zálohuje do souboru .reg v datové složce aplikace. Smaže také instalační soubory (setup, installer) ve složce Stažené soubory starší než 4 dny, instalátor Gasbyn Optimizeru hned. Nejde vrátit zpět tlačítkem."/>
                                     <Button Style="{StaticResource GhostButton}" Content="Vyčistit zbytky aplikací" HorizontalAlignment="Left" Click="CleanLeftovers_Click"/>
                                     <TextBlock x:Name="LeftoversResult" Foreground="{StaticResource GreenBrush}" FontSize="12.5" Margin="0,12,0,0" TextWrapping="Wrap"/>
                                 </StackPanel>
@@ -386,14 +387,16 @@
                                         <Border Background="{StaticResource Panel2Brush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,0,6">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <StackPanel Margin="0,0,16,0">
+                                                <Image Source="{Binding Icon}" Width="30" Height="30" Margin="0,0,12,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                <StackPanel Grid.Column="1" Margin="0,0,16,0" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
                                                     <TextBlock Text="{Binding Subtitle}" FontSize="12" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
                                                 </StackPanel>
-                                                <Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="Aktualizovat" Padding="14,6" VerticalAlignment="Center" Click="UpdateApp_Click"/>
+                                                <Button Grid.Column="2" Style="{StaticResource GhostButton}" Content="Aktualizovat" Padding="14,6" VerticalAlignment="Center" Click="UpdateApp_Click"/>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -432,10 +435,12 @@
                                         <Border Background="{StaticResource Panel2Brush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,0,6">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <StackPanel Margin="0,0,16,0">
+                                                <Image Source="{Binding Icon}" Width="30" Height="30" Margin="0,0,12,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                <StackPanel Grid.Column="1" Margin="0,0,16,0" VerticalAlignment="Center">
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" TextTrimming="CharacterEllipsis"/>
                                                         <Border Visibility="{Binding UnusedVisibility}" Background="#10281E" CornerRadius="4" Padding="6,1" Margin="10,0,0,0" VerticalAlignment="Center">
@@ -445,7 +450,7 @@
                                                     <TextBlock Text="{Binding Details}" FontSize="12" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis"/>
                                                     <TextBlock Text="{Binding UsageText}" FontSize="12" Foreground="{StaticResource AmberBrush}" TextTrimming="CharacterEllipsis"/>
                                                 </StackPanel>
-                                                <Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="Odinstalovat" Padding="14,6" VerticalAlignment="Center" Click="Uninstall_Click"/>
+                                                <Button Grid.Column="2" Style="{StaticResource GhostButton}" Content="Odinstalovat" Padding="14,6" VerticalAlignment="Center" Click="Uninstall_Click"/>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -482,7 +487,7 @@
                             <StackPanel>
                                 <TextBlock Text="Pokročilý režim" Style="{StaticResource SectionTitle}"/>
                                 <TextBlock Style="{StaticResource SectionText}"
-                                           Text="Optimalizace, které nejsou určené pro tento počítač (například pro grafiku Intel, když máš NVIDIA), jsou při vypnutém režimu ztmavené se zámkem a nejdou zapnout. Se zapnutým pokročilým režimem u nich zůstane jen štítek Nepodporované a jdou zapnout po potvrzení. Používej jen, když víš, co děláš."/>
+                                           Text="Optimalizace, které nejsou určené pro tento počítač (například pro grafiku Intel, když máš NVIDIA), jsou ve výchozím stavu skryté. Zapneš je filtrem „Zobrazit nepodporované“ nad seznamem. Bez pokročilého režimu jsou ztmavené se zámkem a nejdou zapnout, s pokročilým režimem u nich zůstane jen štítek Nepodporované a jdou zapnout po potvrzení. Používej jen, když víš, co děláš."/>
                                 <CheckBox x:Name="AdvancedCheck" Content="Zapnout pokročilý režim" Foreground="{StaticResource TextBrush}" Click="Advanced_Click"/>
                             </StackPanel>
                         </Border>

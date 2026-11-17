@@ -103,6 +103,7 @@ public static class Icons
         "Vzhled" => "Palette",
         "Služby" => "Server",
         "Debloat" => "Delete",
+        "Disk" => "Server",
         "Pokročilé" => "Bolt",
         "#fps" => "Speed",
         "#maint" => "Build",

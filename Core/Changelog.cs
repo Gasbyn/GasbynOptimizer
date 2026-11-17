@@ -16,6 +16,16 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.201", new DateTime(2026, 11, 17, 11, 30, 0), new[]
+        {
+            Add("Disk: optimalizace podle typu disku", "Nová kategorie Disk. Má úpravy pro HDD, SSD a NVMe. Doporučené jsou jen tam, kde to dává smysl. Optimalizace pro jiný typ disku, než máš (například HDD na počítači s NVMe), jsou dostupné jen v pokročilém režimu."),
+            Chg("Vypnutí Prefetch a Superfetch jen pro SSD", "Na pevném disku by systém zpomalil, proto je teď nepodporované a jde použít jen v pokročilém režimu."),
+            Chg("Filtr „Zobrazit nepodporované“", "Nepodporované optimalizace jsou ve výchozím stavu skryté. Zapneš je přepínačem nad seznamem. Použít jdou jen s pokročilým režimem v Nastavení."),
+            Chg("Úklid zbytků aplikací maže i staré instalátory", "Smaže instalační soubory (setup, installer) ve Stažených souborech starší než 4 dny. Instalátor Gasbyn Optimizeru se smaže hned."),
+            Chg("Odinstalace ukazuje víc aplikací", "Přibyly aplikace z Microsoft Store (třeba Hodiny), instalace jen pro tvůj účet a programy, které mají odinstalaci jen přes Windows Installer. Spouštěné aplikace ukazují i naplánované úlohy při přihlášení a 32bitové záznamy."),
+            Chg("Loga aplikací", "V Odinstalaci aplikací a v Aktualizaci aplikací se u každé aplikace ukáže její logo."),
+            Chg("Oprava odinstalace Microsoft Edge", "Odinstalace mimo EU končila chybou 532. Teď povolí odinstalaci oficiálním přepínačem a po dobu odinstalace vytvoří atrapu, kterou instalátor Edge hledá. Chybová hláška už neukazuje celý skript.")
+        }),
         new("2.0.0.155", new DateTime(2026, 11, 11, 10, 30, 0), new[]
         {
             Chg("Chytrý detektor je přímo v optimalizacích", "Zvláštní stránka zmizela. Optimalizace, které se hodí právě na tvůj počítač, teď mají štítek Doporučeno stejně jako ty ručně doporučené, a v Podrobněji je napsáno proč. Zapnout doporučené zapne i je."),

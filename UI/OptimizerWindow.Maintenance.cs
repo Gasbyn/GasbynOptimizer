@@ -80,7 +80,7 @@ public partial class OptimizerWindow
         var result = await Task.Run(() => Maintenance.CleanLeftovers());
         HideBusy();
 
-        if (result.UninstallEntries == 0 && result.PackageFolders == 0)
+        if (result.UninstallEntries == 0 && result.PackageFolders == 0 && result.SetupFiles == 0)
         {
             LeftoversResult.Text = "Nenašel jsem žádné zbytky, vše je v pořádku.";
             return;
@@ -88,6 +88,7 @@ public partial class OptimizerWindow
 
         var text = "Odstraněno záznamů v seznamu programů: " + result.UninstallEntries +
                    ", složek aplikací z Obchodu: " + result.PackageFolders + " (uvolněno " + Megabytes(result.Bytes) + " MB).";
+        if (result.SetupFiles > 0) text += " Smazáno starých instalačních souborů ve Stažených souborech: " + result.SetupFiles + ".";
         if (result.BackupFile != null) text += " Záloha seznamu programů: " + result.BackupFile;
         LeftoversResult.Text = text;
     }
@@ -115,9 +116,29 @@ public partial class OptimizerWindow
         }
 
         UpdateList.ItemsSource = apps;
+        if (apps.Count > 0) _ = LoadUpdateIconsAsync(apps);
         UpdateStatus.Text = apps.Count == 0
             ? "Winget nenašel žádné aktualizace." + (raw.ExitCode != 0 ? " (kód výstupu " + raw.ExitCode + ")" : "")
             : "Dostupných aktualizací: " + apps.Count;
+    }
+
+    /// <summary>Loga aktualizací se berou z nainstalovaných programů stejného jména.</summary>
+    private async Task LoadUpdateIconsAsync(IReadOnlyList<UpgradableApp> upgrades)
+    {
+        try
+        {
+            var installed = await Task.Run(() => InstalledApps.List(includeStore: false));
+            foreach (var upgrade in upgrades)
+            {
+                var match = installed.FirstOrDefault(a => a.Name.Equals(upgrade.Name, StringComparison.OrdinalIgnoreCase))
+                            ?? installed.FirstOrDefault(a => upgrade.Name.Length > 3 &&
+                                   (a.Name.Contains(upgrade.Name, StringComparison.OrdinalIgnoreCase) ||
+                                    (a.Name.Length > 3 && upgrade.Name.Contains(a.Name, StringComparison.OrdinalIgnoreCase))));
+                if (match == null) continue;
+                await Dispatcher.InvokeAsync(() => upgrade.Icon = AppIcons.Load(match), System.Windows.Threading.DispatcherPriority.Background);
+            }
+        }
+        catch (Exception ex) { Log.Write("Loga aktualizací se nepodařilo načíst: " + ex.Message); }
     }
 
     private async void CheckUpdates_Click(object sender, RoutedEventArgs e) => await CheckUpdatesAsync();
@@ -185,6 +206,7 @@ public partial class OptimizerWindow
 
         _appsView.Refresh();
         _appsLoaded = true;
+        _ = AppIcons.LoadAllAsync(_apps, Dispatcher);
         var unused = _apps.Count(a => a.IsUnused);
         UninstallStatus.Text = "Nainstalováno " + _apps.Count + " aplikací" + (unused > 0 ? ", z toho " + unused + " nepoužívaných 31 dní a déle." : ".");
     }

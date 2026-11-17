@@ -458,7 +458,18 @@ public sealed class CommandOp : TweakOp
     {
         var result = Shell.Run(exe, args, 60000);
         if (result.ExitCode != 0)
-            throw new InvalidOperationException(Path.GetFileName(exe) + " " + args + " selhalo (kód " + result.ExitCode + "): " + result.Output);
+        {
+            // Skript PowerShellu se do chyby nepíše celý, uživatele zajímá jen výsledek.
+            var what = args.StartsWith("@@PS@@", StringComparison.Ordinal) ? "Skript PowerShellu" : Path.GetFileName(exe) + " " + args;
+            throw new InvalidOperationException(what + " selhal (kód " + result.ExitCode + "): " + Shorten(result.Output));
+        }
+    }
+
+    private static string Shorten(string text)
+    {
+        var lines = text.Replace("\r", "").Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0 && !l.StartsWith("At line:") && !l.StartsWith("+ ") && !l.StartsWith("FullyQualifiedErrorId") && !l.StartsWith("CategoryInfo")).ToList();
+        var joined = string.Join(" ", lines.Take(3));
+        return joined.Length > 300 ? joined[..300] + "…" : joined;
     }
 }
 

@@ -7,8 +7,31 @@ using Microsoft.Win32;
 namespace GasbynOptimizer.Core;
 
 /// <summary>Nainstalovaná klasická aplikace (z registru Windows).</summary>
-public sealed record InstalledApp(string Name, string Publisher, string Version, long SizeKb, string UninstallString)
+public sealed record InstalledApp(string Name, string Publisher, string Version, long SizeKb, string UninstallString) : INotifyPropertyChanged
 {
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private System.Windows.Media.ImageSource? _icon;
+
+    /// <summary>Logo aplikace, načítá se na pozadí po zobrazení seznamu.</summary>
+    public System.Windows.Media.ImageSource? Icon
+    {
+        get => _icon;
+        set
+        {
+            _icon = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Icon)));
+        }
+    }
+
+    /// <summary>Soubor, ze kterého se bere ikona (z registru DisplayIcon, nebo logo aplikace z Obchodu).</summary>
+    public string IconPath { get; init; } = "";
+    public int IconIndex { get; init; }
+
+    /// <summary>Aplikace z Microsoft Store (balíček AppX). Odinstalace jde přes PowerShell.</summary>
+    public bool IsStore => UninstallString.StartsWith(StorePrefix, StringComparison.Ordinal);
+    public const string StorePrefix = "appx:";
+
     /// <summary>Složka s programem (z registru), podle ní se hledá, kdy byl naposledy spuštěn.</summary>
     public string InstallLocation { get; init; } = "";
 
@@ -44,12 +67,19 @@ public static class InstalledApps
     {
         (RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
         (RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
-        (RegistryHive.CurrentUser, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall")
+        (RegistryHive.CurrentUser, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
+        (RegistryHive.CurrentUser, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall")
     };
+
+    private static string Tail(string text)
+    {
+        var line = text.Replace("\r", "").Split('\n').Select(l => l.Trim()).LastOrDefault(l => l.Length > 0) ?? "";
+        return line.Length > 250 ? line[..250] + "…" : line;
+    }
 
     private static string Str(RegistryKey key, string name) => (key.GetValue(name) as string)?.Trim() ?? "";
 
-    public static List<InstalledApp> List()
+    public static List<InstalledApp> List(bool includeStore = true)
     {
         var result = new List<InstalledApp>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -71,6 +101,11 @@ public static class InstalledApps
 
                         var display = Str(key, "DisplayName");
                         var command = Str(key, "UninstallString");
+                        if (command.Length == 0) command = Str(key, "QuietUninstallString");
+                        // Instalace přes Windows Installer bez uvedeného příkazu se odinstaluje podle GUID klíče.
+                        if (command.Length == 0 && key.GetValue("WindowsInstaller") is int wi && wi == 1 &&
+                            Regex.IsMatch(name, @"^\{[0-9A-Fa-f-]{36}\}$"))
+                            command = "MsiExec.exe /X" + name;
                         if (display.Length == 0 || command.Length == 0) continue;
 
                         // Systémové součásti, aktualizace a opravy do seznamu nepatří.
@@ -97,7 +132,23 @@ public static class InstalledApps
                             if (comma > 3) icon = icon[..comma].Trim('"');
                             try { if (icon.Length > 3 && icon.Contains('\\')) location = Path.GetDirectoryName(icon) ?? ""; } catch { }
                         }
-                        result.Add(new InstalledApp(display, Str(key, "Publisher"), version, size, command) { InstallLocation = location });
+                        var iconSpec = Str(key, "DisplayIcon").Trim();
+                        var iconIndex = 0;
+                        var iconPath = iconSpec;
+                        var iconComma = iconSpec.LastIndexOf(',');
+                        if (iconComma > 2 && int.TryParse(iconSpec[(iconComma + 1)..].Trim(), out var parsedIndex))
+                        {
+                            iconIndex = parsedIndex;
+                            iconPath = iconSpec[..iconComma];
+                        }
+                        iconPath = Environment.ExpandEnvironmentVariables(iconPath.Trim().Trim('"'));
+
+                        result.Add(new InstalledApp(display, Str(key, "Publisher"), version, size, command)
+                        {
+                            InstallLocation = location,
+                            IconPath = iconPath,
+                            IconIndex = iconIndex
+                        });
                     }
                     catch
                     {
@@ -111,10 +162,76 @@ public static class InstalledApps
             }
         }
 
+        if (includeStore)
+        {
+            try { result.AddRange(ListStoreApps(result)); }
+            catch (Exception ex) { Log.Write("Seznam aplikací z Obchodu selhal: " + ex.Message); }
+        }
+
         try { AppUsage.Apply(result); }
         catch (Exception ex) { Log.Write("Zjištění používání aplikací selhalo: " + ex.Message); }
 
         return result.OrderByDescending(a => a.IsUnused).ThenBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+    }
+
+    /// <summary>Aplikace z Microsoft Store (včetně předinstalovaných, třeba Hodiny), které jde odinstalovat.</summary>
+    private static List<InstalledApp> ListStoreApps(List<InstalledApp> existing)
+    {
+        var apps = new List<InstalledApp>();
+        const string script = @"
+$ErrorActionPreference = 'SilentlyContinue'
+$names = @{}
+Get-StartApps | ForEach-Object { if ($_.AppID -match '^([^!]+)!') { $names[$Matches[1]] = $_.Name } }
+Get-AppxPackage | Where-Object { -not $_.IsFramework -and -not $_.NonRemovable -and $_.SignatureKind -ne 'System' } | ForEach-Object {
+    $n = $names[$_.PackageFamilyName]
+    if ($n) { 'APP|' + $n + '|' + $_.PackageFullName + '|' + ($_.Publisher -replace '^CN=([^,]+).*', '$1') + '|' + $_.Version + '|' + $_.InstallLocation }
+}";
+        var result = Shell.RunPowerShell(script, 60000);
+        var seen = new HashSet<string>(existing.Select(a => a.Name), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var raw in result.Output.Replace("\r", "").Split('\n'))
+        {
+            var line = raw.Trim();
+            if (!line.StartsWith("APP|", StringComparison.Ordinal)) continue;
+            var parts = line.Split('|');
+            if (parts.Length < 6 || parts[1].Length == 0 || parts[2].Length == 0) continue;
+            if (!seen.Add(parts[1])) continue;
+
+            apps.Add(new InstalledApp(parts[1], parts[3], parts[4], 0, InstalledApp.StorePrefix + parts[2])
+            {
+                InstallLocation = parts[5],
+                IconPath = StoreLogo(parts[5])
+            });
+        }
+        return apps;
+    }
+
+    /// <summary>Najde soubor s logem aplikace z Obchodu podle jejího manifestu.</summary>
+    private static string StoreLogo(string location)
+    {
+        try
+        {
+            var manifest = Path.Combine(location, "AppxManifest.xml");
+            if (!File.Exists(manifest)) return "";
+            var text = File.ReadAllText(manifest);
+            var match = Regex.Match(text, "Square44x44Logo=\"([^\"]+)\"");
+            if (!match.Success) match = Regex.Match(text, "<Logo>([^<]+)</Logo>");
+            if (!match.Success) return "";
+
+            var relative = match.Groups[1].Value.Replace('/', '\\');
+            var dir = Path.GetDirectoryName(Path.Combine(location, relative)) ?? location;
+            var baseName = Path.GetFileNameWithoutExtension(relative);
+            if (!Directory.Exists(dir)) return "";
+
+            var files = Directory.GetFiles(dir, baseName + "*.png");
+            var best = files.FirstOrDefault(f => f.Contains("targetsize-48") && !f.Contains("altform"))
+                       ?? files.FirstOrDefault(f => f.Contains("targetsize-44") && !f.Contains("altform"))
+                       ?? files.FirstOrDefault(f => f.Contains("scale-200"))
+                       ?? files.FirstOrDefault(f => f.Contains("scale-100"))
+                       ?? files.FirstOrDefault();
+            return best ?? "";
+        }
+        catch { return ""; }
     }
 
     /// <summary>Spustí odinstalátor aplikace a počká na jeho dokončení. Odinstalátor zobrazí vlastní okno.</summary>
@@ -122,6 +239,17 @@ public static class InstalledApps
     {
         try
         {
+            if (app.IsStore)
+            {
+                var full = app.UninstallString[InstalledApp.StorePrefix.Length..].Replace("'", "''");
+                Log.Write("Odinstalace aplikace z Obchodu: " + app.Name + " (" + full + ")");
+                var removal = Shell.RunPowerShell(
+                    "try { Remove-AppxPackage -Package '" + full + "' -ErrorAction Stop; exit 0 } catch { Write-Output $_.Exception.Message; exit 1 }", 180000);
+                return removal.ExitCode == 0
+                    ? (true, "Odinstalováno.")
+                    : (false, "Aplikaci se nepodařilo odinstalovat: " + Tail(removal.Output));
+            }
+
             var command = app.UninstallString.Trim();
 
             // MSI: příkaz „/I{GUID}“ aplikaci opravuje, k odinstalaci je potřeba „/X{GUID}“.
@@ -145,7 +273,7 @@ public static class InstalledApps
             var code = process.ExitCode;
 
             // Spolehlivější než kód odinstalátoru je podívat se, jestli aplikace ze seznamu opravdu zmizela.
-            var stillThere = List().Any(a => a.Name == app.Name && a.Version == app.Version);
+            var stillThere = List(includeStore: false).Any(a => a.Name == app.Name && a.Version == app.Version);
             if (!stillThere) return (true, code == 3010 || code == 1641 ? "Odinstalováno. Dokonči to restartem počítače." : "Odinstalováno.");
 
             return code switch
@@ -164,8 +292,23 @@ public static class InstalledApps
     }
 }
 
-public sealed record UpgradableApp(string Name, string Id, string Version, string Available)
+public sealed record UpgradableApp(string Name, string Id, string Version, string Available) : INotifyPropertyChanged
 {
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private System.Windows.Media.ImageSource? _icon;
+
+    /// <summary>Logo aplikace (podle nainstalovaného programu stejného jména).</summary>
+    public System.Windows.Media.ImageSource? Icon
+    {
+        get => _icon;
+        set
+        {
+            _icon = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Icon)));
+        }
+    }
+
     public string VersionText => (Version.Length > 0 ? Version : "?") + "  →  " + Available;
 
     public string Subtitle => Id + "    " + VersionText;

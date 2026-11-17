@@ -20,10 +20,30 @@ $setup = Get-ChildItem (Join-Path $base '*\Installer\setup.exe') -ErrorAction Si
 if (-not $setup) { throw 'Instalátor Edge nebyl nalezen.' }
 New-Item -Path 'HKLM:\SOFTWARE\Microsoft\EdgeUpdate' -Force | Out-Null
 Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\EdgeUpdate' -Name 'DoNotUpdateToEdgeWithChromium' -Value 1 -Type DWord
-Stop-Process -Name msedge -Force -ErrorAction SilentlyContinue
-$p = Start-Process -FilePath $setup.FullName -ArgumentList '--uninstall --system-level --verbose-logging --force-uninstall' -Wait -PassThru
+
+# Mimo EU Windows odinstalaci Edge blokuje (setup končí kódem 532 nebo 93). Povolíme ji oficiálním přepínačem
+# EdgeUpdateDev\AllowUninstall a na dobu odinstalace vytvoříme atrapu starého Edge, kterou instalátor hledá.
+New-Item -Path 'HKLM:\SOFTWARE\Microsoft\EdgeUpdateDev' -Force | Out-Null
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\EdgeUpdateDev' -Name 'AllowUninstall' -Value '' -Type String
+$dummyDir = Join-Path $env:SystemRoot 'SystemApps\Microsoft.MicrosoftEdge_8wekyb3d8bbwe'
+$dummy = Join-Path $dummyDir 'MicrosoftEdge.exe'
+$createdDir = $false
+$createdFile = $false
+if (-not (Test-Path $dummyDir)) { New-Item -ItemType Directory -Path $dummyDir -Force | Out-Null; $createdDir = $true }
+if (-not (Test-Path $dummy)) { New-Item -ItemType File -Path $dummy -Force | Out-Null; $createdFile = $true }
+
+try {
+    Stop-Process -Name msedge -Force -ErrorAction SilentlyContinue
+    Stop-Process -Name msedgewebview2 -Force -ErrorAction SilentlyContinue
+    $p = Start-Process -FilePath $setup.FullName -ArgumentList '--uninstall --system-level --verbose-logging --force-uninstall' -Wait -PassThru
+}
+finally {
+    if ($createdFile) { Remove-Item $dummy -Force -ErrorAction SilentlyContinue }
+    if ($createdDir) { Remove-Item $dummyDir -Force -Recurse -ErrorAction SilentlyContinue }
+}
+
 if (-not (Test-Path (Join-Path $base 'msedge.exe'))) { exit 0 }
-throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
+throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + '). Microsoft ji v tvé oblasti nejspíš blokuje.')
 ";
 
     internal static string EdgeUninstallScript => UninstallScript;
@@ -99,7 +119,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + ').')
             },
             new()
             {
-                Id = "debloat-edge-uninstall", Category = CatalogDebloat.CatDebloat, Experimental = true, ApplyOnly = true, Recommended = true, DoneText = "Odinstalováno", TodoText = "Nainstalováno",
+                Id = "debloat-edge-uninstall", Category = CatalogDebloat.CatDebloat, IsNew = true, Experimental = true, ApplyOnly = true, Recommended = true, DoneText = "Odinstalováno", TodoText = "Nainstalováno",
                 Name = "Edge: odinstalovat úplně",
                 Description = "Odinstaluje Microsoft Edge z počítače a zablokuje jeho automatickou přeinstalaci. WebView2 zůstává, aby fungovaly aplikace, které ho potřebují.",
                 Note = "Experimentální a nevratné: zpět se Edge dostane jen novou instalací z webu Microsoftu. Zajisti si jiný prohlížeč.",

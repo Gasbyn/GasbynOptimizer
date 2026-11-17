@@ -207,6 +207,12 @@ internal static class Details
         ["autoplay-off"] = D("Windows nebude automaticky spouštět nebo otevírat flashky a disky po připojení.", "Bezpečnější, nic se nespustí samo."),
         ["recent-files"] = D("V Průzkumníku se přestanou zobrazovat nedávné a často otevírané soubory.", "Soukromí a čistší Rychlý přístup."),
 
+        // ---- Disk ----
+        ["disk-ntfs-lastaccess"] = D("Windows přestane při každém otevření souboru zapisovat, kdy jsi k němu naposledy přistoupil.", "Méně zbytečných zápisů na disk, což šetří SSD a zrychluje práci se spoustou souborů.", "Některé zálohovací programy čas posledního přístupu používají."),
+        ["disk-hdd-no-spindown"] = D("Pevný disk se po pár minutách nečinnosti nezastaví.", "Nemusí se pak znovu roztáčet, takže zmizí zadrhnutí po delší pauze.", "Disk víc hučí a trochu zvýší spotřebu. Jen pro stolní PC s HDD."),
+        ["disk-hdd-ntfs-memory"] = D("Systém souborů NTFS dostane víc paměti na vlastní evidenci souborů.", "Složky s tisíci soubory se otevírají rychleji a pevný disk míň hledá.", "Hodí se jen při dostatku RAM. Vyžaduje restart."),
+        ["disk-nvme-native-driver"] = D("Zapne v novějším Windows 11 nový ovladač disků NVMe.", "Lépe využívá víc jader procesoru, takže může zrychlit náhodné čtení a zápis.", "Neoficiální. Některé zálohovací a diskové nástroje s ním nemusí fungovat. Vyžaduje restart."),
+
         // ---- Debloat ----
         ["debloat-chrome"] = D("Vypne v Chrome hlášení a statistiky, běh na pozadí, rychlý start a reklamní doporučení.", "Chrome zbytečně nezatěžuje počítač a neposílá data.", "Žádné."),
         ["debloat-brave"] = D("Vypne v Brave Rewards, peněženku, VPN, AI chat a hlášení.", "Čistší prohlížeč bez věcí, které nepoužíváš."),

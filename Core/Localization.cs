@@ -84,6 +84,8 @@ public static class L
     {
         ["Všechny optimalizace"] = "All optimizations",
         ["Hraní a výkon"] = "Gaming & performance",
+        ["Disk"] = "Disk",
+        ["Zobrazit nepodporované"] = "Show unsupported",
         ["Vzhled"] = "Appearance",
         ["Služby"] = "Services",
         ["Debloat"] = "Debloat",

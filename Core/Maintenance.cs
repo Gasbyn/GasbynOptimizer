@@ -526,7 +526,7 @@ Write-Output $removed
         }
     }
 
-    public sealed record LeftoverResult(int UninstallEntries, int PackageFolders, long Bytes, string? BackupFile);
+    public sealed record LeftoverResult(int UninstallEntries, int PackageFolders, long Bytes, string? BackupFile, int SetupFiles = 0);
 
     private const string UninstallPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
     private const string UninstallPath32 = @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall";
@@ -684,6 +684,64 @@ Write-Output $removed
         return removed;
     }
 
+    private static string DownloadsFolder()
+    {
+        try
+        {
+            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders", false);
+            if (key?.GetValue("{374DE290-123F-4565-9164-ABE4F9A0A5E2}") is string path && path.Length > 0)
+                return Environment.ExpandEnvironmentVariables(path);
+        }
+        catch { /* použije se výchozí složka */ }
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+    }
+
+    private const int SetupMaxAgeDays = 4;
+
+    private static readonly System.Text.RegularExpressions.Regex SetupName = new(
+        @"(setup|install|instal|installer)", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+    private static readonly System.Text.RegularExpressions.Regex OwnSetupName = new(
+        @"^GasbynOptimizer[-_ ]?Setup", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// Smaže instalační soubory (setup, installer: .exe, .msi, .msix) ze složky Stažené soubory, které jsou starší než 4 dny.
+    /// Instalátor Gasbyn Optimizeru se maže hned. Podsložky se nechávají být.
+    /// </summary>
+    private static int CleanOldSetupFiles(ref long bytes)
+    {
+        var folder = DownloadsFolder();
+        if (!Directory.Exists(folder)) return 0;
+
+        var count = 0;
+        var now = DateTime.Now;
+        foreach (var file in Directory.EnumerateFiles(folder))
+        {
+            try
+            {
+                var name = Path.GetFileName(file);
+                var ext = Path.GetExtension(file);
+                if (!ext.Equals(".exe", StringComparison.OrdinalIgnoreCase) &&
+                    !ext.Equals(".msi", StringComparison.OrdinalIgnoreCase) &&
+                    !ext.Equals(".msix", StringComparison.OrdinalIgnoreCase)) continue;
+
+                var own = OwnSetupName.IsMatch(name) && ext.Equals(".exe", StringComparison.OrdinalIgnoreCase);
+                if (!own && !SetupName.IsMatch(name)) continue;
+
+                var info = new FileInfo(file);
+                var age = now - (info.LastWriteTime > info.CreationTime ? info.LastWriteTime : info.CreationTime);
+                if (!own && age.TotalDays < SetupMaxAgeDays) continue;
+
+                var size = info.Length;
+                info.Delete();
+                bytes += size;
+                count++;
+            }
+            catch { /* soubor je otevřený nebo bez práv, přeskočí se */ }
+        }
+        return count;
+    }
+
     /// <summary>Uklidí zbytky odinstalovaných aplikací: záznamy v seznamu programů a složky aplikací z Obchodu.</summary>
     public static LeftoverResult CleanLeftovers()
     {
@@ -698,7 +756,11 @@ Write-Output $removed
         try { folders = CleanOrphanPackageFolders(ref bytes); }
         catch (Exception ex) { Log.Write("Čištění složek aplikací selhalo: " + ex.Message); }
 
-        Log.Write("Zbytky po aplikacích: záznamů " + entries + ", složek " + folders + " (" + bytes / 1024 / 1024 + " MB)");
-        return new LeftoverResult(entries, folders, bytes, backup);
+        var setups = 0;
+        try { setups = CleanOldSetupFiles(ref bytes); }
+        catch (Exception ex) { Log.Write("Čištění instalačních souborů selhalo: " + ex.Message); }
+
+        Log.Write("Zbytky po aplikacích: záznamů " + entries + ", složek " + folders + ", instalátorů " + setups + " (" + bytes / 1024 / 1024 + " MB)");
+        return new LeftoverResult(entries, folders, bytes, backup, setups);
     }
 }

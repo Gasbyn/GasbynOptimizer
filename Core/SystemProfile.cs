@@ -30,6 +30,9 @@ public sealed class SystemProfile
     /// <summary>true = systémový disk je SSD, false = HDD, null = nepodařilo se zjistit.</summary>
     public bool? SystemDriveIsSsd { get; init; }
 
+    /// <summary>true = systémový disk je NVMe, false = jiný typ (SATA SSD nebo HDD), null = nepodařilo se zjistit.</summary>
+    public bool? SystemDriveIsNvme { get; init; }
+
     public double RamGb { get; init; }
 
     public bool HasGpu(GpuVendor vendor) => Gpus.Any(g => g.Vendor == vendor);
@@ -45,7 +48,7 @@ public sealed class SystemProfile
 
     public string TypeText => IsLaptop switch { true => "Notebook", false => "Stolní PC", _ => "nezjištěno" };
 
-    public string DriveText => SystemDriveIsSsd switch { true => "SSD", false => "HDD", _ => "nezjištěno" };
+    public string DriveText => SystemDriveIsNvme == true ? "NVMe SSD" : SystemDriveIsSsd switch { true => "SSD", false => "HDD", _ => "nezjištěno" };
 
     /// <summary>Jednořádkové shrnutí pod nadpisem stránky.</summary>
     public string Summary
@@ -195,7 +198,8 @@ public sealed class SystemProfile
             BoardVendor = boardVendor,
             BoardModel = boardModel,
             IsLaptop = laptop,
-            SystemDriveIsSsd = DetectSystemDriveSsd(),
+            SystemDriveIsSsd = DetectSystemDriveSsd(out var nvme),
+            SystemDriveIsNvme = nvme,
             RamGb = ramGb
         };
 
@@ -204,12 +208,13 @@ public sealed class SystemProfile
         return profile;
     }
 
-    private static bool? DetectSystemDriveSsd()
+    private static bool? DetectSystemDriveSsd(out bool? nvme)
     {
+        nvme = null;
         const string storage = @"root\Microsoft\Windows\Storage";
         try
         {
-            var disks = Query(storage, "SELECT DeviceId, MediaType FROM MSFT_PhysicalDisk");
+            var disks = Query(storage, "SELECT DeviceId, MediaType, BusType FROM MSFT_PhysicalDisk");
             if (disks.Count == 0) return null;
 
             // Najdeme fyzický disk, na kterém leží systémový oddíl.
@@ -233,6 +238,8 @@ public sealed class SystemProfile
 
             if (disk != null)
             {
+                var bus = Text(disk, "BusType");
+                if (bus.Length > 0) nvme = bus == "17"; // BusType 17 = NVMe
                 return Text(disk, "MediaType") switch { "4" => true, "3" => false, _ => null };
             }
 
@@ -281,6 +288,14 @@ public static class Needs
     /// <summary>Neznámý typ disku se bere jako podporovaný, jen jednoznačné HDD je nepodporované.</summary>
     public static string? Ssd(SystemProfile p) =>
         p.SystemDriveIsSsd == false ? "Vyžaduje systém na SSD disku." : null;
+
+    /// <summary>Optimalizace pro pevný disk. Na SSD a NVMe je nepodporovaná (jen pokročilý režim).</summary>
+    public static string? Hdd(SystemProfile p) =>
+        p.SystemDriveIsSsd == true ? "Určeno pro systém na pevném disku (HDD). Tvůj systémový disk je SSD." : null;
+
+    /// <summary>Optimalizace pro NVMe disk.</summary>
+    public static string? Nvme(SystemProfile p) =>
+        p.SystemDriveIsNvme == false ? "Vyžaduje systémový disk NVMe." : null;
 
     public static string? Asus(SystemProfile p) =>
         p.BoardVendor.Contains("ASUS", StringComparison.OrdinalIgnoreCase) ? null : "Vyžaduje základní desku nebo notebook ASUS.";
