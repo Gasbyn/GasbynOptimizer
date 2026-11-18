@@ -16,6 +16,11 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.202", new DateTime(2026, 11, 18, 14, 40, 0), new[]
+        {
+            Chg("Aktualizované podmínky použití", "Podmínky jsou doplněné o odinstalaci aplikací, mazání starých instalačních souborů, kontrolu aktualizací přes winget a export nastavení. Všichni je musí potvrdit znovu."),
+            Chg("Spolehlivější zobrazení podmínek", "Souhlas se pamatuje v nastavení i v registru. Po nové instalaci, odinstalaci nebo smazání nastavení se podmínky ukážou znovu.")
+        }),
         new("2.0.0.201", new DateTime(2026, 11, 17, 11, 30, 0), new[]
         {
             Add("Disk: optimalizace podle typu disku", "Nová kategorie Disk. Má úpravy pro HDD, SSD a NVMe. Doporučené jsou jen tam, kde to dává smysl. Optimalizace pro jiný typ disku, než máš (například HDD na počítači s NVMe), jsou dostupné jen v pokročilém režimu."),

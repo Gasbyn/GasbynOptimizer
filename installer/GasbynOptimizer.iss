@@ -55,6 +55,9 @@ Name: "{autodesktop}\Gasbyn Optimizer"; Filename: "{app}\GasbynOptimizer.exe"; T
 
 [Registry]
 ; Jazyk vybraný v průvodci si převezme aplikace při prvním spuštění (běžná instalace, ne tichá aktualizace).
+; Klíč se při odinstalaci smaže. Při ruční (ne tiché) instalaci se zruší dřívější souhlas s podmínkami, aby je uživatel potvrdil znovu.
+Root: HKLM; Subkey: "Software\GasbynOptimizer"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\GasbynOptimizer"; ValueName: "AcceptedTermsVersion"; ValueType: none; Flags: deletevalue; Check: not WizardSilent
 Root: HKLM; Subkey: "Software\GasbynOptimizer"; ValueType: string; ValueName: "Language"; ValueData: "{language}"; Flags: uninsdeletevalue; Check: not WizardSilent
 
 [Run]

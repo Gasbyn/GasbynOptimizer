@@ -47,7 +47,7 @@ public partial class App : System.Windows.Application
 
             // Podmínky použití: při prvním spuštění (a po jejich změně) je musí uživatel odsouhlasit.
             var settings = AppSettings.Load();
-            if (settings.AcceptedTermsVersion < SupportLinks.TermsVersion)
+            if (!TermsAcceptance.IsAccepted(settings, SupportLinks.TermsVersion))
             {
                 splash.Hide();
                 var terms = new TermsWindow(true);
@@ -56,8 +56,7 @@ public partial class App : System.Windows.Application
                     Shutdown();
                     return;
                 }
-                settings.AcceptedTermsVersion = SupportLinks.TermsVersion;
-                settings.Save();
+                TermsAcceptance.Save(settings, SupportLinks.TermsVersion);
                 splash.Show();
             }
 

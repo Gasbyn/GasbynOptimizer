@@ -20,23 +20,23 @@ public static class SupportLinks
     }
 
     /// <summary>Verze podmínek. Při změně textu se zvýší a uživatel je potvrdí znovu.</summary>
-    public const int TermsVersion = 1;
+    public const int TermsVersion = 2;
 
     public const string Terms =
 @"1. Co je Gasbyn Optimizer
-Gasbyn Optimizer je nástroj, který mění nastavení Windows (registr, služby, naplánované úlohy, plány napájení a další), aby počítač běžel rychleji, hladceji a soukroměji. Nepatří společnostem Microsoft, NVIDIA, AMD, Intel, ASUS, MSI, Google, Brave, Spotify, Discord, Valve, Epic Games ani jiným. Jejich názvy a ochranné známky patří jejich vlastníkům a uvádíme je jen pro popis funkcí.
+Gasbyn Optimizer je nástroj, který mění nastavení Windows (registr, služby, naplánované úlohy, plány napájení, spouštěné aplikace a další), aby počítač běžel rychleji, hladceji a soukroměji. Nepatří společnostem Microsoft, NVIDIA, AMD, Intel, ASUS, MSI, Google, Brave, Spotify, Discord, Valve, Epic Games ani jiným. Jejich názvy a ochranné známky patří jejich vlastníkům a uvádíme je jen pro popis funkcí.
 
 2. Používáš na vlastní riziko
 Aplikace zasahuje do systému. Používáš ji na vlastní odpovědnost. Autoři a provozovatelé Gasbyn Optimizeru neodpovídají za žádné přímé ani nepřímé škody, ztrátu dat, nestabilitu či nefunkčnost systému, her nebo programů, ztrátu záruky ani jiné následky, které vzniknou používáním aplikace. Aplikace je poskytována „tak, jak je“, bez jakékoli záruky.
 
 3. Optimalizace mají různou míru rizika
-Většina optimalizací je bezpečná a jde vrátit zpět. Optimalizace označené jako „Experimentální“ nebo v kategorii „Pokročilé“ jsou hlubší, mohou snížit zabezpečení (např. mitigace procesoru, Defender, firewall, SmartScreen), vypnout funkce systému (tisk, Bluetooth, vzdálená plocha, aktualizace) nebo vyžadovat restart. Zapínej je jen, když víš, co dělají. Některé akce, například odinstalace Microsoft Edge nebo čištění souborů, nejdou vrátit zpět.
+Většina optimalizací je bezpečná a jde vrátit zpět. Optimalizace označené jako „Experimentální“ nebo v kategorii „Pokročilé“ jsou hlubší, mohou snížit zabezpečení (např. mitigace procesoru, Defender, firewall, SmartScreen), vypnout funkce systému (tisk, Bluetooth, vzdálená plocha, aktualizace) nebo vyžadovat restart. Zapínej je jen, když víš, co dělají. Některé akce, například odinstalace Microsoft Edge nebo jiných aplikací, čištění souborů nebo mazání starých instalačních souborů ve složce Stažené soubory, nejdou vrátit zpět.
 
 4. Záloha a vrácení změn
 Aplikace si před změnou pamatuje původní hodnoty a umí vytvořit bod obnovení Windows. Přesto doporučujeme zálohovat důležitá data. Vrácení původního stavu u některých změn nemusí být dokonalé, například pokud mezitím systém nebo jiný program nastavení změnil.
 
 5. Bezpečnost a soukromí
-Aplikace nesbírá osobní údaje a neodesílá informace o tvém počítači. Přistupuje k internetu jen kvůli kontrole a stažení nové verze z GitHubu. Soubory záloh a protokol změn zůstávají ve složce aplikace na tvém počítači.
+Aplikace nesbírá osobní údaje a neodesílá informace o tvém počítači. Přistupuje k internetu jen kvůli kontrole a stažení nové verze z GitHubu a kvůli kontrole aktualizací aplikací přes Windows Package Manager (winget), který komunikuje s vlastními servery. Chytrá doporučení, samokontrola i seznamy aplikací se vyhodnocují jen na tvém počítači. Soubory záloh, nastavení a protokol změn zůstávají ve složce aplikace na tvém počítači. Exportované nastavení se ukládá jen tam, kam ho sám vybereš.
 
 6. Aktualizace
 Při každém spuštění aplikace zkontroluje novou verzi a případně se sama aktualizuje. Tyto podmínky se mohou s aktualizací změnit. Pokud se změní podstatně, požádáme tě o nový souhlas.
