@@ -213,6 +213,12 @@ internal static class Details
         ["disk-hdd-ntfs-memory"] = D("Systém souborů NTFS dostane víc paměti na vlastní evidenci souborů.", "Složky s tisíci soubory se otevírají rychleji a pevný disk míň hledá.", "Hodí se jen při dostatku RAM. Vyžaduje restart."),
         ["disk-nvme-native-driver"] = D("Zapne v novějším Windows 11 nový ovladač disků NVMe.", "Lépe využívá víc jader procesoru, takže může zrychlit náhodné čtení a zápis.", "Neoficiální. Některé zálohovací a diskové nástroje s ním nemusí fungovat. Vyžaduje restart."),
 
+        // ---- Wi-Fi ----
+        ["wifi-power-saving"] = D("Wi-Fi adaptér se na síťovém napájení nepřepíná do úsporného režimu.", "Stabilnější signál a nižší odezva, míň výpadků a zpoždění při hraní a hovorech.", "Jen na síťovém napájení. Na baterii notebooku se nic nemění."),
+        ["wifi-suggested-hotspots"] = D("Windows se přestane samo připojovat k doporučeným otevřeným Wi-Fi sítím v okolí.", "Bezpečnější a soukromější, nepřipojíš se omylem do cizí sítě."),
+        ["wifi-prefer-cable"] = D("Když je připojený síťový kabel, Windows vypne Wi-Fi a použije jen kabel.", "Stabilnější internet bez přepínání mezi kabelem a Wi-Fi.", "Wi-Fi se po odpojení kabelu připojí samo zpátky."),
+        ["wifi-hotspot-services"] = D("Vypne služby mobilního hotspotu a Wi-Fi Direct, které na pozadí běží, i když je nepoužíváš.", "Méně procesů na pozadí, Wi-Fi zůstává funkční.", "Nepůjde sdílet internet z počítače jako hotspot ani posílat soubory přes Wi-Fi Direct."),
+
         // ---- Debloat ----
         ["debloat-chrome"] = D("Vypne v Chrome hlášení a statistiky, běh na pozadí, rychlý start a reklamní doporučení.", "Chrome zbytečně nezatěžuje počítač a neposílá data.", "Žádné."),
         ["debloat-brave"] = D("Vypne v Brave Rewards, peněženku, VPN, AI chat a hlášení.", "Čistší prohlížeč bez věcí, které nepoužíváš."),

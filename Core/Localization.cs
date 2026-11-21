@@ -85,6 +85,7 @@ public static class L
         ["Všechny optimalizace"] = "All optimizations",
         ["Hraní a výkon"] = "Gaming & performance",
         ["Disk"] = "Disk",
+        ["Wi-Fi"] = "Wi-Fi",
         ["Zobrazit nepodporované"] = "Show unsupported",
         ["Vzhled"] = "Appearance",
         ["Služby"] = "Services",

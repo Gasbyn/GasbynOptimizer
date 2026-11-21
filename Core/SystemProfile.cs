@@ -33,6 +33,9 @@ public sealed class SystemProfile
     /// <summary>true = systémový disk je NVMe, false = jiný typ (SATA SSD nebo HDD), null = nepodařilo se zjistit.</summary>
     public bool? SystemDriveIsNvme { get; init; }
 
+    /// <summary>true = počítač má Wi-Fi adaptér, false = nemá, null = nepodařilo se zjistit.</summary>
+    public bool? HasWifi { get; init; }
+
     public double RamGb { get; init; }
 
     public bool HasGpu(GpuVendor vendor) => Gpus.Any(g => g.Vendor == vendor);
@@ -78,6 +81,17 @@ public sealed class SystemProfile
         if (string.IsNullOrWhiteSpace(text)) return "";
         var cleaned = text.Replace("(R)", "").Replace("(TM)", "").Replace("(tm)", "").Replace("(r)", "");
         return Regex.Replace(cleaned, @"\s+", " ").Trim();
+    }
+
+    private static bool? DetectWifi()
+    {
+        var adapters = Query(@"root\cimv2", "SELECT Name, NetConnectionID FROM Win32_NetworkAdapter WHERE PhysicalAdapter = TRUE");
+        if (adapters.Count == 0) return null;
+        return adapters.Any(a =>
+        {
+            var text = (Text(a, "Name") + " " + Text(a, "NetConnectionID")).ToLowerInvariant();
+            return text.Contains("wi-fi") || text.Contains("wifi") || text.Contains("wireless") || text.Contains("wlan") || text.Contains("802.11");
+        });
     }
 
     private static List<ManagementBaseObject> Query(string scope, string wql)
@@ -200,6 +214,7 @@ public sealed class SystemProfile
             IsLaptop = laptop,
             SystemDriveIsSsd = DetectSystemDriveSsd(out var nvme),
             SystemDriveIsNvme = nvme,
+            HasWifi = DetectWifi(),
             RamGb = ramGb
         };
 
@@ -288,6 +303,10 @@ public static class Needs
     /// <summary>Neznámý typ disku se bere jako podporovaný, jen jednoznačné HDD je nepodporované.</summary>
     public static string? Ssd(SystemProfile p) =>
         p.SystemDriveIsSsd == false ? "Vyžaduje systém na SSD disku." : null;
+
+    /// <summary>Wi-Fi optimalizace dávají smysl jen na počítači s Wi-Fi adaptérem.</summary>
+    public static string? Wifi(SystemProfile p) =>
+        p.HasWifi == false ? "Tento počítač nemá Wi-Fi adaptér." : null;
 
     /// <summary>Optimalizace pro pevný disk. Na SSD a NVMe je nepodporovaná (jen pokročilý režim).</summary>
     public static string? Hdd(SystemProfile p) =>

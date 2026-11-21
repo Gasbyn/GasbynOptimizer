@@ -184,6 +184,7 @@ public partial class OptimizerWindow : Window
     {
         ("Hraní a výkon", new[] { Catalog.CatGaming, CatalogPower.CatPower, Catalog.CatSystem, CatalogHardware.CatHardware }),
         ("Disk", new[] { CatalogDisk.CatDisk }),
+        ("Wi-Fi", new[] { CatalogWifi.CatWifi }),
         ("Vzhled", new[] { Catalog.CatVisual, CatalogFonts.CatFonts, Catalog.CatUi }),
         ("Služby", new[] { Catalog.CatServices }),
         ("Debloat", new[] { CatalogDebloat.CatDebloat }),

@@ -23,7 +23,7 @@ public static class Catalog
     /// <summary>Pořadí kategorií v levém menu.</summary>
     internal static readonly string[] CategoryOrder =
     {
-        CatPrivacy, CatUpdate, CatInternet, CatGaming, CatalogPower.CatPower, CatSystem, CatVisual, CatalogFonts.CatFonts, CatUi, CatServices, CatalogHardware.CatHardware, CatalogDebloat.CatDebloat, CatalogAdvanced.CatAdvanced, CatalogDisk.CatDisk
+        CatPrivacy, CatUpdate, CatInternet, CatGaming, CatalogPower.CatPower, CatSystem, CatVisual, CatalogFonts.CatFonts, CatUi, CatServices, CatalogHardware.CatHardware, CatalogDebloat.CatDebloat, CatalogAdvanced.CatAdvanced, CatalogDisk.CatDisk, CatalogWifi.CatWifi
     };
 
     // --- pomocné továrny ---------------------------------------------------------------------
@@ -56,7 +56,7 @@ public static class Catalog
 
     public static IReadOnlyList<Tweak> All() => Details.Apply(CatalogMerge.Apply(AllRaw()));
 
-    private static IReadOnlyList<Tweak> AllRaw() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).Concat(CatalogPower.Create()).Concat(CatalogAdvanced.Create()).Concat(CatalogMore.Create()).Concat(CatalogDebloat.Create()).Concat(CatalogNetwork.Create()).Concat(CatalogGpu.Create()).Concat(CatalogV27.Create()).Concat(CatalogDisk.Create()).ToList();
+    private static IReadOnlyList<Tweak> AllRaw() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).Concat(CatalogPower.Create()).Concat(CatalogAdvanced.Create()).Concat(CatalogMore.Create()).Concat(CatalogDebloat.Create()).Concat(CatalogNetwork.Create()).Concat(CatalogGpu.Create()).Concat(CatalogV27.Create()).Concat(CatalogDisk.Create()).Concat(CatalogWifi.Create()).ToList();
 
     private static IReadOnlyList<Tweak> Base()
     {

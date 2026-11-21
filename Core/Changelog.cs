@@ -16,6 +16,11 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.211", new DateTime(2026, 11, 21, 20, 40, 0), new[]
+        {
+            Add("Aktualizátor ovladačů", "V Údržbě, Aktualizace, je teď přepínač Aplikace / Drivery. Drivery vyhledá a nainstaluje přes Windows Update, takže nabídne jen ovladače, které pro tvůj počítač zveřejnil výrobce. Před instalací se vytvoří bod obnovení. Když Windows Update v systému chybí, kategorie Drivery se nezobrazí."),
+            Add("Wi-Fi optimalizace", "Nová kategorie Wi-Fi: vypnutí úsporného režimu Wi-Fi adaptéru (doporučeno), nepřipojování k doporučeným otevřeným sítím (doporučeno), vypnutí Wi-Fi při připojeném kabelu a vypnutí mobilního hotspotu a Wi-Fi Direct. Na počítači bez Wi-Fi jsou nepodporované.")
+        }),
         new("2.0.0.202", new DateTime(2026, 11, 18, 14, 40, 0), new[]
         {
             Chg("Aktualizované podmínky použití", "Podmínky jsou doplněné o odinstalaci aplikací, mazání starých instalačních souborů, kontrolu aktualizací přes winget a export nastavení. Všichni je musí potvrdit znovu."),

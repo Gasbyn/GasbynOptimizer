@@ -104,6 +104,7 @@ public static class Icons
         "Služby" => "Server",
         "Debloat" => "Delete",
         "Disk" => "Server",
+        "Wi-Fi" => "Public",
         "Pokročilé" => "Bolt",
         "#fps" => "Speed",
         "#maint" => "Build",

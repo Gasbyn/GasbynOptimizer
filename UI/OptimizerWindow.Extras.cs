@@ -90,6 +90,7 @@ public partial class OptimizerWindow
     private void BuildExtras()
     {
         L.Add(ExtraEn);
+        BuildDriversUi();
         var host = (Panel)PageSettings.Parent;
 
         // --- Spouštěné aplikace
