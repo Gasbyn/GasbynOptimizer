@@ -213,6 +213,10 @@ internal static class Details
         ["disk-hdd-ntfs-memory"] = D("Systém souborů NTFS dostane víc paměti na vlastní evidenci souborů.", "Složky s tisíci soubory se otevírají rychleji a pevný disk míň hledá.", "Hodí se jen při dostatku RAM. Vyžaduje restart."),
         ["disk-nvme-native-driver"] = D("Zapne v novějším Windows 11 nový ovladač disků NVMe.", "Lépe využívá víc jader procesoru, takže může zrychlit náhodné čtení a zápis.", "Neoficiální. Některé zálohovací a diskové nástroje s ním nemusí fungovat. Vyžaduje restart."),
 
+        // ---- Kamera ----
+        ["camera-access-deny"] = D("Aplikace a weby nedostanou přístup ke kameře.", "Soukromí: nikdo tě přes kameru neuvidí, a přitom zůstane kamera ve Windows.", "Kamera nepůjde použít v Discordu, Zoomu ani Teams, dokud úpravu nevypneš."),
+        ["camera-support-off"] = D("Vypne podporu kamer ve Windows včetně služby, která kameru sdílí mezi aplikacemi.", "Méně procesů na pozadí a úplná jistota, že kamera nejede.", "Kamera nepůjde použít v žádném programu. Vyžaduje restart."),
+
         // ---- Wi-Fi ----
         ["wifi-power-saving"] = D("Wi-Fi adaptér se na síťovém napájení nepřepíná do úsporného režimu.", "Stabilnější signál a nižší odezva, míň výpadků a zpoždění při hraní a hovorech.", "Jen na síťovém napájení. Na baterii notebooku se nic nemění."),
         ["wifi-suggested-hotspots"] = D("Windows se přestane samo připojovat k doporučeným otevřeným Wi-Fi sítím v okolí.", "Bezpečnější a soukromější, nepřipojíš se omylem do cizí sítě."),

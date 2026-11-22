@@ -16,10 +16,15 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
-        new("2.0.0.211", new DateTime(2026, 11, 21, 20, 40, 0), new[]
+        new("2.0.0.214", new DateTime(2026, 11, 22, 16, 10, 0), new[]
         {
-            Add("Aktualizátor ovladačů", "V Údržbě, Aktualizace, je teď přepínač Aplikace / Drivery. Drivery vyhledá a nainstaluje přes Windows Update, takže nabídne jen ovladače, které pro tvůj počítač zveřejnil výrobce. Před instalací se vytvoří bod obnovení. Když Windows Update v systému chybí, kategorie Drivery se nezobrazí."),
-            Add("Wi-Fi optimalizace", "Nová kategorie Wi-Fi: vypnutí úsporného režimu Wi-Fi adaptéru (doporučeno), nepřipojování k doporučeným otevřeným sítím (doporučeno), vypnutí Wi-Fi při připojeném kabelu a vypnutí mobilního hotspotu a Wi-Fi Direct. Na počítači bez Wi-Fi jsou nepodporované.")
+            Add("Automatické aktualizace za běhu", "Když je aplikace zapnutá, každou minutu se zkontroluje nová verze. Drobná verze (změní se jen poslední číslo) se nainstaluje sama na pozadí. U větší verze s novými funkcemi se ukáže okno Teď / Později, aplikace se přesune do popředí a problikává v liště. Při Později se aktualizuje sama při příštím spuštění."),
+            Add("Aktualizátor ovladačů", "V Údržbě, Aktualizace, je přepínač Aplikace / Drivery. Drivery vyhledá a nainstaluje přes Windows Update, takže nabídne jen ovladače, které pro tvůj počítač zveřejnil výrobce. Před instalací se vytvoří bod obnovení. Když Windows Update v systému chybí, kategorie Drivery se nezobrazí."),
+            Add("Wi-Fi optimalizace", "Vypnutí úsporného režimu Wi-Fi adaptéru (doporučeno), nepřipojování k doporučeným otevřeným sítím (doporučeno), vypnutí Wi-Fi při připojeném kabelu a vypnutí mobilního hotspotu a Wi-Fi Direct. Na počítači bez Wi-Fi jsou nepodporované."),
+            Add("Kamera: zakázat aplikacím přístup", "Aplikace nedostanou přístup ke kameře, kamera zůstane v systému. Lehčí varianta pro ty, kdo kameru nepoužívají."),
+            Add("Kamera: vypnout podporu kamer", "Úplné vypnutí podpory kamer ve Windows. Experimentální, kamera přestane fungovat ve všech programech (Discord, Zoom, OBS)."),
+            Chg("Méně kategorií", "Kategorie Pokročilé, Debloat, Služby, Vzhled, Disk, Wi-Fi a Hraní a výkon nahradilo devět přehlednějších: Soukromí, Výkon a hry, Disk a úložiště, Síť a Wi-Fi, Windows Update, Vzhled a pohodlí, Systém a služby, Předinstalované aplikace a Zabezpečení a funkce Windows."),
+            Chg("Spouštěné aplikace v Údržbě", "Spouštěné aplikace už nejsou v levém menu, najdeš je v Údržbě.")
         }),
         new("2.0.0.202", new DateTime(2026, 11, 18, 14, 40, 0), new[]
         {

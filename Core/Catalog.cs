@@ -20,10 +20,36 @@ public static class Catalog
 
     internal const string Win11 = "Pouze Windows 11.";
 
+    // --- Kategorie, jak je vidí uživatel. Dílčí katalogy si dál označují optimalizace svými původními názvy
+    // a tady se převedou na tyto kategorie (viz Remap).
+    internal const string NewPrivacy = "Soukromí";
+    internal const string NewPerformance = "Výkon a hry";
+    internal const string NewDisk = "Disk a úložiště";
+    internal const string NewNetwork = "Síť a Wi-Fi";
+    internal const string NewUpdate = "Windows Update";
+    internal const string NewLook = "Vzhled a pohodlí";
+    internal const string NewSystem = "Systém a služby";
+    internal const string NewApps = "Předinstalované aplikace";
+    internal const string NewSecurity = "Zabezpečení a funkce Windows";
+
     /// <summary>Pořadí kategorií v levém menu.</summary>
     internal static readonly string[] CategoryOrder =
     {
-        CatPrivacy, CatUpdate, CatInternet, CatGaming, CatalogPower.CatPower, CatSystem, CatVisual, CatalogFonts.CatFonts, CatUi, CatServices, CatalogHardware.CatHardware, CatalogDebloat.CatDebloat, CatalogAdvanced.CatAdvanced, CatalogDisk.CatDisk, CatalogWifi.CatWifi
+        NewPrivacy, NewPerformance, NewDisk, NewNetwork, NewUpdate, NewLook, NewSystem, NewApps, NewSecurity
+    };
+
+    internal static string Remap(string category) => category switch
+    {
+        CatPrivacy => NewPrivacy,
+        CatGaming or CatalogPower.CatPower or CatalogHardware.CatHardware => NewPerformance,
+        CatalogDisk.CatDisk => NewDisk,
+        CatInternet or CatalogWifi.CatWifi => NewNetwork,
+        CatUpdate => NewUpdate,
+        CatVisual or CatalogFonts.CatFonts or CatUi => NewLook,
+        CatSystem or CatServices => NewSystem,
+        CatalogDebloat.CatDebloat => NewApps,
+        CatalogAdvanced.CatAdvanced => NewSecurity,
+        _ => category
     };
 
     // --- pomocné továrny ---------------------------------------------------------------------
@@ -54,9 +80,14 @@ public static class Catalog
 
     // --- katalog -----------------------------------------------------------------------------
 
-    public static IReadOnlyList<Tweak> All() => Details.Apply(CatalogMerge.Apply(AllRaw()));
+    public static IReadOnlyList<Tweak> All()
+    {
+        var all = Details.Apply(CatalogMerge.Apply(AllRaw()));
+        foreach (var tweak in all) tweak.Category = Remap(tweak.Category);
+        return all;
+    }
 
-    private static IReadOnlyList<Tweak> AllRaw() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).Concat(CatalogPower.Create()).Concat(CatalogAdvanced.Create()).Concat(CatalogMore.Create()).Concat(CatalogDebloat.Create()).Concat(CatalogNetwork.Create()).Concat(CatalogGpu.Create()).Concat(CatalogV27.Create()).Concat(CatalogDisk.Create()).Concat(CatalogWifi.Create()).ToList();
+    private static IReadOnlyList<Tweak> AllRaw() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).Concat(CatalogPower.Create()).Concat(CatalogAdvanced.Create()).Concat(CatalogMore.Create()).Concat(CatalogDebloat.Create()).Concat(CatalogNetwork.Create()).Concat(CatalogGpu.Create()).Concat(CatalogV27.Create()).Concat(CatalogDisk.Create()).Concat(CatalogWifi.Create()).Concat(CatalogCamera.Create()).ToList();
 
     private static IReadOnlyList<Tweak> Base()
     {

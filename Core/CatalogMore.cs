@@ -73,7 +73,7 @@ internal static class CatalogMore
             },
             new()
             {
-                Id = "prefetch-off", Category = Catalog.CatSystem, IsNew = true, Requires = Needs.Ssd, Experimental = true, RequiresRestart = true,
+                Id = "prefetch-off", Category = Catalog.CatSystem, Requires = Needs.Ssd, Experimental = true, RequiresRestart = true,
                 Name = "Vypnout Prefetch a Superfetch v registru",
                 Description = "Vypne předčítání souborů při startu. Má smysl hlavně na SSD, kde ho nepotřebuješ.",
                 Note = "Dostupné jen pro systém na SSD (na pevném disku HDD by systém zpomalil). Vyžaduje restart.",

@@ -181,15 +181,7 @@ public partial class OptimizerWindow : Window
     // Levé menu je záměrně krátké. Ostatní kategorie (soukromí, aktualizace, internet atd.)
     // se zobrazují jen v položce „Všechny optimalizace“, kde jsou seskupené pod nadpisy.
     private static readonly (string Name, string[] Categories)[] NavGroups =
-    {
-        ("Hraní a výkon", new[] { Catalog.CatGaming, CatalogPower.CatPower, Catalog.CatSystem, CatalogHardware.CatHardware }),
-        ("Disk", new[] { CatalogDisk.CatDisk }),
-        ("Wi-Fi", new[] { CatalogWifi.CatWifi }),
-        ("Vzhled", new[] { Catalog.CatVisual, CatalogFonts.CatFonts, Catalog.CatUi }),
-        ("Služby", new[] { Catalog.CatServices }),
-        ("Debloat", new[] { CatalogDebloat.CatDebloat }),
-        ("Pokročilé", new[] { CatalogAdvanced.CatAdvanced })
-    };
+        Catalog.CategoryOrder.Select(c => (c, new[] { c })).ToArray();
 
     private string[] _categories = Array.Empty<string>();
     private bool _showUnsupported;
@@ -211,7 +203,6 @@ public partial class OptimizerWindow : Window
 
         var fps = AddNav("Performance Tester (brzy)", "#fps", false);
         fps.IsEnabled = false;
-        AddNav("Spouštěné aplikace", "#startup", false);
         AddNav("Údržba", "#maint", false);
         AddNav("Nastavení", "#settings", false);
     }
@@ -224,7 +215,6 @@ public partial class OptimizerWindow : Window
         PageMaintenance.Visibility = tag == "#maint" ? Visibility.Visible : Visibility.Collapsed;
         PageSettings.Visibility = tag == "#settings" ? Visibility.Visible : Visibility.Collapsed;
         if (tag == "#maint") Motion.Page(PageMaintenance);
-        ShowExtraPage(tag);
         if (tag == "#settings") Motion.Page(PageSettings);
         if (tag.StartsWith('#')) return;
 
@@ -355,7 +345,7 @@ public partial class OptimizerWindow : Window
         if (!item.IsSupported && !_showUnsupported) return false;
 
         // Aplikace, které na tomto PC nejsou nebo nejdou odinstalovat, se ukazují jen v pokročilém režimu.
-        if (!_settings.AdvancedMode && !item.IsAvailable && item.Category == CatalogDebloat.CatDebloat) return false;
+        if (!_settings.AdvancedMode && !item.IsAvailable && item.Category == Catalog.NewApps) return false;
 
         switch (_filter)
         {

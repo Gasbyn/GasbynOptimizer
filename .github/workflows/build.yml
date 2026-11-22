@@ -60,8 +60,8 @@ jobs:
             $tag = ''
           } else {
             $tags = @(gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=100" --paginate --jq '.[].tag_name')
-            # Stabilní vydání jsou v2.0.0.N (v2.0.0 byl základ, další vydání začínají na v2.0.0.6, aktuálně 2.0.0.210). Betaverze v2.0.b1.N se nepočítají.
-            $max = 210
+            # Stabilní vydání jsou v2.0.0.N (v2.0.0 byl základ, další vydání začínají na v2.0.0.6, aktuálně 2.0.0.213). Betaverze v2.0.b1.N se nepočítají.
+            $max = 213
             foreach ($t in $tags) {
               $m = [regex]::Match([string]$t, '^v2\.0\.0\.(\d+)$')
               if ($m.Success -and [int]$m.Groups[1].Value -gt $max) { $max = [int]$m.Groups[1].Value }
@@ -146,7 +146,8 @@ jobs:
           tag_name: ${{ steps.ver.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: Gasbyn Optimizer ${{ steps.ver.outputs.label }}
-          generate_release_notes: true
+          body_path: RELEASE_NOTES.md
+          generate_release_notes: false
           make_latest: 'true'
           files: |
             dist/*.exe

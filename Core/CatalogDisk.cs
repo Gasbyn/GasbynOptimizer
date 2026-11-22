@@ -18,7 +18,7 @@ internal static class CatalogDisk
         {
             new()
             {
-                Id = "disk-ntfs-lastaccess", Category = CatDisk, IsNew = true, Recommended = true, RequiresRestart = true,
+                Id = "disk-ntfs-lastaccess", Category = CatDisk, Recommended = true, RequiresRestart = true,
                 Name = "Disk: nezapisovat čas posledního přístupu k souborům",
                 Description = "NTFS přestane při každém čtení souboru zapisovat čas posledního přístupu. Méně zápisů na disk, rychlejší práce se spoustou souborů.",
                 Note = "Programy, které čas posledního přístupu používají (některé zálohovací nástroje), ho už nedostanou. Vyžaduje restart.",
@@ -30,7 +30,7 @@ internal static class CatalogDisk
             },
             new()
             {
-                Id = "disk-hdd-no-spindown", Category = CatDisk, IsNew = true, Requires = Needs.Hdd,
+                Id = "disk-hdd-no-spindown", Category = CatDisk, Requires = Needs.Hdd,
                 RecommendWhen = p => p.SystemDriveIsSsd == false && p.IsLaptop != true,
                 RequiresRestart = false,
                 Name = "HDD: nevypínat pevný disk při nečinnosti",
@@ -43,7 +43,7 @@ internal static class CatalogDisk
             },
             new()
             {
-                Id = "disk-hdd-ntfs-memory", Category = CatDisk, IsNew = true, Requires = Needs.Hdd, RequiresRestart = true,
+                Id = "disk-hdd-ntfs-memory", Category = CatDisk, Requires = Needs.Hdd, RequiresRestart = true,
                 RecommendWhen = p => p.SystemDriveIsSsd == false && p.RamGb >= 16,
                 Name = "HDD: větší paměť pro souborový systém NTFS",
                 Description = "NTFS dostane víc paměti na ukládání informací o souborech. Pevný disk pak míň hledá a složky s tisíci soubory se otevírají rychleji.",
@@ -55,7 +55,7 @@ internal static class CatalogDisk
             },
             new()
             {
-                Id = "disk-nvme-native-driver", Category = CatDisk, IsNew = true, Requires = Needs.Nvme, Experimental = true, RequiresRestart = true,
+                Id = "disk-nvme-native-driver", Category = CatDisk, Requires = Needs.Nvme, Experimental = true, RequiresRestart = true,
                 MinBuild = 26100,
                 Name = "NVMe: nativní ovladač Windows (rychlejší fronta příkazů)",
                 Description = "Zapne v novějším Windows 11 nový ovladač disků NVMe, který lépe využívá více jader procesoru. Může zrychlit náhodné čtení a zápis.",

@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace GasbynOptimizer.Core;
 
-public sealed record UpdateInfo(Version Version, string Label, string DownloadUrl, string FileName, string? Sha256);
+public sealed record UpdateInfo(Version Version, string Label, string DownloadUrl, string FileName, string? Sha256, string? Notes = null);
 
 /// <summary>
 /// Kontrola a instalace nových verzí z GitHub Releases. Aktualizace se bere jen z vydání,
@@ -90,13 +90,23 @@ public static class AppUpdater
                         sha = digest.Substring("sha256:".Length);
                 }
 
-                best = new UpdateInfo(version, tag.TrimStart('v', 'V'), url, Path.GetFileName(name), sha);
+                var notes = release.TryGetProperty("body", out var bodyElement) && bodyElement.ValueKind == JsonValueKind.String
+                    ? bodyElement.GetString()
+                    : null;
+                best = new UpdateInfo(version, tag.TrimStart('v', 'V'), url, Path.GetFileName(name), sha, notes);
                 break;
             }
         }
 
         return best != null && best.Version > Current ? best : null;
     }
+
+    /// <summary>
+    /// Změna v prvních třech číslech (2.x.x) je „velká“ verze s novými funkcemi, kvůli které se uživatel ptá.
+    /// Změna jen posledního čísla (y) je drobná a instaluje se sama.
+    /// </summary>
+    public static bool IsMajorChange(Version latest, Version current) =>
+        latest.Major != current.Major || latest.Minor != current.Minor || latest.Build != current.Build;
 
     /// <summary>Stáhne instalátor do dočasné složky a ověří kontrolní součet (pokud ho GitHub uvádí).</summary>
     public static async Task<string> DownloadAsync(UpdateInfo info, IProgress<double> progress, CancellationToken ct)

@@ -37,7 +37,7 @@ public static class Advisor
             var t = input.Tweak;
             if (t.ApplyOnly || !input.Supported) continue;
             if (input.State is TweakState.On or TweakState.NotApplicable) continue;
-            if ((t.Experimental || t.Category == CatalogAdvanced.CatAdvanced) && !advancedMode) continue;
+            if ((t.Experimental || t.Category == Catalog.NewSecurity) && !advancedMode) continue;
 
             var key = (t.Id + " " + t.Name + " " + t.Category).ToLowerInvariant();
             var score = input.Recommended ? 50 : 15;
@@ -98,7 +98,7 @@ public static class Advisor
                 reasons.Add("Používáš OBS, proto u nahrávání raději nic neměnit.");
             }
 
-            var risky = t.Experimental || t.Confirm != null || t.Category == CatalogAdvanced.CatAdvanced;
+            var risky = t.Experimental || t.Confirm != null || t.Category == Catalog.NewSecurity;
             if (risky) score -= 20;
             else if (t.RequiresRestart) score -= 3;
 

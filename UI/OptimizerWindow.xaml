@@ -316,9 +316,10 @@
 
                         <WrapPanel Margin="0,0,0,16">
                             <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Úklid" Tag="clean" GroupName="mtab" IsChecked="True" Click="MaintTab_Click"/>
-                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Aktualizace aplikací" Tag="update" GroupName="mtab" Click="MaintTab_Click"/>
+                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Aktualizace" Tag="update" GroupName="mtab" Click="MaintTab_Click"/>
                             <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Odinstalace aplikací" Tag="uninstall" GroupName="mtab" Click="MaintTab_Click"/>
                             <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Prohlížeče" Tag="browser" GroupName="mtab" Click="MaintTab_Click"/>
+                            <RadioButton Style="{StaticResource ChipButton}" Margin="0,0,6,6" Content="Spouštěné aplikace" Tag="startup" GroupName="mtab" Click="MaintTab_Click"/>
                         </WrapPanel>
 
                         <!-- Úklid -->

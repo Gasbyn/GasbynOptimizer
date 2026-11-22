@@ -21,7 +21,7 @@ public sealed class SettingsExport
 /// <summary>Nové stránky a karty: chytrý detektor, spouštěné aplikace, samokontrola, export/import, jazyk a motiv.</summary>
 public partial class OptimizerWindow
 {
-    private ScrollViewer _pageStartup = null!;
+    private StackPanel _pageStartup = null!;
     private StackPanel _startupList = null!;
     private TextBlock _startupInfo = null!;
     private TextBlock _selfCheckText = null!;
@@ -91,10 +91,10 @@ public partial class OptimizerWindow
     {
         L.Add(ExtraEn);
         BuildDriversUi();
-        var host = (Panel)PageSettings.Parent;
 
         // --- Spouštěné aplikace
-        _pageStartup = MakePage("Spouštěné aplikace", out var startupRoot);
+        _pageStartup = new StackPanel { Visibility = Visibility.Collapsed };
+        var startupRoot = _pageStartup;
         startupRoot.Children.Add(new TextBlock
         {
             Text = "Zde vidíš programy, které se spouští s Windows. Vypnutím zrychlíš start systému. Nic se nemaže, kdykoli ho můžeš zase zapnout. Používá stejný záznam jako Správce úloh.",
@@ -105,7 +105,7 @@ public partial class OptimizerWindow
         startupRoot.Children.Add(GhostButton("Obnovit seznam", (_, _) => LoadStartup()));
         _startupList = new StackPanel();
         startupRoot.Children.Add(_startupList);
-        host.Children.Add(_pageStartup);
+        ((Panel)MaintBrowser.Parent).Children.Add(_pageStartup);
 
         // --- karty v Nastavení
         var settingsRoot = (StackPanel)((ScrollViewer)PageSettings).Content;
@@ -154,6 +154,7 @@ public partial class OptimizerWindow
         settingsRoot.Children.Insert(4, exportCard);
 
         UpdateSelfCheckText(null);
+        StartAutoUpdate();
         Loaded += async (_, _) =>
         {
             if (_settings.AutoSelfCheck) await RunSelfCheckAsync(false);
@@ -189,12 +190,6 @@ public partial class OptimizerWindow
         _settings.Theme = code;
         _settings.Save();
         MessageBox.Show(this, L.T("Změna se projeví po restartu aplikace."), "Gasbyn Optimizer", MessageBoxButton.OK, MessageBoxImage.Information);
-    }
-
-    private void ShowExtraPage(string tag)
-    {
-        _pageStartup.Visibility = tag == "#startup" ? Visibility.Visible : Visibility.Collapsed;
-        if (tag == "#startup") { LoadStartup(); Motion.Page(_pageStartup); }
     }
 
     // --- samokontrola ---------------------------------------------------------------------------

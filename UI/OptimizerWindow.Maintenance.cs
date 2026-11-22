@@ -24,6 +24,9 @@ public partial class OptimizerWindow
         MaintUninstall.Visibility = tag == "uninstall" ? Visibility.Visible : Visibility.Collapsed;
         MaintBrowser.Visibility = tag == "browser" ? Visibility.Visible : Visibility.Collapsed;
 
+        _pageStartup.Visibility = tag == "startup" ? Visibility.Visible : Visibility.Collapsed;
+        if (tag == "startup") LoadStartup();
+
         if (tag == "uninstall" && !_appsLoaded)
             await LoadAppsAsync();
     }
