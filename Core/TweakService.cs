@@ -36,6 +36,9 @@ public sealed class Tweak
     /// <summary>Nově přidaná optimalizace (filtr Nové).</summary>
     public bool IsNew { get; init; }
 
+    /// <summary>Po zjištění, že optimalizace přestala platit (nová verze služby aplikace), se při samokontrole tiše zapne znovu.</summary>
+    public bool AutoReapply { get; init; }
+
     /// <summary>Podrobné vysvětlení lidskou řečí (co to dělá, proč to chceš, na co si dát pozor).</summary>
     public string Detail { get; set; } = "";
 

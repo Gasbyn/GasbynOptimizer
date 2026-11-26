@@ -87,7 +87,7 @@ public static class Catalog
         return all;
     }
 
-    private static IReadOnlyList<Tweak> AllRaw() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).Concat(CatalogPower.Create()).Concat(CatalogAdvanced.Create()).Concat(CatalogMore.Create()).Concat(CatalogDebloat.Create()).Concat(CatalogNetwork.Create()).Concat(CatalogGpu.Create()).Concat(CatalogV27.Create()).Concat(CatalogDisk.Create()).Concat(CatalogWifi.Create()).Concat(CatalogCamera.Create()).ToList();
+    private static IReadOnlyList<Tweak> AllRaw() => Base().Concat(CatalogExtra.Create()).Concat(CatalogFonts.Create()).Concat(CatalogHardware.Create()).Concat(CatalogPower.Create()).Concat(CatalogAdvanced.Create()).Concat(CatalogMore.Create()).Concat(CatalogDebloat.Create()).Concat(CatalogNetwork.Create()).Concat(CatalogGpu.Create()).Concat(CatalogV27.Create()).Concat(CatalogDisk.Create()).Concat(CatalogWifi.Create()).Concat(CatalogCamera.Create()).Concat(CatalogAppUpdaters.Create()).ToList();
 
     private static IReadOnlyList<Tweak> Base()
     {

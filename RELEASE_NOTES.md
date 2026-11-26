@@ -1,1 +1,1 @@
-Automatické aktualizace za běhu, aktualizátor ovladačů, Wi-Fi a kamera optimalizace, přehlednější kategorie. Podrobnosti najdeš po aktualizaci v Update logu přímo v aplikaci.
+Aktualizace aplikací jen ručně (Chrome, Brave, Firefox, Opera, Adobe, Dropbox), vysoká priorita her a streamování, Windows Update jen ručně. Podrobnosti najdeš po aktualizaci v Update logu přímo v aplikaci.

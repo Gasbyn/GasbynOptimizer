@@ -15,7 +15,7 @@ internal static class CatalogWifi
         {
             new()
             {
-                Id = "wifi-power-saving", Category = CatWifi, IsNew = true, Requires = Needs.Wifi, Recommended = true,
+                Id = "wifi-power-saving", Category = CatWifi, Requires = Needs.Wifi, Recommended = true,
                 Name = "Wi-Fi: vypnout úsporný režim adaptéru",
                 Description = "Wi-Fi adaptér poběží na síťovém napájení v režimu maximálního výkonu. Méně výpadků, nižší odezva a stabilnější signál.",
                 Note = "Platí jen na síťovém napájení, na baterii notebooku se nic nemění. Doplňuje vypnutí šetření energie síťové karty v Síti.",
@@ -27,7 +27,7 @@ internal static class CatalogWifi
             },
             new()
             {
-                Id = "wifi-suggested-hotspots", Category = CatWifi, IsNew = true, Requires = Needs.Wifi, Recommended = true,
+                Id = "wifi-suggested-hotspots", Category = CatWifi, Requires = Needs.Wifi, Recommended = true,
                 Name = "Wi-Fi: nepřipojovat se k doporučeným otevřeným sítím",
                 Description = "Windows se přestane samo připojovat k otevřeným Wi-Fi hotspotům, které sám doporučí. Bezpečnější a soukromější.",
                 Ops = new TweakOp[]
@@ -37,7 +37,7 @@ internal static class CatalogWifi
             },
             new()
             {
-                Id = "wifi-prefer-cable", Category = CatWifi, IsNew = true, Requires = Needs.Wifi,
+                Id = "wifi-prefer-cable", Category = CatWifi, Requires = Needs.Wifi,
                 Name = "Wi-Fi: vypnout Wi-Fi, když je připojený kabel",
                 Description = "Když je připojený síťový kabel, Windows odpojí Wi-Fi a používá jen kabel. Internet je stabilnější a nepřepíná se mezi dvěma sítěmi.",
                 Note = "Hodí se na počítač nebo notebook, který používáš s kabelem i bez něj. Po odpojení kabelu se Wi-Fi připojí samo. Zásada Windows, může ji přepsat správce sítě.",
@@ -49,7 +49,7 @@ internal static class CatalogWifi
             },
             new()
             {
-                Id = "wifi-hotspot-services", Category = CatWifi, IsNew = true, Requires = Needs.Wifi,
+                Id = "wifi-hotspot-services", Category = CatWifi, Requires = Needs.Wifi,
                 Name = "Wi-Fi: vypnout mobilní hotspot a Wi-Fi Direct",
                 Description = "Vypne služby sdílení internetu přes Wi-Fi a Wi-Fi Direct. Méně procesů na pozadí, samotné Wi-Fi zůstane funkční.",
                 Note = "Nepůjde sdílet internet z počítače jako hotspot ani posílat soubory přes Wi-Fi Direct. Úplné vypnutí Wi-Fi je v Pokročilých.",

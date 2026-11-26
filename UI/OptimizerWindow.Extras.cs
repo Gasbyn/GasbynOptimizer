@@ -227,6 +227,14 @@ public partial class OptimizerWindow
         {
             var all = _items.Select(i => i.Tweak).ToList();
             var result = await Task.Run(() => SelfCheck.Run(_service, all));
+
+            // Aktualizátory aplikací (nové verzované služby) se vypínají tiše, bez dotazu.
+            var auto = result.Drifted.Where(d => d.Tweak.AutoReapply).ToList();
+            if (auto.Count > 0)
+            {
+                await Task.Run(() => { foreach (var a in auto) { try { _service.Apply(a.Tweak); } catch (Exception ex) { Log.Write("Tiché zapnutí selhalo: " + ex.Message); } } });
+                result = await Task.Run(() => SelfCheck.Run(_service, all));
+            }
             UpdateSelfCheckText(result);
 
             if (result.Drifted.Count > 0)

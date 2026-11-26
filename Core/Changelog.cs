@@ -16,6 +16,12 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.217", new DateTime(2026, 11, 26, 22, 30, 0), new[]
+        {
+            Add("Aktualizace aplikací jen ručně", "Nové optimalizace v kategorii Windows Update vypnou aktualizace na pozadí pro Chrome (Google Update), Brave, Firefox, Opera, Adobe a Dropbox. Zakážou i verzované služby (např. GoogleUpdaterService159.0.8140.0) a aplikace je po samokontrole sama znovu vypne, když se po aktualizaci objeví nová. Edge má stejné vypnutí doplněné o úlohy."),
+            Add("Vysoká priorita pro známé aplikace", "Jedno tlačítko nastaví vysokou prioritu OBS Studiu, Streamlabs, Fortnite, Robloxu, Minecraftu, CS2 a Valorantu. Seznam je v popisku."),
+            Add("Windows Update jen ručně", "Windows se přestane aktualizovat automaticky, aktualizace spustíš ručně."),
+        }),
         new("2.0.0.214", new DateTime(2026, 11, 22, 16, 10, 0), new[]
         {
             Add("Automatické aktualizace za běhu", "Když je aplikace zapnutá, každou minutu se zkontroluje nová verze. Drobná verze (změní se jen poslední číslo) se nainstaluje sama na pozadí. U větší verze s novými funkcemi se ukáže okno Teď / Později, aplikace se přesune do popředí a problikává v liště. Při Později se aktualizuje sama při příštím spuštění."),
