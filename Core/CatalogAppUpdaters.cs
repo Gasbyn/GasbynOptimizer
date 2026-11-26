@@ -11,7 +11,19 @@ internal static class CatalogAppUpdaters
         {
             new()
             {
-                Id = "net-mld-icmp", Category = Catalog.CatInternet, IsNew = true, Experimental = true,
+                Id = "explorer-no-home", Category = Catalog.CatUi, IsNew = true, RequiresRestart = false, MinBuild = 22000,
+                Name = "Průzkumník: skrýt tlačítko Domů (Home)",
+                Description = "V levém panelu Průzkumníka zmizí položka Domů (Home). Průzkumník se otevře na „Tento počítač“. " + Catalog.Win11,
+                Note = "Projeví se po restartu Průzkumníka nebo odhlášení. Vypnutí položku vrátí.",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Hkcu(@"Software\Classes\CLSID\{f874310e-b6b7-47dc-bc84-b9e6b38f5903}", "System.IsPinnedToNameSpaceTree", 0, null),
+                    Catalog.Hkcu(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "LaunchTo", 1, 2)
+                }
+            },
+            new()
+            {
+                Id = "net-mld-icmp", Category = Catalog.CatInternet, Experimental = true,
                 Name = "Síť: vypnout MLD/IGMP a ICMP přesměrování",
                 Description = "Vypne multicastové hlášení členství ve skupinách (IGMP, v IPv6 obdoba MLD) a přijímání ICMP přesměrování. Méně zbytečných paketů v síti a bezpečnější směrování.",
                 Note = "Experimentální: pokud ti po zapnutí přestane fungovat FiveM, vypni tuhle úpravu a dej vědět. Multicast používá objevování zařízení v síti (např. sdílení médií, Chromecast).",

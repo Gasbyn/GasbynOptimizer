@@ -232,6 +232,7 @@ internal static class Details
         ["wu-manual-only"] = D("Windows nebude stahovat ani instalovat aktualizace samo.", "Žádné neočekávané stahování a zatěžování počítače při hře nebo streamu.", "Bezpečnostní záplaty musíš instalovat ručně v Nastavení → Windows Update."),
         ["game-priority-apps"] = D("Nastaví vysokou prioritu CPU OBS, Streamlabs, Fortnite, Robloxu, Minecraftu, CS2 a Valorantu.", "Stabilnější FPS a plynulejší stream, když na pozadí běží další věci.", "U Minecraftu Java se priorita týká všech programů javaw.exe. Experimentální kvůli anti-cheatům."),
         ["net-mld-icmp"] = D("Vypne IGMP/MLD multicast a ICMP přesměrování v síťové vrstvě.", "Méně zbytečného provozu a nechtěných změn směrování.", "Může omezit objevování zařízení v síti. Experimentální, při problémech s FiveM vypni."),
+        ["explorer-no-home"] = D("Skryje položku Domů (Home) v levém panelu Průzkumníka a otevře ho na Tento počítač.", "Čistší panel bez Domů a doporučených souborů.", "Jen Windows 11. Projeví se po restartu Průzkumníka."),
         // ---- Debloat ----
         ["debloat-chrome"] = D("Vypne v Chrome hlášení a statistiky, běh na pozadí, rychlý start a reklamní doporučení.", "Chrome zbytečně nezatěžuje počítač a neposílá data.", "Žádné."),
         ["debloat-brave"] = D("Vypne v Brave Rewards, peněženku, VPN, AI chat a hlášení.", "Čistší prohlížeč bez věcí, které nepoužíváš."),

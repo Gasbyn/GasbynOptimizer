@@ -16,6 +16,10 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.219", new DateTime(2026, 11, 26, 22, 55, 0), new[]
+        {
+            Add("Průzkumník: skrýt tlačítko Domů", "V levém panelu Průzkumníka zmizí položka Domů (Home) a Průzkumník se otevře na Tento počítač. Jen Windows 11."),
+        }),
         new("2.0.0.218", new DateTime(2026, 11, 26, 22, 20, 0), new[]
         {
             Add("Síť: vypnout MLD/IGMP a ICMP přesměrování", "Nová experimentální optimalizace v Síti: vypne multicastové hlášení (IGMP/MLD) a přijímání ICMP přesměrování. Pokud kvůli ní přestane fungovat FiveM, jde kdykoli vypnout."),
