@@ -11,7 +11,19 @@ internal static class CatalogAppUpdaters
         {
             new()
             {
-                Id = "upd-chrome", Category = Catalog.CatUpdate, IsNew = true, AutoReapply = true, RequiresRestart = false,
+                Id = "net-mld-icmp", Category = Catalog.CatInternet, IsNew = true, Experimental = true,
+                Name = "Síť: vypnout MLD/IGMP a ICMP přesměrování",
+                Description = "Vypne multicastové hlášení členství ve skupinách (IGMP, v IPv6 obdoba MLD) a přijímání ICMP přesměrování. Méně zbytečných paketů v síti a bezpečnější směrování.",
+                Note = "Experimentální: pokud ti po zapnutí přestane fungovat FiveM, vypni tuhle úpravu a dej vědět. Multicast používá objevování zařízení v síti (např. sdílení médií, Chromecast).",
+                Ops = new TweakOp[]
+                {
+                    Catalog.Hklm(@"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters", "IGMPLevel", 0, null),
+                    Catalog.Hklm(@"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters", "EnableICMPRedirect", 0, 1)
+                }
+            },
+            new()
+            {
+                Id = "upd-chrome", Category = Catalog.CatUpdate, AutoReapply = true, RequiresRestart = false,
                 Name = "Chrome / Google Update: vypnout aktualizace na pozadí",
                 Description = "Zakáže službu Google Update (včetně verzovaných služeb GoogleUpdaterService a GoogleUpdaterInternalService s číslem verze) a její úlohy. Chrome se pak aktualizuje jen ručně přes Nastavení → O prohlížeči Chrome.",
                 Note = "Optimalizace hlídá i nové služby, které Google po každé aktualizaci vytvoří. Aplikace je při spuštění znovu vypne. Zabezpečení: aktualizuj Chrome pravidelně ručně.",
@@ -27,7 +39,7 @@ internal static class CatalogAppUpdaters
             },
             new()
             {
-                Id = "upd-brave", Category = Catalog.CatUpdate, IsNew = true, AutoReapply = true, RequiresRestart = false,
+                Id = "upd-brave", Category = Catalog.CatUpdate, AutoReapply = true, RequiresRestart = false,
                 Name = "Brave: vypnout aktualizace na pozadí",
                 Description = "Zakáže služby Brave Update (brave, bravem, verzované služby) a jeho naplánované úlohy. Brave se aktualizuje ručně přes O prohlížeči Brave.",
                 Note = "Aplikace nové služby po aktualizacích znovu vypne při spuštění.",
@@ -41,7 +53,7 @@ internal static class CatalogAppUpdaters
             },
             new()
             {
-                Id = "upd-firefox", Category = Catalog.CatUpdate, IsNew = true, AutoReapply = true, RequiresRestart = false,
+                Id = "upd-firefox", Category = Catalog.CatUpdate, AutoReapply = true, RequiresRestart = false,
                 Name = "Firefox: vypnout aktualizace na pozadí",
                 Description = "Zakáže službu Mozilla Maintenance a úlohu Firefox Background Update. Firefox se aktualizuje jen ručně nebo při otevření.",
                 Note = "Aktualizace pak provedeš v Nastavení → Obecné → Aktualizace Firefoxu.",
@@ -54,7 +66,7 @@ internal static class CatalogAppUpdaters
             },
             new()
             {
-                Id = "upd-opera", Category = Catalog.CatUpdate, IsNew = true, AutoReapply = true, RequiresRestart = false,
+                Id = "upd-opera", Category = Catalog.CatUpdate, AutoReapply = true, RequiresRestart = false,
                 Name = "Opera: vypnout aktualizace na pozadí",
                 Description = "Zakáže naplánované úlohy Opera scheduled Autoupdate, které běží na pozadí.",
                 Note = "Opera se aktualizuje při spuštění nebo ručně přes O programu Opera.",
@@ -67,7 +79,7 @@ internal static class CatalogAppUpdaters
             },
             new()
             {
-                Id = "upd-adobe", Category = Catalog.CatUpdate, IsNew = true, AutoReapply = true, RequiresRestart = false,
+                Id = "upd-adobe", Category = Catalog.CatUpdate, AutoReapply = true, RequiresRestart = false,
                 Name = "Adobe (Acrobat, Creative Cloud): vypnout aktualizace na pozadí",
                 Description = "Zakáže služby Adobe Acrobat Update a Adobe Genuine Software a úlohu Adobe Acrobat Update Task.",
                 Note = "Adobe programy se pak aktualizují ručně (Nápověda → Zkontrolovat aktualizace).",
@@ -82,7 +94,7 @@ internal static class CatalogAppUpdaters
             },
             new()
             {
-                Id = "upd-dropbox", Category = Catalog.CatUpdate, IsNew = true, AutoReapply = true, RequiresRestart = false,
+                Id = "upd-dropbox", Category = Catalog.CatUpdate, AutoReapply = true, RequiresRestart = false,
                 Name = "Dropbox: vypnout aktualizace na pozadí",
                 Description = "Zakáže služby Dropbox Update (dbupdate, dbupdatem) a úlohy DropboxUpdateTask. Dropbox se aktualizuje při spuštění.",
                 Note = "Synchronizace funguje dál, jen se přestane samo aktualizovat na pozadí.",
@@ -95,7 +107,7 @@ internal static class CatalogAppUpdaters
             },
             new()
             {
-                Id = "wu-manual-only", Category = Catalog.CatUpdate, IsNew = true, RequiresRestart = false,
+                Id = "wu-manual-only", Category = Catalog.CatUpdate, RequiresRestart = false,
                 Name = "Windows Update jen ručně",
                 Description = "Windows se nebude aktualizovat automaticky. Aktualizace se stáhnou a nainstalují, až si je sám vyžádáš v Nastavení → Windows Update → Vyhledat aktualizace.",
                 Note = "Nezapomeň aktualizovat ručně alespoň jednou za měsíc kvůli bezpečnostním záplatám.",
@@ -106,7 +118,7 @@ internal static class CatalogAppUpdaters
             },
             new()
             {
-                Id = "game-priority-apps", Category = Catalog.CatGaming, IsNew = true, Experimental = true, RequiresRestart = false,
+                Id = "game-priority-apps", Category = Catalog.CatGaming, Experimental = true, RequiresRestart = false,
                 Name = "Vysoká priorita pro známé hry a streamovací programy",
                 Description = "Nastaví vysokou prioritu procesoru těmto programům: OBS Studio (obs64, obs32), Streamlabs (Desktop i OBS), Fortnite, Roblox, Minecraft (Java i Bedrock), Counter-Strike 2 a Valorant. Ostatní programy se nemění.",
                 Note = "Experimentální: u Minecraftu Java se priorita nastaví všem programům javaw.exe. Anti-cheaty (Vanguard, Easy Anti-Cheat) by to neměly blokovat, ale je to zásah do nastavení spouštění, takže při problémech vypni. Projeví se po dalším spuštění programu.",

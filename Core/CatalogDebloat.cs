@@ -104,7 +104,7 @@ throw ('Odinstalace Edge selhala (kód ' + $p.ExitCode + '). Microsoft ji v tvé
             },
             new()
             {
-                Id = "debloat-edge-off", Category = CatalogDebloat.CatDebloat, IsNew = true, AutoReapply = true, InstalledCheck = () => File.Exists(CatalogDebloat.EdgeExe),
+                Id = "debloat-edge-off", Category = CatalogDebloat.CatDebloat, AutoReapply = true, InstalledCheck = () => File.Exists(CatalogDebloat.EdgeExe),
                 Name = "Edge: vypnout úplně (aktualizace a služby)",
                 Description = "Vypne běh Edge na pozadí a zakáže jeho aktualizace a služby (Edge Update, Elevation Service). Prohlížeč zůstane nainstalovaný, ale nic nedělá na pozadí.",
                 Note = "Experimentální: Edge se přestane aktualizovat, což může být riziko, pokud ho používáš. Vypnutí vše vrátí.",

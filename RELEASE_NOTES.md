@@ -1,1 +1,1 @@
-Aktualizace aplikací jen ručně (Chrome, Brave, Firefox, Opera, Adobe, Dropbox), vysoká priorita her a streamování, Windows Update jen ručně. Podrobnosti najdeš po aktualizaci v Update logu přímo v aplikaci.
+Nová optimalizace sítě: vypnutí MLD/IGMP a ICMP přesměrování (experimentální). Podrobnosti najdeš po aktualizaci v Update logu přímo v aplikaci.

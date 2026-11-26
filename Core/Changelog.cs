@@ -16,6 +16,10 @@ public static class Changelog
 
     public static readonly IReadOnlyList<ChangeEntry> Entries = new List<ChangeEntry>
     {
+        new("2.0.0.218", new DateTime(2026, 11, 26, 22, 20, 0), new[]
+        {
+            Add("Síť: vypnout MLD/IGMP a ICMP přesměrování", "Nová experimentální optimalizace v Síti: vypne multicastové hlášení (IGMP/MLD) a přijímání ICMP přesměrování. Pokud kvůli ní přestane fungovat FiveM, jde kdykoli vypnout."),
+        }),
         new("2.0.0.217", new DateTime(2026, 11, 26, 22, 30, 0), new[]
         {
             Add("Aktualizace aplikací jen ručně", "Nové optimalizace v kategorii Windows Update vypnou aktualizace na pozadí pro Chrome (Google Update), Brave, Firefox, Opera, Adobe a Dropbox. Zakážou i verzované služby (např. GoogleUpdaterService159.0.8140.0) a aplikace je po samokontrole sama znovu vypne, když se po aktualizaci objeví nová. Edge má stejné vypnutí doplněné o úlohy."),
